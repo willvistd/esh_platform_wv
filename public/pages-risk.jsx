@@ -3639,10 +3639,11 @@ const RISK_STYLE = `
   .risk-back-btn { background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--fg-2); }
   .risk-back-btn:hover { background: var(--bg-sunk); }
   .risk-step-badge { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.18); flex-shrink: 0; }
-  /* 인쇄(PDF) 시: textarea 숨기고 tx-mirror div로 전체 텍스트 표시 */
+  /* 인쇄(PDF) 시: textarea/select 숨기고 tx-mirror div로 전체 텍스트 표시 */
   .risk-table-area .tx-mirror { display: none; }
   @media print {
     .risk-table-area textarea { display: none !important; }
+    .risk-table-area select.sel-mirror { display: none !important; } /* 예상재해 등 긴 텍스트 select — 한 줄 잘림 방지 */
     .risk-table-area .tx-mirror { display: block !important; white-space: pre-wrap; font-family: inherit; font-size: 11px; line-height: 1.4; word-break: break-word; width: 100%; padding: 0; }
   }
 `;
@@ -6346,12 +6347,13 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         })()}
                       </div>
                     </TD>
-                    {/* 예상재해 */}
+                    {/* 예상재해 — 화면=select, 인쇄=tx-mirror(전체 텍스트 줄바꿈 표시, 한 줄 잘림 방지) */}
                     <TD>
-                      <select value={row.예상재해} onChange={e => updRow(i, "예상재해", e.target.value)} style={inSel} title={row.예상재해 || ""}>
+                      <select className="sel-mirror" value={row.예상재해} onChange={e => updRow(i, "예상재해", e.target.value)} style={inSel} title={row.예상재해 || ""}>
                         <option value="">선택...</option>
                         {ACCIDENT_TYPES.map(a => <option key={a}>{a}</option>)}
                       </select>
+                      <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
                     </TD>
                     {/* 현재안전조치: 추천 드롭다운 + 자유 입력 */}
                     <TD>
