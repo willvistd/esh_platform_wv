@@ -6221,17 +6221,24 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           placeholder="직접 입력 또는 ▾ 목록"
                           style={{ ...inTA, textAlign: "left", paddingRight: taskList.length > 0 ? 22 : 6 }} />
                         <div className="tx-mirror">{row.세부작업}</div>
-                        {taskList.length > 0 && (() => {
+                        {(() => {
                           const open = taskSuggestRow === i;
+                          const has = taskList.length > 0;
                           return (
                             <>
                               <button type="button" className="no-print"
                                 onClick={e => { e.stopPropagation(); setTaskSuggestRow(open ? -1 : i); }}
-                                title="공정 목록 보기"
-                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: "#1d4ed8" }}>
+                                title={has ? "공정 목록 보기" : "이 평가표 유형에는 공정 목록이 없습니다"}
+                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: has ? "#1d4ed8" : "#9ca3af" }}>
                                 ▾
                               </button>
-                              {open && (
+                              {open && !has && (
+                                <div className="no-print"
+                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  이 평가표 유형에는 공정 목록이 없습니다. 직접 입력하세요.
+                                </div>
+                              )}
+                              {open && has && (
                                 <div className="no-print"
                                   style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   {taskList.map((t, ti) => (
@@ -6266,17 +6273,24 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           placeholder="직접 입력 또는 ▾ 목록"
                           style={{ ...inTA, textAlign: "left", paddingRight: causeOpts.length > 0 ? 22 : 6 }} />
                         <div className="tx-mirror">{row.원인}</div>
-                        {causeOpts.length > 0 && (() => {
+                        {(() => {
                           const open = causeSuggestRow === i;
+                          const has = causeOpts.length > 0;
                           return (
                             <>
                               <button type="button" className="no-print"
                                 onClick={e => { e.stopPropagation(); setCauseSuggestRow(open ? -1 : i); }}
-                                title="원인 목록 보기"
-                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: "#1d4ed8" }}>
+                                title={has ? "원인 목록 보기" : "위험분류를 먼저 선택하세요"}
+                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: has ? "#1d4ed8" : "#9ca3af" }}>
                                 ▾
                               </button>
-                              {open && (
+                              {open && !has && (
+                                <div className="no-print"
+                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  왼쪽 <b>위험분류</b>를 먼저 선택하면 원인 목록이 표시됩니다.
+                                </div>
+                              )}
+                              {open && has && (
                                 <div className="no-print"
                                   style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   {causeOpts.map((o, oi) => (
@@ -6309,17 +6323,23 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           const sugs = (taskSpecific && taskSpecific.length > 0)
                             ? taskSpecific
                             : filterSuggestionsByTableType(HAZARD_ENV_SUGGESTIONS[row.원인]);
-                          if (sugs.length === 0) return null;
+                          const has = sugs.length > 0;
                           const open = envSuggestRow === i;
                           return (
                             <>
                               <button type="button" className="no-print"
                                 onClick={(e) => { e.stopPropagation(); setEnvSuggestRow(open ? -1 : i); }}
-                                title="추천 문구 보기"
-                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#fef9c3" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: "#a16207" }}>
+                                title={has ? "추천 문구 보기" : "원인을 먼저 선택하세요"}
+                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#fef9c3" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: has ? "#a16207" : "#9ca3af" }}>
                                 💡
                               </button>
-                              {open && (
+                              {open && !has && (
+                                <div className="no-print"
+                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  <b>원인</b>을 먼저 선택하면 추천 문구가 표시됩니다.
+                                </div>
+                              )}
+                              {open && has && (
                                 <div className="no-print"
                                   style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #f59e0b", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#a16207", padding: "4px 8px", borderBottom: "1px solid #fde68a", marginBottom: 4, fontWeight: 700, background: "#fef9c3" }}>
@@ -6369,7 +6389,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           const sugs = (taskSpecific && taskSpecific.length > 0)
                             ? taskSpecific
                             : filterSuggestionsByTableType(HAZARD_SAFETY_SUGGESTIONS[row.원인]);
-                          if (sugs.length === 0) return null;
+                          const has = sugs.length > 0;
                           const open = safetySuggestRow === i;
                           // 기존 내용에 줄바꿈으로 추가 (append 모드) + 선택 시 드롭다운 자동 닫힘
                           const apply = (s) => {
@@ -6383,11 +6403,17 @@ const RiskTableView = ({ onNav, currentUser }) => {
                             <>
                               <button type="button" className="no-print"
                                 onClick={(e) => { e.stopPropagation(); setSafetySuggestRow(open ? -1 : i); }}
-                                title="추천 안전조치 보기"
-                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: "#1e40af" }}>
+                                title={has ? "추천 안전조치 보기" : "원인을 먼저 선택하세요"}
+                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #cbd5e1", borderRadius: 4, background: open ? "#dbeafe" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: has ? "#1e40af" : "#9ca3af" }}>
                                 💡
                               </button>
-                              {open && (
+                              {open && !has && (
+                                <div className="no-print"
+                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  <b>원인</b>을 먼저 선택하면 추천 안전조치가 표시됩니다.
+                                </div>
+                              )}
+                              {open && has && (
                                 <div className="no-print"
                                   style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#1e40af", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", marginBottom: 4, fontWeight: 700, background: "#dbeafe" }}>
@@ -6441,7 +6467,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         <div className="tx-mirror">{row.감소대책}</div>
                         {(() => {
                           const sugs = filterSuggestionsByTableType(HAZARD_MEASURE_SUGGESTIONS[row.원인]);
-                          if (sugs.length === 0) return null;
+                          const has = sugs.length > 0;
                           const open = measureSuggestRow === i;
                           // 기존 내용에 줄바꿈으로 추가 (append) 모드: 클릭 시 줄 단위로 추가
                           const apply = (s) => {
@@ -6454,11 +6480,17 @@ const RiskTableView = ({ onNav, currentUser }) => {
                             <>
                               <button type="button" className="no-print"
                                 onClick={(e) => { e.stopPropagation(); setMeasureSuggestRow(open ? -1 : i); }}
-                                title="추천 대책 보기"
-                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #86efac", borderRadius: 4, background: open ? "#dcfce7" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: "#166534" }}>
+                                title={has ? "추천 대책 보기" : "원인을 먼저 선택하세요"}
+                                style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, padding: 0, border: "1px solid #86efac", borderRadius: 4, background: open ? "#dcfce7" : "#fff", cursor: "pointer", fontSize: 11, lineHeight: 1, color: has ? "#166534" : "#9ca3af" }}>
                                 ✓
                               </button>
-                              {open && (
+                              {open && !has && (
+                                <div className="no-print"
+                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  <b>원인</b>을 먼저 선택하면 추천 감소대책이 표시됩니다.
+                                </div>
+                              )}
+                              {open && has && (
                                 <div className="no-print"
                                   style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 340, maxHeight: 300, overflowY: "auto", background: "#fff", border: "1.5px solid #16a34a", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#166534", padding: "4px 8px", borderBottom: "1px solid #bbf7d0", marginBottom: 4, fontWeight: 700, background: "#dcfce7" }}>
