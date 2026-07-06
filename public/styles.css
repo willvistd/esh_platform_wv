@@ -211,6 +211,31 @@ a { color: inherit; text-decoration: none; }
 .sb-link-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sb-link-count { font-size: 11px; color: var(--fg-4); font-variant-numeric: tabular-nums; }
 [data-mood="technical"] .sb-link-count { font-family: var(--font-mono); }
+.sb-cat-caret { margin-left: 2px; opacity: .45; flex: 0 0 auto; }
+
+/* ─── 하위카테고리 플라이아웃 (호버 시 오른쪽에 표시) ─── */
+.sb-flyout {
+  position: fixed; z-index: 200;
+  min-width: 190px;
+  background: var(--primary);
+  border-radius: var(--r-sm);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+  padding: 6px;
+  animation: sb-flyout-in .12s ease;
+}
+@keyframes sb-flyout-in { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+.sb-flyout-hd {
+  color: rgba(255,255,255,0.72);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em;
+  padding: 5px 10px 7px;
+}
+.sb-flyout-link {
+  color: #fff; font-size: 13px; font-weight: 500;
+  padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  white-space: nowrap; user-select: none;
+}
+.sb-flyout-link:hover { background: rgba(255,255,255,0.18); }
+.sb-flyout-link.active { background: rgba(255,255,255,0.28); font-weight: 700; }
 
 .sb-spacer { flex: 1; }
 

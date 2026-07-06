@@ -71,6 +71,35 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
     return false;
   };
 
+  // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃으로 표시) ───
+  const SUBCATS = {
+    training: [
+      { label: "교육일지 작성/조회", nav: { name: "education-log" }, act: (r) => ["education-log", "education-log-new", "education-log-list"].includes(r.name) },
+    ],
+    msds: [
+      { label: "MSDS 서식 생성", nav: { name: "msds-generate" }, act: (r) => r.name === "msds-generate" },
+    ],
+    "risk-assessment": [
+      { label: "위험성평가 서류 작성", nav: { name: "risk-assessment" }, act: (r) => r.name === "risk-assessment" || r.name.startsWith("risk-") },
+      { label: "근무환경 조사표 출력", nav: { name: "tool-worker-survey" }, act: (r) => r.name === "tool-worker-survey" },
+      { label: "현장점검 보고서", nav: { name: "field-inspection" }, act: (r) => r.name === "field-inspection" },
+    ],
+    signage: [
+      { label: "출입문 표지 생성", nav: { name: "tool-safety-signs" }, act: (r) => r.name === "tool-safety-signs" },
+    ],
+  };
+  const getSubs = (c) => SUBCATS[c.id] || (c.name === "안전보건표지" ? SUBCATS.signage : null);
+
+  const [flyout, setFlyout] = React.useState(null);
+  const flyTimer = React.useRef(null);
+  const openFly = (e, c, subs) => {
+    clearTimeout(flyTimer.current);
+    const r = e.currentTarget.getBoundingClientRect();
+    setFlyout({ id: c.id, name: c.name, subs, top: r.top, left: r.right + 4 });
+  };
+  const scheduleFlyClose = () => { flyTimer.current = setTimeout(() => setFlyout(null), 140); };
+  const keepFlyOpen = () => clearTimeout(flyTimer.current);
+
   return (
     <aside className="sidebar">
       <div className="sb-brand">
@@ -105,64 +134,26 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
       {categories.some((c) => allow("cat:" + c.id)) && (
         <>
           <div className="sb-section-label">카테고리</div>
-          {categories.map((c) => allow("cat:" + c.id) && (
-            <React.Fragment key={c.id}>
-              <NavLink
-                active={route.name === "category" && route.id === c.id}
-                icon={CAT_ICON[c.id] || "doc"}
-                onClick={() => onNav({ name: "category", id: c.id })}>
-                {c.name}
-                <span className="sb-link-count">{c.count}</span>
-              </NavLink>
-              {c.id === "training" && (
+          {categories.map((c) => {
+            if (!allow("cat:" + c.id)) return null;
+            const subs = getSubs(c);
+            const hasActiveSub = subs && subs.some((s) => s.act(route));
+            return (
+              <div
+                key={c.id}
+                onMouseEnter={subs ? (e) => openFly(e, c, subs) : undefined}
+                onMouseLeave={subs ? scheduleFlyClose : undefined}>
                 <NavLink
-                  active={route.name === "education-log" || route.name === "education-log-new" || route.name === "education-log-list"}
-                  onClick={() => onNav({ name: "education-log" })}
-                  style={{ paddingLeft: 28, fontSize: 12 }}>
-                  └ 교육일지 작성/조회
+                  active={(route.name === "category" && route.id === c.id) || (flyout?.id === c.id) || hasActiveSub}
+                  icon={CAT_ICON[c.id] || "doc"}
+                  onClick={() => onNav({ name: "category", id: c.id })}>
+                  {c.name}
+                  <span className="sb-link-count">{c.count}</span>
+                  {subs && <Icon name="chevron-right" size={13} className="sb-cat-caret" />}
                 </NavLink>
-              )}
-              {c.id === "msds" && (
-                <NavLink
-                  active={route.name === "msds-generate"}
-                  onClick={() => onNav({ name: "msds-generate" })}
-                  style={{ paddingLeft: 28, fontSize: 12 }}>
-                  └ MSDS 서식 생성
-                </NavLink>
-              )}
-              {c.id === "risk-assessment" && (
-                <>
-                  <NavLink
-                    active={route.name === "risk-assessment" || route.name.startsWith("risk-")}
-                    onClick={() => onNav({ name: "risk-assessment" })}
-                    style={{ paddingLeft: 28, fontSize: 12 }}>
-                    └ 위험성평가 서류 작성
-                  </NavLink>
-                  <NavLink
-                    active={route.name === "tool-worker-survey"}
-                    onClick={() => onNav({ name: "tool-worker-survey" })}
-                    style={{ paddingLeft: 28, fontSize: 12 }}>
-                    └ 근무환경 조사표 출력
-                  </NavLink>
-                  <NavLink
-                    active={route.name === "field-inspection"}
-                    onClick={() => onNav({ name: "field-inspection" })}
-                    style={{ paddingLeft: 28, fontSize: 12 }}>
-                    └ 현장점검 보고서
-                  </NavLink>
-                </>
-              )}
-              {/* 안전보건표지 카테고리 아래: 표지 인쇄 도구 (id 또는 이름 매칭) */}
-              {(c.id === "signage" || c.name === "안전보건표지") && (
-                <NavLink
-                  active={route.name === "tool-safety-signs"}
-                  onClick={() => onNav({ name: "tool-safety-signs" })}
-                  style={{ paddingLeft: 28, fontSize: 12 }}>
-                  └ 출입문 표지 생성
-                </NavLink>
-              )}
-            </React.Fragment>
-          ))}
+              </div>
+            );
+          })}
         </>
       )}
 
@@ -210,6 +201,25 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           </button>
         )}
       </div>
+
+      {/* 하위카테고리 플라이아웃 (호버 시 오른쪽, 파란 바탕/흰 글씨) */}
+      {flyout && (
+        <div
+          className="sb-flyout"
+          style={{ top: flyout.top, left: flyout.left }}
+          onMouseEnter={keepFlyOpen}
+          onMouseLeave={scheduleFlyClose}>
+          <div className="sb-flyout-hd">{flyout.name}</div>
+          {flyout.subs.map((s) => (
+            <div
+              key={s.label}
+              className={"sb-flyout-link" + (s.act(route) ? " active" : "")}
+              onClick={() => { onNav(s.nav); setFlyout(null); }}>
+              {s.label}
+            </div>
+          ))}
+        </div>
+      )}
     </aside>);
 
 };
