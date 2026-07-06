@@ -6256,13 +6256,16 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         })()}
                       </div>
                     </TD>
-                    {/* 위험분류 */}
+                    {/* 위험분류 — appearance:none으로 지워진 네이티브 화살표 대신 ▾ 표식 오버레이 (클릭은 select로 통과) */}
                     <TD>
-                      <select value={row.위험분류} onChange={e => updRow(i, "위험분류", e.target.value)} style={inSel}
-                        title={row.세부작업 && TASK_HAZARD_CATEGORIES[row.세부작업] ? `「${row.세부작업}」에 해당하는 분류만 표시됨` : ""}>
-                        <option value="">{row.세부작업 ? "선택..." : "세부작업 먼저"}</option>
-                        {getAllowedHazardCats(row.세부작업).map(c => <option key={c}>{c}</option>)}
-                      </select>
+                      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
+                        <select value={row.위험분류} onChange={e => updRow(i, "위험분류", e.target.value)} style={{ ...inSel, paddingRight: 22 }}
+                          title={row.세부작업 && TASK_HAZARD_CATEGORIES[row.세부작업] ? `「${row.세부작업}」에 해당하는 분류만 표시됨` : ""}>
+                          <option value="">{row.세부작업 ? "선택..." : "세부작업 먼저"}</option>
+                          {getAllowedHazardCats(row.세부작업).map(c => <option key={c}>{c}</option>)}
+                        </select>
+                        <span className="no-print" style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", pointerEvents: "none" }}>▾</span>
+                      </div>
                     </TD>
                     {/* 원인: textarea + 추천 드롭다운 */}
                     <TD>
@@ -6369,11 +6372,14 @@ const RiskTableView = ({ onNav, currentUser }) => {
                     </TD>
                     {/* 예상재해 — 화면=select, 인쇄=tx-mirror(전체 텍스트 줄바꿈 표시, 한 줄 잘림 방지) */}
                     <TD>
-                      <select className="sel-mirror" value={row.예상재해} onChange={e => updRow(i, "예상재해", e.target.value)} style={inSel} title={row.예상재해 || ""}>
-                        <option value="">선택...</option>
-                        {ACCIDENT_TYPES.map(a => <option key={a}>{a}</option>)}
-                      </select>
-                      <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
+                      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
+                        <select className="sel-mirror" value={row.예상재해} onChange={e => updRow(i, "예상재해", e.target.value)} style={{ ...inSel, paddingRight: 22 }} title={row.예상재해 || ""}>
+                          <option value="">선택...</option>
+                          {ACCIDENT_TYPES.map(a => <option key={a}>{a}</option>)}
+                        </select>
+                        <span className="no-print" style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", pointerEvents: "none" }}>▾</span>
+                        <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
+                      </div>
                     </TD>
                     {/* 현재안전조치: 추천 드롭다운 + 자유 입력 */}
                     <TD>
