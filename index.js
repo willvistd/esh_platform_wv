@@ -1545,8 +1545,10 @@ app.get('/api/msds/search', async (req, res) => {
 });
 
 // ── 위험성평가 PDF 생성 라우트 (puppeteer + pdf-lib) ──
+// frontendBaseUrl에 실제 리슨 포트 반영 — Railway는 PORT=8080이라
+// 기본값(localhost:3000) 그대로면 puppeteer가 ERR_CONNECTION_REFUSED
 const { registerRiskPdfRoutes } = require('./risk-pdf');
-registerRiskPdfRoutes(app);
+registerRiskPdfRoutes(app, { frontendBaseUrl: `http://localhost:${process.env.PORT || 3000}` });
 
 // ── Express body 크기 제한 확장 (PDF 생성 시 사진 base64 + 모든 STEP 데이터 포함) ──
 // app.use(express.json()) 보다 큰 limit 필요 — 기존 use 위치보다 후순위는 안되니까 별도 처리
