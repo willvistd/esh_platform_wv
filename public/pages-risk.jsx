@@ -3644,7 +3644,7 @@ const RISK_STYLE = `
   @media print {
     .risk-table-area textarea { display: none !important; }
     .risk-table-area select.sel-mirror { display: none !important; } /* 예상재해 등 긴 텍스트 select — 한 줄 잘림 방지 */
-    .risk-table-area .tx-mirror { display: block !important; white-space: pre-wrap; font-family: inherit; font-size: 11px; line-height: 1.4; word-break: break-word; width: 100%; padding: 0; }
+    .risk-table-area .tx-mirror { display: block !important; white-space: pre-wrap; font-family: inherit; font-size: 11px; line-height: 1.4; word-break: break-word; width: 100%; padding: 0; text-align: center; }
   }
 `;
 
@@ -6219,7 +6219,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           onChange={e => { updRow(i, "세부작업", e.target.value); autoGrow(e.target); }}
                           ref={autoGrow}
                           placeholder="직접 입력 또는 ▾ 목록"
-                          style={{ ...inTA, textAlign: "left", paddingRight: taskList.length > 0 ? 22 : 6 }} />
+                          style={{ ...inTA, paddingRight: taskList.length > 0 ? 22 : 6 }} />
                         <div className="tx-mirror">{row.세부작업}</div>
                         {(() => {
                           const open = taskSuggestRow === i;
@@ -6274,7 +6274,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           onChange={e => { updRow(i, "원인", e.target.value); autoGrow(e.target); }}
                           ref={autoGrow}
                           placeholder="직접 입력 또는 ▾ 목록"
-                          style={{ ...inTA, textAlign: "left", paddingRight: causeOpts.length > 0 ? 22 : 6 }} />
+                          style={{ ...inTA, paddingRight: causeOpts.length > 0 ? 22 : 6 }} />
                         <div className="tx-mirror">{row.원인}</div>
                         {(() => {
                           const open = causeSuggestRow === i;
@@ -6317,7 +6317,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         <textarea value={row.위험발생환경} rows={1}
                           onChange={e => { updRow(i, "위험발생환경", e.target.value); autoGrow(e.target); }}
                           ref={autoGrow}
-                          style={{ ...inTA, paddingRight: 22, textAlign: "left" }} />
+                          style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.위험발생환경}</div>
                         {(() => {
                           // 1순위: 세부작업+원인 매핑 (있으면 그것만 표시)
@@ -6387,7 +6387,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         <textarea value={row.현재안전조치} rows={1}
                           onChange={e => { updRow(i, "현재안전조치", e.target.value); autoGrow(e.target); }}
                           ref={autoGrow}
-                          style={{ ...inTA, paddingRight: 22, textAlign: "left" }} />
+                          style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.현재안전조치}</div>
                         {(() => {
                           // 1순위: 세부작업+원인 매핑, 2순위: 원인 기반 폴백
@@ -6469,7 +6469,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                         <textarea value={row.감소대책} rows={1}
                           onChange={e => { updRow(i, "감소대책", e.target.value); autoGrow(e.target); }}
                           ref={autoGrow}
-                          style={{ ...inTA, paddingRight: 22, textAlign: "left" }} />
+                          style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.감소대책}</div>
                         {(() => {
                           const sugs = filterSuggestionsByTableType(HAZARD_MEASURE_SUGGESTIONS[row.원인]);
