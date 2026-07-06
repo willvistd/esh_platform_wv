@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>위험성평가 서식 디자인 가이드</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    background: #f5f5f7; color: #1a1a1a; margin: 0; padding: 40px 20px;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .doc-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; text-align: center; }
+  .doc-subtitle { font-size: 14px; color: #666; text-align: center; margin-bottom: 40px; }
+
+  .section {
+    background: #fff; border-radius: 12px; padding: 30px 36px;
+    margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .section-title {
+    font-size: 18px; font-weight: 700; margin: 0 0 4px;
+    padding-bottom: 12px; border-bottom: 2px solid #1e5fcf;
+    display: inline-block; padding-right: 20px;
+  }
+  .section-desc { font-size: 13px; color: #666; margin: 8px 0 20px; }
+
+  /* ── 1. 색상 팔레트 ── */
+  .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .color-card { border: 1px solid #e5e5ea; border-radius: 8px; overflow: hidden; }
+  .color-swatch { height: 70px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .color-info { padding: 10px 12px; font-size: 12px; }
+  .color-name { font-weight: 700; margin-bottom: 2px; }
+  .color-hex { color: #666; font-family: monospace; }
+  .color-use { color: #888; font-size: 11px; margin-top: 4px; }
+
+  /* ── 2. 타이포그래피 ── */
+  .type-row { display: flex; align-items: baseline; padding: 12px 0; border-bottom: 1px dashed #e5e5ea; gap: 20px; }
+  .type-row:last-child { border-bottom: none; }
+  .type-meta { width: 200px; flex-shrink: 0; font-size: 11px; color: #888; font-family: monospace; }
+  .type-meta b { display: block; color: #1a1a1a; font-family: inherit; font-size: 12px; margin-bottom: 2px; }
+  .type-sample { color: #000; }
+
+  /* ── 3. 표 (Table) ── */
+  .demo-table {
+    width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px;
+  }
+  .demo-table td, .demo-table th {
+    border: 1px solid #333; padding: 10px 12px; vertical-align: middle;
+  }
+  .demo-table .lbl {
+    background: #f0f0f0; font-weight: 700; text-align: center;
+    white-space: nowrap; width: 110px;
+  }
+  .demo-table input, .demo-table textarea {
+    width: 100%; border: none; background: transparent; font-size: 13px;
+    outline: none; font-family: inherit; padding: 0;
+  }
+  .demo-table textarea { resize: vertical; min-height: 60px; line-height: 1.6; }
+  .demo-table .input-cell { padding: 10px 12px; }
+  .demo-table .input-cell-no-pad { padding: 0; }
+  .demo-table .input-cell-no-pad input { padding: 10px 12px; }
+  .section-header-row td {
+    background: #e0f2fe !important; font-weight: 700; text-align: center;
+    font-size: 14px;
+  }
+
+  /* ── 4. 폼 필드 ── */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field-card { border: 1px solid #e5e5ea; border-radius: 8px; padding: 16px; }
+  .field-title { font-size: 12px; font-weight: 700; color: #666; margin-bottom: 10px; text-transform: uppercase; }
+
+  /* ── 빈 칸 처리 비교 ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .compare-card { border: 1px solid #e5e5ea; border-radius: 8px; padding: 16px; }
+  .compare-bad { border-color: #fca5a5; background: #fef2f2; }
+  .compare-good { border-color: #86efac; background: #f0fdf4; }
+  .compare-label {
+    font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    display: inline-block; margin-bottom: 10px;
+  }
+  .label-bad { background: #fee2e2; color: #b91c1c; }
+  .label-good { background: #d1fae5; color: #166534; }
+
+  /* ── 8. 완성 예시 — A4 portrait 실제 비율 (210×297mm = 794×1123px @ 96dpi) ── */
+  .a4-wrapper {
+    display: flex; flex-direction: column; align-items: center;
+    background: #e5e5ea; padding: 40px 20px; border-radius: 8px;
+    overflow-x: auto;
+  }
+  .a4-label {
+    font-size: 12px; font-weight: 700; color: #666; margin-bottom: 16px;
+    background: #fff; padding: 4px 12px; border-radius: 12px;
+    border: 1px solid #ccc;
+  }
+  .example-card {
+    /* A4 portrait: 210mm × 297mm = 794px × 1123px (96 DPI) */
+    width: 794px;
+    min-height: 1123px;
+    background: #fff;
+    /* @page margin 15mm = ~57px */
+    padding: 57px;
+    border: 1px solid #999;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+    position: relative;
+  }
+  /* 가상 눈금자 (좌측·상단 mm 표시) */
+  .example-card::before {
+    content: "210mm";
+    position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: #888; background: #e5e5ea; padding: 0 6px;
+  }
+  .example-card::after {
+    content: "297mm";
+    position: absolute; top: 50%; right: -42px; transform: rotate(90deg);
+    font-size: 10px; color: #888; background: #e5e5ea; padding: 0 6px;
+  }
+  .example-h2 { text-align: center; font-size: 18px; font-weight: 700; margin: 0 0 28px; }
+  /* A4 안의 표는 실제 인쇄 폰트(10.5pt ≈ 14px)에 가깝게 */
+  .example-card .demo-table { font-size: 12.5px; }
+  .example-card .demo-table .lbl { font-size: 12.5px; }
+  .example-card .demo-table input { font-size: 12.5px; }
+
+  /* ── 안내 박스 ── */
+  .note {
+    padding: 12px 16px; background: #eff6ff; border-left: 4px solid #1e5fcf;
+    border-radius: 6px; font-size: 13px; color: #1e3a8a; margin-top: 16px;
+  }
+  .warn {
+    padding: 12px 16px; background: #fef3c7; border-left: 4px solid #d97706;
+    border-radius: 6px; font-size: 13px; color: #92400e; margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1 class="doc-title">📐 위험성평가 서식 디자인 가이드</h1>
+  <p class="doc-subtitle">모든 STEP·보조서류·전체출력에 일관되게 적용되는 시각 기준 (회의록 기준)</p>
+
+  <!-- ──────── 1. 색상 ──────── -->
+  <section class="section">
+    <h2 class="section-title">1. 색상 팔레트</h2>
+    <p class="section-desc">테두리·배경·강조 등 모든 색 사용 시 아래 팔레트에서만 선택.</p>
+    <div class="color-grid">
+      <div class="color-card">
+        <div class="color-swatch" style="background:#333; color:#fff;">테두리</div>
+        <div class="color-info"><div class="color-name">테두리</div><div class="color-hex">#333</div><div class="color-use">모든 표 테두리 1px solid</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#f0f0f0; color:#333;">라벨 배경</div>
+        <div class="color-info"><div class="color-name">라벨 셀 배경</div><div class="color-hex">#f0f0f0</div><div class="color-use">"사업장명" 같은 좌측 라벨</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#fff; color:#333; border-bottom:1px solid #ddd;">입력 배경</div>
+        <div class="color-info"><div class="color-name">입력 셀 배경</div><div class="color-hex">#fff</div><div class="color-use">사용자 입력칸</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#e0f2fe; color:#075985;">섹션 강조</div>
+        <div class="color-info"><div class="color-name">섹션 헤더 강조</div><div class="color-hex">#e0f2fe</div><div class="color-use">"공정 분석" 같은 섹션 제목 행</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#fef2f2; color:#991b1b;">위험성 빨강</div>
+        <div class="color-info"><div class="color-name">위험성 (현재)</div><div class="color-hex">#fef2f2</div><div class="color-use">위험성평가표 좌측 3컬럼</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#f0fdf4; color:#166534;">개선 후 초록</div>
+        <div class="color-info"><div class="color-name">개선 후 위험성</div><div class="color-hex">#f0fdf4</div><div class="color-use">위험성평가표 우측 3컬럼</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#fef3c7; color:#92400e;">경고/주의</div>
+        <div class="color-info"><div class="color-name">경고·주의</div><div class="color-hex">#fef3c7</div><div class="color-use">⚠️ 안내 메시지 배경</div></div>
+      </div>
+      <div class="color-card">
+        <div class="color-swatch" style="background:#666; color:#fff;">보조 텍스트</div>
+        <div class="color-info"><div class="color-name">보조 텍스트</div><div class="color-hex">#666</div><div class="color-use">설명·placeholder·날짜 라벨</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── 2. 타이포 ──────── -->
+  <section class="section">
+    <h2 class="section-title">2. 타이포그래피</h2>
+    <p class="section-desc">모든 텍스트는 아래 5단계 안에서 선택. 임의 폰트 사이즈 금지.</p>
+    <div class="type-row">
+      <div class="type-meta"><b>문서 제목 (h2)</b>화면 18px / 인쇄 14pt<br>weight 700, center</div>
+      <div class="type-sample" style="font-size:18px; font-weight:700;">위험성평가 회의록</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><b>섹션 강조 헤더</b>화면 14px / 인쇄 11pt<br>weight 700, center, bg #e0f2fe</div>
+      <div class="type-sample" style="font-size:14px; font-weight:700; background:#e0f2fe; padding:8px 16px; border:1px solid #333;">공정 분석</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><b>라벨 (cellLabel)</b>화면 13px / 인쇄 10.5pt<br>weight 700, center, bg #f0f0f0</div>
+      <div class="type-sample" style="font-size:13px; font-weight:700; background:#f0f0f0; padding:8px 12px; border:1px solid #333; display:inline-block;">사업장명</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><b>입력 텍스트</b>화면 13px / 인쇄 10.5pt<br>weight 400, left</div>
+      <div class="type-sample" style="font-size:13px;">㈜윌앤비전 - 강남 타워</div>
+    </div>
+    <div class="type-row">
+      <div class="type-meta"><b>보조 설명</b>화면 11px / 인쇄 9pt<br>weight 400, color #666</div>
+      <div class="type-sample" style="font-size:11px; color:#666;">※ 메인에서 사업장(본부)을 먼저 선택해주세요.</div>
+    </div>
+  </section>
+
+  <!-- ──────── 3. 표 구조 ──────── -->
+  <section class="section">
+    <h2 class="section-title">3. 표 (Table) 패턴</h2>
+    <p class="section-desc">3가지 표준 패턴. 새 서식 만들 때 이 중 하나 선택.</p>
+
+    <h4 style="margin-top:24px; font-size:14px;">패턴 A. 4컬럼 폼 (라벨–입력–라벨–입력)</h4>
+    <table class="demo-table">
+      <colgroup>
+        <col style="width:110px"><col><col style="width:110px"><col>
+      </colgroup>
+      <tr>
+        <td class="lbl">사업장명</td>
+        <td class="input-cell-no-pad"><input value="㈜윌앤비전 - 강남 타워"></td>
+        <td class="lbl">사업주명</td>
+        <td class="input-cell-no-pad"><input value="홍길동"></td>
+      </tr>
+      <tr>
+        <td class="lbl">주소</td>
+        <td colspan="3" class="input-cell-no-pad"><input value="서울특별시 강남구 테헤란로 ○○○"></td>
+      </tr>
+    </table>
+
+    <h4 style="margin-top:24px; font-size:14px;">패턴 B. 2컬럼 폼 (라벨–입력)</h4>
+    <table class="demo-table">
+      <colgroup><col style="width:110px"><col></colgroup>
+      <tr>
+        <td class="lbl">평가진행기간</td>
+        <td class="input-cell">2026-05-01 ~ 2026-05-31</td>
+      </tr>
+    </table>
+
+    <h4 style="margin-top:24px; font-size:14px;">패턴 C. 데이터 표 (헤더 + 행)</h4>
+    <table class="demo-table">
+      <tr class="section-header-row"><td colspan="4">공정 분석</td></tr>
+      <tr>
+        <th class="lbl" style="width:42px">No.</th>
+        <th class="lbl" style="width:110px">관리분야</th>
+        <th class="lbl">공정 설명</th>
+        <th class="lbl" style="width:23%">설비/물질</th>
+      </tr>
+      <tr>
+        <td style="text-align:center; font-weight:600;">1</td>
+        <td style="text-align:center;">시설관리</td>
+        <td>식음시·체크리스트 작성 및 점검 후 유지보수업체에 위탁관리</td>
+        <td>핸드그라인더, 사다리, 헬멧 등</td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ──────── 4. 빈 칸 처리 ──────── -->
+  <section class="section">
+    <h2 class="section-title">4. 빈 칸 처리 (Before / After)</h2>
+    <p class="section-desc">현재 가장 보기 안 좋은 부분 — 입력값이 없을 때 인쇄에서 어떻게 보이는지.</p>
+    <div class="compare-grid">
+      <div class="compare-card compare-bad">
+        <span class="compare-label label-bad">❌ 현재 (Before)</span>
+        <table class="demo-table" style="margin-bottom:8px;">
+          <colgroup><col style="width:110px"><col></colgroup>
+          <tr><td class="lbl">평가진행기간</td><td class="input-cell" style="color:#999; font-size:11px;">연도-월-일 &nbsp;&nbsp; ~ &nbsp;&nbsp; 연도-월-일</td></tr>
+        </table>
+        <div style="font-size:11px; color:#7f1d1d;">placeholder가 그대로 인쇄됨</div>
+      </div>
+      <div class="compare-card compare-good">
+        <span class="compare-label label-good">✓ 기준 (After)</span>
+        <table class="demo-table" style="margin-bottom:8px;">
+          <colgroup><col style="width:110px"><col></colgroup>
+          <tr><td class="lbl">평가진행기간</td><td class="input-cell"></td></tr>
+        </table>
+        <div style="font-size:11px; color:#166534;">완전한 빈 칸 (인쇄 시 placeholder 숨김)</div>
+      </div>
+    </div>
+
+    <div class="compare-grid" style="margin-top:16px;">
+      <div class="compare-card compare-bad">
+        <span class="compare-label label-bad">❌ 현재 (Before)</span>
+        <table class="demo-table" style="margin-bottom:8px;">
+          <colgroup><col style="width:60px"><col></colgroup>
+          <tr style="height:90px;"><td style="text-align:center;">1</td><td><textarea style="min-height:60px; width:100%; border:none;">  </textarea></td></tr>
+        </table>
+        <div style="font-size:11px; color:#7f1d1d;">textarea minHeight 90px → 빈 텍스트도 큰 박스 차지</div>
+      </div>
+      <div class="compare-card compare-good">
+        <span class="compare-label label-good">✓ 기준 (After)</span>
+        <table class="demo-table" style="margin-bottom:8px;">
+          <colgroup><col style="width:60px"><col></colgroup>
+          <tr style="height:40px;"><td style="text-align:center;">1</td><td>—</td></tr>
+        </table>
+        <div style="font-size:11px; color:#166534;">빈 칸은 짧은 대시("—") + 행 높이 자연스럽게</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── 5. 여백 ──────── -->
+  <section class="section">
+    <h2 class="section-title">5. 여백 (Spacing)</h2>
+    <p class="section-desc">표 사이, 셀 안쪽, 카드 패딩 — 모두 표준 값으로 통일.</p>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px;">
+      <div style="border:1px solid #e5e5ea; padding:16px; border-radius:8px;">
+        <div style="font-size:12px; color:#666; font-weight:700; margin-bottom:8px;">카드 패딩</div>
+        <div style="background:#dbeafe; padding:40px 50px; text-align:center; font-size:12px; color:#1e3a8a; font-weight:700;">40px 50px</div>
+        <div style="font-size:11px; color:#666; margin-top:8px;">화면 카드 내부 / 인쇄 시 0 (@page margin 사용)</div>
+      </div>
+      <div style="border:1px solid #e5e5ea; padding:16px; border-radius:8px;">
+        <div style="font-size:12px; color:#666; font-weight:700; margin-bottom:8px;">셀 패딩</div>
+        <div style="background:#f0f0f0; padding:10px 12px; text-align:center; font-size:12px; font-weight:700; border:1px solid #333;">10px 12px</div>
+        <div style="font-size:11px; color:#666; margin-top:8px;">모든 라벨/입력 셀 안쪽</div>
+      </div>
+      <div style="border:1px solid #e5e5ea; padding:16px; border-radius:8px;">
+        <div style="font-size:12px; color:#666; font-weight:700; margin-bottom:8px;">표 사이 여백</div>
+        <div style="background:#fff; border:1px solid #333; height:30px; margin-bottom:28px;"></div>
+        <div style="background:#fff; border:1px solid #333; height:30px;"></div>
+        <div style="font-size:11px; color:#666; margin-top:8px; text-align:center;">marginBottom: 28px</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ──────── 6. 완성 예시 ──────── -->
+  <section class="section">
+    <h2 class="section-title">6. 완성 예시 — A4 실제 비율</h2>
+    <p class="section-desc">사업장 정보(STEP 2)를 기준에 맞춰 재설계 + <b>실제 A4 portrait 크기(210×297mm)</b>로 표시.<br>가로 스크롤이 생기면 그게 정확한 크기입니다 (모니터 < A4 폭일 수 있음).</p>
+    <div class="a4-wrapper">
+      <div class="a4-label">📄 A4 Portrait (210mm × 297mm) · @page margin 15mm</div>
+    <div class="example-card">
+      <h2 class="example-h2">사업장 정보(업종별 공정/설비/물질 구분)</h2>
+
+      <table class="demo-table" style="margin-bottom:28px;">
+        <colgroup>
+          <col style="width:110px"><col><col style="width:110px"><col>
+        </colgroup>
+        <tr>
+          <td class="lbl">사업장명</td>
+          <td class="input-cell-no-pad"><input value="㈜윌앤비전 - 강남 타워"></td>
+          <td class="lbl">사업주명</td>
+          <td class="input-cell-no-pad"><input value="홍길동"></td>
+        </tr>
+        <tr>
+          <td class="lbl">업종</td>
+          <td class="input-cell-no-pad"><input value="사업서비스업[90104]"></td>
+          <td class="lbl">근로자수</td>
+          <td class="input-cell-no-pad"><input value="32명"></td>
+        </tr>
+        <tr>
+          <td class="lbl">주소</td>
+          <td colspan="3" class="input-cell-no-pad"><input value="서울특별시 강남구 테헤란로 ○○○"></td>
+        </tr>
+        <tr>
+          <td class="lbl">참여자</td>
+          <td colspan="3" class="input-cell-no-pad"><input value="김안전 외 4명"></td>
+        </tr>
+        <tr>
+          <td class="lbl">평가진행기간</td>
+          <td colspan="3" class="input-cell">2026-05-01 ~ 2026-05-31</td>
+        </tr>
+        <tr>
+          <td class="lbl">관리분야</td>
+          <td colspan="3" class="input-cell" style="font-weight:600;">시설관리 / 미화 / 보안 / 주차관리 / 안내 / 사무행정 / 출퇴근</td>
+        </tr>
+      </table>
+
+      <table class="demo-table" style="margin-bottom:28px;">
+        <tr class="section-header-row"><td colspan="5">공정 분석</td></tr>
+        <tr>
+          <th class="lbl" style="width:42px">No.</th>
+          <th class="lbl" style="width:90px">관리분야</th>
+          <th class="lbl">공정 설명</th>
+          <th class="lbl" style="width:22%">설비</th>
+          <th class="lbl" style="width:18%">물질</th>
+        </tr>
+        <tr><td style="text-align:center;">1</td><td style="text-align:center;">시설관리</td><td>점검·정비·소모품 교체</td><td>핸드그라인더, 사다리</td><td>—</td></tr>
+        <tr><td style="text-align:center;">2</td><td style="text-align:center;">미화</td><td>공용공간 청소</td><td>청소기, 진공흡입기</td><td>세제, 락스</td></tr>
+        <tr><td style="text-align:center;">3</td><td style="text-align:center;">보안</td><td>출입통제 및 순찰</td><td>CCTV, 워키토키</td><td>—</td></tr>
+      </table>
+
+      <table class="demo-table">
+        <colgroup><col style="width:110px"><col></colgroup>
+        <tr><td class="lbl">비고</td><td class="input-cell">추가 사항이 있으면 작성합니다.</td></tr>
+      </table>
+    </div>
+    </div><!-- /.a4-wrapper -->
+
+    <div class="note">
+      💡 <b>차이점 보이시나요?</b><br>
+      • 행 높이 일정 · 라벨 너비 110px 통일 · 빈 칸 시 "—" · 텍스트 정렬 일관 · placeholder 인쇄 노출 X<br>
+      • 표 사이 여백 28px · 카드 패딩 40/50 · 회의록과 100% 동일한 시각 기준
+    </div>
+
+    <div class="warn">
+      ⚠️ <b>주의:</b> 이 가이드는 시각적 미리보기입니다. 실제 React 컴포넌트에 적용하려면 컴포넌트 추출(<code>RiskFormCard</code>, <code>RiskFormTable</code> 등) 작업이 별도로 필요합니다.
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

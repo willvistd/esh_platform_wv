@@ -1,0 +1,23 @@
+# Railway/Nixpacks 빌드 설정
+# Puppeteer가 사용할 Chromium + 한글 폰트 + 의존 라이브러리 자동 설치
+
+[phases.setup]
+nixPkgs = [
+  "nodejs_20",
+  "chromium",
+  "fontconfig",
+  # 한글 폰트 (Noto Sans CJK)
+  "noto-fonts-cjk-sans",
+  "noto-fonts-cjk-serif",
+]
+
+[phases.install]
+cmds = ["npm ci || npm install"]
+
+[start]
+cmd = "node index.js"
+
+[variables]
+# Puppeteer가 Nix의 chromium을 사용하도록
+PUPPETEER_SKIP_DOWNLOAD = "true"
+PUPPETEER_EXECUTABLE_PATH = "/nix/store/chromium-bin/bin/chromium"
