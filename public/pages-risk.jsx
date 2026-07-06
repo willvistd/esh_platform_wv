@@ -5707,7 +5707,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
   const taskList = (WORK_TASKS[tableType] || []);
 
   // inline select style — text-overflow로 잘림 방지 + 호버 시 전체 표시
-  const inSel = { border: "none", background: "transparent", fontSize: 11, width: "100%", padding: "2px 3px", fontFamily: "inherit" };
+  const inSel = { border: "none", background: "transparent", fontSize: 11, width: "100%", padding: "2px 3px", fontFamily: "inherit", textAlign: "center" };
   const inTA = { display: "block", width: "100%", border: "none", background: "transparent", resize: "none", fontSize: 11, padding: "4px 6px", lineHeight: 1.4, fontFamily: "inherit", wordBreak: "break-word", whiteSpace: "pre-wrap", overflow: "hidden", boxSizing: "border-box", margin: 0, textAlign: "center" };
   const inIn = { border: "none", background: "transparent", fontSize: 11, width: "100%", padding: "3px 4px" };
 
