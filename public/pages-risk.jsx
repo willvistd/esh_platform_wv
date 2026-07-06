@@ -6854,8 +6854,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
   const _saved = riskLoad(SAVE_KEY);
   const [form, setForm] = React.useState(_saved?.form || {
     사업장명: ctx?.사업장명 || "",   // 새 평가 작성 시 입력한 사업장명 자동 연동
-    교육일시: "", 교육장소: "",
-    강사명: "", 강사직책: "",
+    교육일자: "", 교육시간_시작: "", 교육시간_종료: "",
+    교육장소: "", 강사명: "",
     교육내용: "○ 위험성평가 실시 결과(잔류 위험성)에 따른 조치의 내용\n○ 위험성평가 추가 감소대책 수립 및 실행에 대한 내용\n○ 위험성평가 결과 고위험성(중등급 이상/6점 이상) 분류대장 작업 및 수립된 감소대책에 대한 이행 방법",
   });
   const [attendees, setAttendees] = React.useState(() => {
@@ -6875,6 +6875,21 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
     riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
     setSavedAt(at);
+  };
+
+  // 교육시간 자동 산출 (회의록과 동일)
+  const calcDuration = () => {
+    if (!form.교육시간_시작 || !form.교육시간_종료) return "";
+    const [sh, sm] = form.교육시간_시작.split(":").map(Number);
+    const [eh, em] = form.교육시간_종료.split(":").map(Number);
+    let mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60;
+    if (mins === 0) return "";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h > 0 && m > 0) return `(${h}시간 ${m}분)`;
+    if (h > 0) return `(${h}시간)`;
+    return `(${m}분)`;
   };
 
   // ── 결재 요청 전송 ──
@@ -7022,23 +7037,30 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               </td>
             </tr>
             <tr>
-              <td className="lbl">교육일시</td>
+              <td className="lbl">교육일자</td>
               <td>
-                <input type="datetime-local" value={form.교육일시} onChange={e => upd("교육일시", e.target.value)} />
+                <input type="date" value={form.교육일자} onChange={e => upd("교육일자", e.target.value)} />
               </td>
+              <td className="lbl">교육시간</td>
+              <td>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="time" value={form.교육시간_시작} onChange={e => upd("교육시간_시작", e.target.value)}
+                    style={{ width: 100, border: "1px solid #ddd", borderRadius: 4, padding: "4px 6px" }} />
+                  <span>~</span>
+                  <input type="time" value={form.교육시간_종료} onChange={e => upd("교육시간_종료", e.target.value)}
+                    style={{ width: 100, border: "1px solid #ddd", borderRadius: 4, padding: "4px 6px" }} />
+                  <span style={{ color: "#666", fontSize: 12 }}>{calcDuration()}</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
               <td className="lbl">교육장소</td>
               <td>
                 <input type="text" value={form.교육장소} onChange={e => upd("교육장소", e.target.value)} placeholder="교육장소" />
               </td>
-            </tr>
-            <tr>
               <td className="lbl">강사명</td>
               <td>
                 <input type="text" value={form.강사명} onChange={e => upd("강사명", e.target.value)} placeholder="강사명" />
-              </td>
-              <td className="lbl">강사 직책</td>
-              <td>
-                <input type="text" value={form.강사직책} onChange={e => upd("강사직책", e.target.value)} placeholder="직책 입력" />
               </td>
             </tr>
             <tr>
@@ -7409,7 +7431,7 @@ const RiskAttendeesView = ({ onNav }) => {
   const sourceDate = isMeetingCtx
     ? (meetingForm?.회의일자 || "")
     : isTrainingCtx
-      ? (trainingForm?.교육일시 ? trainingForm.교육일시.slice(0, 10) : "")
+      ? (trainingForm?.교육일자 || "")
       : "";
   const sourceSite = isMeetingCtx
     ? (meetingForm?.회의장소 || "")
@@ -7634,10 +7656,10 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
   const meetingForm  = ctx?.evalId ? riskLoad(`wv_risk_meeting_${ctx.evalId}`)?.form  : null;
   const trainingForm = ctx?.evalId ? riskLoad(`wv_risk_training_${ctx.evalId}`)?.form : null;
   const sourceForm = isMeetingCtx ? meetingForm : trainingForm;
-  // 회의록: form.회의일자(date) | 전파교육: form.교육일시(datetime-local) → 날짜만 추출
+  // 회의록: form.회의일자(date) | 전파교육: form.교육일자(date)
   const sourceDate = isMeetingCtx
     ? (meetingForm?.회의일자 || "")
-    : (trainingForm?.교육일시 ? trainingForm.교육일시.slice(0, 10) : "");
+    : (trainingForm?.교육일자 || "");
   const sourceSite = (isMeetingCtx ? meetingForm?.회의장소 : trainingForm?.사업장명) || "";
 
   const [title, setTitle] = React.useState(_saved?.title || defaultTitle);
