@@ -3647,6 +3647,17 @@ const RISK_STYLE = `
   }
 `;
 
+// ── 날짜 → "(요일)" 병기 유틸 (YYYY-MM-DD → "(월)") ──
+const WEEKDAY_KO = ["일", "월", "화", "수", "목", "금", "토"];
+const weekdayKo = (dateStr) => {
+  if (!dateStr) return "";
+  const parts = String(dateStr).slice(0, 10).split("-").map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return "";
+  const d = new Date(parts[0], parts[1] - 1, parts[2]); // 로컬 기준(시간대 오차 방지)
+  if (isNaN(d.getTime())) return "";
+  return `(${WEEKDAY_KO[d.getDay()]})`;
+};
+
 // ── 저장/불러오기 유틸 ──
 const riskSave = (key, data) => {
   try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
@@ -5362,7 +5373,10 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             <tr style={{ height: 52 }}>
               <td style={cellLabel}>회의일자</td>
               <td style={cellInput}>
-                <input type="date" value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={inp} />
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <input type="date" value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto" }} />
+                  {form.회의일자 && <span style={{ fontSize: 13, color: "#333", paddingRight: 12 }}>{weekdayKo(form.회의일자)}</span>}
+                </div>
               </td>
               <td style={cellLabel}>회의시간</td>
               <td style={cellInput}>
@@ -7039,7 +7053,10 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
             <tr>
               <td className="lbl">교육일자</td>
               <td>
-                <input type="date" value={form.교육일자} onChange={e => upd("교육일자", e.target.value)} />
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="date" value={form.교육일자} onChange={e => upd("교육일자", e.target.value)} style={{ width: "auto" }} />
+                  {form.교육일자 && <span style={{ fontSize: 13, color: "#333" }}>{weekdayKo(form.교육일자)}</span>}
+                </div>
               </td>
               <td className="lbl">교육시간</td>
               <td>
