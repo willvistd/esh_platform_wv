@@ -6,14 +6,13 @@ const INSP_STYLE = `
 .insp-header { padding:12px 20px 2px; }
 .insp-header-title { font-size:18px; font-weight:700; color:var(--fg); }
 .insp-header-sub { font-size:12px; color:var(--fg-3); margin-top:2px; }
-.insp-tab-bar { position:sticky; top:52px; z-index:20; background:var(--bg-elev);
-  border-bottom:1px solid var(--line); display:flex; align-items:center; }
+.insp-tab-bar { display:flex; align-items:center; margin-bottom:12px; }
 .insp-tab { padding:12px 22px; font-size:13px; font-weight:600; cursor:pointer; border:none;
   background:transparent; color:var(--fg-3); border-bottom:3px solid transparent;
   transition:all .15s; font-family:inherit; }
 .insp-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
 .insp-tab:hover:not(.active) { color:var(--fg); background:var(--bg); }
-.insp-body { padding:20px 20px 60px; }
+.insp-body { padding:4px 0 60px; }
 
 /* 섹션 카드 */
 .insp-section { background:var(--bg-elev); border:1px solid var(--line); border-radius:var(--r);
@@ -133,6 +132,7 @@ const INSP_STYLE = `
   .insp-no-print { display:none !important; }
   .insp-tab-bar { display:none !important; }
   .insp-header { display:none !important; }
+  .content { max-width:100% !important; padding:0 !important; }
   .sidebar,.topbar { display:none !important; }
   .app { display:block !important; }
   .insp-preview { border:none !important; padding:0 !important; border-radius:0 !important; }
@@ -617,17 +617,16 @@ function FieldInspectionView({ onNav, currentUser }) {
   };
 
   return (
-    <div>
+    <div className="content" style={{ maxWidth: 900 }}>
       <style>{INSP_STYLE}</style>
 
-      {/* 헤더 */}
-      <div className="insp-header insp-no-print">
-        <div style={{ position:'relative', textAlign:'center' }}>
-          <div>
-            <div className="insp-header-title">현장점검 보고서</div>
-            <div className="insp-header-sub">사업장 현장점검 결과 기록 및 보고서 자동 생성</div>
-          </div>
-          <div style={{ position:'absolute', right:0, top:0, display:'flex', gap:6, flexShrink:0 }}>
+      {/* 헤더 — 위험성평가 표준 패턴 */}
+      <div className="content-hd insp-no-print">
+        <div>
+          <h1 className="content-title">현장점검 보고서</h1>
+          <div className="content-sub">사업장 현장점검 결과 기록 및 보고서 자동 생성</div>
+        </div>
+        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
             <button onClick={handleNew}
               style={{ fontFamily:'inherit', fontSize:12, padding:'6px 12px',
                 border:'1px solid var(--line)', background:'var(--bg-elev)',
@@ -647,7 +646,6 @@ function FieldInspectionView({ onNav, currentUser }) {
               임시저장
             </button>
           </div>
-        </div>
       </div>
 
       {/* 탭바 */}
@@ -667,7 +665,7 @@ function FieldInspectionView({ onNav, currentUser }) {
       </div>
 
       {/* 본문 */}
-      <div className="insp-wrap insp-body">
+      <div className="insp-body">
         {tab === 'write' ? (
           <>
             {/* 기본정보 */}
