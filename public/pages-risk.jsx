@@ -3521,6 +3521,8 @@ const RISK_STYLE = `
       page-break-inside: auto;
     }
     .risk-print-area tr { page-break-inside: avoid; page-break-after: auto; }
+    /* 회의내용처럼 길어질 수 있는 행은 페이지 넘김 허용(경계에서 잘림 방지) */
+    .risk-print-area tr.meeting-content-row { page-break-inside: auto !important; }
     .risk-print-area thead { display: table-header-group; }
     /* 일반 페이지: 표/입력칸 폰트 표준화 (cover-page 제외) */
     .risk-print-area:not(.cover-page) th,
@@ -5385,7 +5387,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               </td>
             </tr>
             {/* 회의내용 */}
-            <tr>
+            <tr className="meeting-content-row">
               <td style={{ ...cellLabel, verticalAlign: "middle" }}>회의내용</td>
               <td colSpan={3} style={cellInput}>
                 <textarea value={form.회의내용} onChange={e => upd("회의내용", e.target.value)}

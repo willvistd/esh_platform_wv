@@ -155,6 +155,10 @@ function registerRiskPdfRoutes(app, { frontendBaseUrl = 'http://localhost:3000' 
             Math.round((i / job.total) * 100));
 
         await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 });
+        // 인쇄 미디어 명시 — @media print 규칙(.no-print 숨김/.print-only 표시)이
+        // 확실히 적용되도록. 미설정 시 일부 환경에서 screen 렌더 → textarea가 그대로
+        // 출력돼 회의내용 등 긴 텍스트가 고정높이로 잘리는 문제 방지.
+        await page.emulateMediaType('print');
         await new Promise(r => setTimeout(r, 800));
 
         // ⚠️ 핵심 수정 v2: addStyleTag(head)는 React가 body에 렌더한 RISK_STYLE보다 cascade에서 짐.
