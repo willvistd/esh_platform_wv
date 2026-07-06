@@ -7009,11 +7009,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
       `}</style>
 
       <div className="risk-print-area train-print-area">
-        {/* 제목 (결재란 제거됨 — 위험성평가 표지의 결재란으로 통합) */}
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>위험성평가 결과 전파교육</div>
-          <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>교 육 일 지</div>
-        </div>
+        {/* 제목 — 회의록과 동일 스타일(26px/800 중앙정렬) */}
+        <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, marginBottom: 28 }}>위험성평가 결과 전파교육</h2>
 
         {/* 기본 정보 표 */}
         <table className="train-tbl">
