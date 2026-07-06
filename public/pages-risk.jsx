@@ -5390,14 +5390,20 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               <td colSpan={3} style={cellInput}>
                 <textarea value={form.회의내용} onChange={e => upd("회의내용", e.target.value)}
                   rows={5}
+                  className="no-print"
                   style={{ ...inp, padding: "12px 14px", resize: "vertical", minHeight: 130, lineHeight: 1.7, whiteSpace: "pre-line" }} />
+                {/* 인쇄용: 내용 길이만큼 높이 자동 확장 (textarea는 인쇄 시 잘림) */}
+                <div className="print-only" style={{ padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word", minHeight: 130 }}>{form.회의내용}</div>
                 {/* 근로자의견 박스 */}
                 <div style={{ borderTop: "1px solid #333", padding: "10px 14px", background: "#fafafa" }}>
                   <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>○ 근로자의견</div>
                   <textarea value={form.근로자의견} onChange={e => upd("근로자의견", e.target.value)}
                     rows={3}
+                    className="no-print"
                     style={{ width: "100%", border: "1px solid #ccc", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "#fff", outline: "none" }}
                     placeholder="근로자 의견을 입력하세요." />
+                  {/* 인쇄용: 내용 길이만큼 높이 자동 확장 */}
+                  <div className="print-only" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", padding: "8px 10px", minHeight: 40 }}>{form.근로자의견}</div>
                 </div>
               </td>
             </tr>
