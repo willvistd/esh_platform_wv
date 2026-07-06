@@ -30,7 +30,15 @@ if (!supabase) app.use('/uploads', express.static(uploadsDir));
 
 // ── 프론트엔드 정적 파일 서빙 ──
 const frontendDir = process.env.FRONTEND_DIR || path.join(__dirname, 'public');
-app.use(express.static(frontendDir));
+// .jsx/.js/.css/.html은 no-cache로 서빙 → 배포/수정 후 F5만 해도 최신 반영
+// (브라우저가 ETag로 재검증 → 변경 없으면 304, 변경 시 새 파일. 강력 새로고침 불필요)
+app.use(express.static(frontendDir, {
+  setHeaders: (res, filePath) => {
+    if (/\.(jsx|js|css|html)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  },
+}));
 
 // ── 도구: 안전보건표지 인쇄 (자기완결형 HTML). .html 없이도 접근 가능하게 ──
 app.get('/tools/safety-signs', (req, res) => {
