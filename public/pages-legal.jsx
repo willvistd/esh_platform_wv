@@ -234,11 +234,13 @@ function LegalCheckerView({ onNav, currentUser }) {
 
   return (
     <div className="content" style={{ maxWidth: 920 }}>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color:"var(--fg)", margin:"0 0 4px" }}>법적의무 자동판정</h2>
-        <p style={{ fontSize: 13, color:"var(--fg-3)", margin:0 }}>
-          상시근로자 수·업종을 입력하면 필수·해당·제외 서류를 자동 분류합니다. (시행령 별표2·3·5·9 기준)
-        </p>
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">법적의무 자동판정</h1>
+          <div className="content-sub">
+            상시근로자 수·업종을 입력하면 필수·해당·제외 서류를 자동 분류합니다. (시행령 별표2·3·5·9 기준)
+          </div>
+        </div>
       </div>
 
       {/* 입력 카드 */}
