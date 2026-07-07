@@ -146,7 +146,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
                 <NavLink
                   active={(route.name === "category" && route.id === c.id) || (flyout?.id === c.id) || hasActiveSub}
                   icon={CAT_ICON[c.id] || "doc"}
-                  onClick={() => onNav({ name: "category", id: c.id })}>
+                  // 하위메뉴 있는 카테고리: 클릭해도 바로 진입 안 하고 날개(플라이아웃)를 염
+                  //   → 게시판 포함 모든 진입을 오른쪽 날개에서만. (없으면 기존대로 바로 진입)
+                  onClick={subs ? (e) => openFly(e, c, subs) : () => onNav({ name: "category", id: c.id })}>
                   {c.name}
                   <span className="sb-link-count">{c.count}</span>
                   {subs && <Icon name="chevron-right" size={13} className="sb-cat-caret" />}
@@ -210,6 +212,12 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           onMouseEnter={keepFlyOpen}
           onMouseLeave={scheduleFlyClose}>
           <div className="sb-flyout-hd">{flyout.name}</div>
+          {/* 게시판(카테고리 본체) 진입 — 날개 맨 위 항목 */}
+          <div
+            className={"sb-flyout-link" + (route.name === "category" && route.id === flyout.id ? " active" : "")}
+            onClick={() => { onNav({ name: "category", id: flyout.id }); setFlyout(null); }}>
+            📋 게시판 보기
+          </div>
           {flyout.subs.map((s) => (
             <div
               key={s.label}
