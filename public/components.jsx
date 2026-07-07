@@ -167,10 +167,13 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           {allow("manage-sites") && (
             <NavLink active={route.name === "manage-sites"} icon="home" onClick={() => onNav({ name: "manage-sites" })}>사업장 관리</NavLink>
           )}
+          {/* 결재함 — 현재 미사용, 숨김 처리 (기능은 유지) */}
+          {false && (
           <NavLink active={route.name === "approval-inbox" || route.name === "approval-compose" || route.name === "approval-detail"}
             icon="check-square" onClick={() => onNav({ name: "approval-inbox" })}>
             결재함
           </NavLink>
+          )}
           {allow("manage-approvals") && (
             <NavLink active={route.name === "manage-approvals"} icon="user-plus" onClick={() => onNav({ name: "manage-approvals" })}>
               가입 승인 관리
