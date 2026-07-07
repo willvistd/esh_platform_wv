@@ -133,3 +133,42 @@ window.WV_SUBMENUS = [
   { key: "msds-gen",      catId: "msds",            defaultLabel: "MSDS 서식 생성",         nav: { name: "msds-generate" }, actNames: ["msds-generate"] },
   { key: "safety-signs",  catId: "signage", catName: "안전보건표지", defaultLabel: "출입문 표지 생성", nav: { name: "tool-safety-signs" }, actNames: ["tool-safety-signs"] },
 ];
+
+// ── 하위메뉴 헬퍼 (사이드바 + 카테고리 관리 공용) ──
+//   설정 저장 형태: { [카테고리id]: [ {uid, kind, label, enabled, toolKey?, targetCat?} ] }
+//   kind: "board"(게시판 링크, targetCat 없으면 자기 자신) | "tool"(고정 기능 페이지)
+window.WV_SUB = {
+  _uid: 0,
+  newUid: () => "sm_" + (window.WV_SUB._uid++) + "_" + Math.floor(Math.random() * 100000),
+  toolByKey: (key) => (window.WV_SUBMENUS || []).find((m) => m.key === key),
+  toolsForCat: (c) => (window.WV_SUBMENUS || []).filter((m) => m.catId === c.id || (m.catName && m.catName === c.name)),
+  // 관리자 설정이 없을 때의 기본 목록 (게시판 보기 + 해당 카테고리 고정 기능들)
+  defaultList: (c) => {
+    const tools = window.WV_SUB.toolsForCat(c);
+    if (!tools.length) return []; // 고정 기능 없는 카테고리는 날개 없음(바로 진입)
+    return [
+      { uid: "board", kind: "board", label: "게시판 보기", enabled: true },
+      ...tools.map((t) => ({ uid: t.key, kind: "tool", toolKey: t.key, label: t.defaultLabel, enabled: true })),
+    ];
+  },
+  // 저장된 설정(배열) 있으면 그것, 없으면 기본 목록
+  listFor: (c, cfg) => (Array.isArray(cfg && cfg[c.id]) ? cfg[c.id] : window.WV_SUB.defaultList(c)),
+  // 항목 → { label, nav, act } (사이드바 렌더용)
+  resolve: (item, c) => {
+    if (item.kind === "tool") {
+      const t = window.WV_SUB.toolByKey(item.toolKey);
+      if (!t) return null;
+      return {
+        label: item.label || t.defaultLabel,
+        nav: t.nav,
+        act: (r) => (t.actNames || []).includes(r.name) || (t.actPrefix && r.name.startsWith(t.actPrefix)),
+      };
+    }
+    const cid = item.targetCat || c.id; // board
+    return {
+      label: item.label || "게시판 보기",
+      nav: { name: "category", id: cid },
+      act: (r) => r.name === "category" && r.id === cid,
+    };
+  },
+};

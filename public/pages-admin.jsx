@@ -1046,46 +1046,75 @@ const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit
   );
 };
 
-// ─── 하위메뉴 인라인 에디터 (카테고리 행 안에서 펼쳐서 편집) — 이름/순서/표시 (기능 고정) ───
-const CategorySubmenuInline = ({ items, get, setField, applyOrder, onSave, saving, msg }) => {
+// ─── 하위메뉴 인라인 에디터 — 이름/순서/표시/추가/삭제 (리스트 기반) ───
+const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg }) => {
+  const TOOLS = window.WV_SUBMENUS || [];
+  const [addVal, setAddVal] = React.useState("board:");
   const btn = { width: 22, height: 22, border: "1px solid var(--line)", borderRadius: 4, background: "var(--bg)", cursor: "pointer", fontSize: 11, color: "var(--fg-2)", padding: 0 };
-  const sorted = [...items].sort((a, b) => get(a.key, "order", a.idx) - get(b.key, "order", b.idx));
-  const moveItem = (i, dir) => {
-    const arr = [...sorted]; const j = i + dir;
-    if (j < 0 || j >= arr.length) return;
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-    applyOrder(arr);
+  const upd = (i, patch) => onChange(list.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+  const del = (i) => onChange(list.filter((_, idx) => idx !== i));
+  const move = (i, dir) => {
+    const j = i + dir; if (j < 0 || j >= list.length) return;
+    const arr = [...list]; [arr[i], arr[j]] = [arr[j], arr[i]]; onChange(arr);
   };
+  const add = () => {
+    const sep = addVal.indexOf(":");
+    const kind = addVal.slice(0, sep), ref = addVal.slice(sep + 1);
+    let item;
+    if (kind === "tool") {
+      const t = TOOLS.find((x) => x.key === ref); if (!t) return;
+      item = { uid: window.WV_SUB.newUid(), kind: "tool", toolKey: t.key, label: t.defaultLabel, enabled: true };
+    } else {
+      const cName = ref ? (cats.find((x) => x.id === ref)?.name || "게시판") + " 게시판" : "게시판 보기";
+      item = { uid: window.WV_SUB.newUid(), kind: "board", targetCat: ref || undefined, label: cName, enabled: true };
+    }
+    onChange([...list, item]);
+  };
+  const phOf = (it) => (it.kind === "tool" ? (TOOLS.find((x) => x.key === it.toolKey)?.defaultLabel || "") : "게시판 보기");
   return (
     <div style={{ padding: "10px 18px 14px 58px", background: "var(--bg-sunk)", borderBottom: "1px solid var(--line-2)" }}>
-      <div style={{ fontSize: 11, color: "var(--fg-4)", marginBottom: 8 }}>하위메뉴 (사이드바 날개) — 이름·순서·표시 조정</div>
-      {sorted.map((m, i) => {
-        const enabled = get(m.key, "enabled", true);
+      <div style={{ fontSize: 11, color: "var(--fg-4)", marginBottom: 8 }}>하위메뉴 (사이드바 날개) — 이름·순서·표시·추가</div>
+      {list.length === 0 && (
+        <div style={{ fontSize: 12, color: "var(--fg-3)", padding: "2px 0 8px" }}>
+          하위메뉴가 없습니다. 아래에서 추가하세요. (없으면 카테고리 클릭 시 게시판으로 바로 진입)
+        </div>
+      )}
+      {list.map((it, i) => {
+        const enabled = it.enabled !== false;
         return (
-          <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: enabled ? 1 : 0.5 }}>
+          <div key={it.uid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: enabled ? 1 : 0.5 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <button style={btn} onClick={() => moveItem(i, -1)} disabled={i === 0} title="위로">▲</button>
-              <button style={btn} onClick={() => moveItem(i, 1)} disabled={i === sorted.length - 1} title="아래로">▼</button>
+              <button style={btn} onClick={() => move(i, -1)} disabled={i === 0} title="위로">▲</button>
+              <button style={btn} onClick={() => move(i, 1)} disabled={i === list.length - 1} title="아래로">▼</button>
             </div>
-            <input
-              value={get(m.key, "label", m.defaultLabel)}
-              onChange={(e) => setField(m.key, "label", e.target.value)}
-              placeholder={m.defaultLabel}
+            <span style={{ fontSize: 10, color: "var(--fg-4)", width: 34, textAlign: "center", flexShrink: 0 }}>{it.kind === "tool" ? "기능" : "게시판"}</span>
+            <input value={it.label || ""} onChange={(e) => upd(i, { label: e.target.value })} placeholder={phOf(it)}
               style={{ flex: 1, fontFamily: "inherit", fontSize: 13, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
-            <button onClick={() => setField(m.key, "label", m.defaultLabel)} title="기본 이름으로"
-              style={{ ...btn, width: "auto", height: 30, padding: "0 8px", fontSize: 11 }}>기본값</button>
             <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--fg-2)", cursor: "pointer", whiteSpace: "nowrap" }}>
-              <input type="checkbox" checked={enabled} onChange={(e) => setField(m.key, "enabled", e.target.checked)} />
-              표시
+              <input type="checkbox" checked={enabled} onChange={(e) => upd(i, { enabled: e.target.checked })} /> 표시
             </label>
+            <button style={{ ...btn, width: 26, height: 26, color: "#dc2626", borderColor: "#fca5a5" }} onClick={() => del(i)} title="삭제">✕</button>
           </div>
         );
       })}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-        <button className="btn btn-primary btn-sm" onClick={onSave} disabled={saving}>
-          {saving ? <span className="login-spinner" /> : <><Icon name="check" size={12} /> 하위메뉴 저장</>}
-        </button>
+      {/* 추가 + 저장 */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+        <select value={addVal} onChange={(e) => setAddVal(e.target.value)}
+          style={{ fontFamily: "inherit", fontSize: 12, padding: "7px 8px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)" }}>
+          <optgroup label="게시판 링크">
+            <option value="board:">이 카테고리 게시판</option>
+            {cats.filter((x) => x.id !== cat.id).map((x) => <option key={x.id} value={"board:" + x.id}>{x.name} 게시판</option>)}
+          </optgroup>
+          <optgroup label="기능 페이지">
+            {TOOLS.map((t) => <option key={t.key} value={"tool:" + t.key}>{t.defaultLabel}</option>)}
+          </optgroup>
+        </select>
+        <button className="btn btn-secondary btn-sm" onClick={add}><Icon name="plus" size={12} /> 항목 추가</button>
+        <div style={{ flex: 1 }} />
         {msg && <span style={{ fontSize: 11, color: msg.startsWith("저장 완료") ? "#166534" : "#dc2626" }}>{msg}</span>}
+        <button className="btn btn-primary btn-sm" onClick={onSave} disabled={saving}>
+          {saving ? <span className="login-spinner" /> : <><Icon name="check" size={12} /> 저장</>}
+        </button>
       </div>
     </div>
   );
@@ -1102,8 +1131,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   const [form, setForm] = React.useState({ name: "", desc: "", type: "board", icon: "doc", approval: false });
   const reset = () => { setForm({ name: "", desc: "", type: "board", icon: "doc", approval: false }); setEditing(null); };
 
-  // ── 하위메뉴(사이드바 날개) 인라인 관리 ──
-  const SUBMENU_CATALOG = window.WV_SUBMENUS || [];
+  // ── 하위메뉴(사이드바 날개) 인라인 관리 — { 카테고리id: [항목...] } ──
   const [subCfg, setSubCfg] = React.useState({});
   const [subSaving, setSubSaving] = React.useState(false);
   const [subMsg, setSubMsg] = React.useState("");
@@ -1112,10 +1140,8 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
     fetch("/api/settings/submenus").then((r) => r.json())
       .then((d) => { if (d && d.value) setSubCfg(d.value); }).catch(() => {});
   }, []);
-  const subGet = (key, field, dflt) => { const c = subCfg[key] || {}; return c[field] != null ? c[field] : dflt; };
-  const subSetField = (key, field, val) => { setSubMsg(""); setSubCfg((p) => ({ ...p, [key]: { ...(p[key] || {}), [field]: val } })); };
-  const subApplyOrder = (arr) => { setSubMsg(""); setSubCfg((p) => { const n = { ...p }; arr.forEach((m, i) => { n[m.key] = { ...(n[m.key] || {}), order: i }; }); return n; }); };
-  const subItemsOf = (c) => SUBMENU_CATALOG.filter((m) => m.catId === c.id || (m.catName && m.catName === c.name)).map((m, idx) => ({ ...m, idx }));
+  const subListFor = (c) => (Array.isArray(subCfg[c.id]) ? subCfg[c.id] : window.WV_SUB.defaultList(c));
+  const setSubList = (catId, newList) => { setSubMsg(""); setSubCfg((p) => ({ ...p, [catId]: newList })); };
   const saveSubs = async () => {
     setSubSaving(true); setSubMsg("");
     try {
@@ -1257,7 +1283,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
         {cats.map((c, i) => {
           const isDragging = dragIndex === i;
           const isDropTarget = dragOverIndex === i && dragIndex !== null && dragIndex !== i;
-          const subItems = subItemsOf(c);
+          const subCount = subListFor(c).length;
           const expanded = expandedCat === c.id;
           return (
             <React.Fragment key={c.id}>
@@ -1295,21 +1321,20 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
               <div className="meta" style={{whiteSpace: "normal", lineHeight: 1.4}}>{c.desc}</div>
               <div className="mono" style={{ color: "var(--fg-2)" }}>{c.count}</div>
               <div style={{ display: "flex", gap: 4 }}>
-                {subItems.length > 0 && (
-                  <button className="btn btn-ghost btn-sm" title="하위메뉴 편집"
-                    onClick={(e) => { e.stopPropagation(); setExpandedCat(expanded ? null : c.id); }}
-                    style={{ color: expanded ? "var(--primary)" : undefined }}>
-                    <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} /> 하위 {subItems.length}
-                  </button>
-                )}
+                <button className="btn btn-ghost btn-sm" title="하위메뉴 편집"
+                  onClick={(e) => { e.stopPropagation(); setExpandedCat(expanded ? null : c.id); }}
+                  style={{ color: expanded ? "var(--primary)" : undefined }}>
+                  <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} /> 하위 {subCount}
+                </button>
                 <button className="btn btn-ghost btn-sm" onClick={() => startEdit(c)}><Icon name="edit" size={12} /></button>
                 <button className="btn btn-ghost btn-sm" onClick={() => remove(c)}><Icon name="trash" size={12} /></button>
                 <button className="btn btn-ghost btn-sm"><Icon name="more-horizontal" size={12} /></button>
               </div>
             </div>
-            {subItems.length > 0 && expanded && (
-              <CategorySubmenuInline items={subItems} get={subGet} setField={subSetField}
-                applyOrder={subApplyOrder} onSave={saveSubs} saving={subSaving} msg={subMsg} />
+            {expanded && (
+              <CategorySubmenuInline cat={c} list={subListFor(c)} cats={cats}
+                onChange={(newList) => setSubList(c.id, newList)}
+                onSave={saveSubs} saving={subSaving} msg={subMsg} />
             )}
             </React.Fragment>
           );

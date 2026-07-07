@@ -71,9 +71,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
     return false;
   };
 
-  // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃) — 카탈로그(data.js) + 관리자 설정(DB) ───
-  const SUBMENU_CATALOG = window.WV_SUBMENUS || [];
-  const [subCfg, setSubCfg] = React.useState({}); // { key: { label, order, enabled } }
+  // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃) — 카탈로그+관리자 설정(DB) ───
+  //   설정: { [카테고리id]: [항목...] } (게시판 보기 포함, 순서=배열 순). 없으면 기본 목록.
+  const [subCfg, setSubCfg] = React.useState({});
   React.useEffect(() => {
     fetch("/api/settings/submenus")
       .then((r) => r.json())
@@ -81,20 +81,11 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
       .catch(() => {});
   }, []);
   const getSubs = (c) => {
-    const items = SUBMENU_CATALOG
-      .filter((m) => m.catId === c.id || (m.catName && m.catName === c.name))
-      .map((m) => {
-        const cfg = subCfg[m.key] || {};
-        if (cfg.enabled === false) return null;
-        return {
-          label: cfg.label || m.defaultLabel,
-          order: cfg.order != null ? cfg.order : SUBMENU_CATALOG.indexOf(m),
-          nav: m.nav,
-          act: (r) => (m.actNames || []).includes(r.name) || (m.actPrefix && r.name.startsWith(m.actPrefix)),
-        };
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.order - b.order);
+    const list = window.WV_SUB.listFor(c, subCfg);
+    const items = list
+      .filter((it) => it.enabled !== false)
+      .map((it) => window.WV_SUB.resolve(it, c))
+      .filter(Boolean);
     return items.length ? items : null;
   };
 
@@ -220,12 +211,6 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           onMouseEnter={keepFlyOpen}
           onMouseLeave={scheduleFlyClose}>
           <div className="sb-flyout-hd">{flyout.name}</div>
-          {/* 게시판(카테고리 본체) 진입 — 날개 맨 위 항목 */}
-          <div
-            className={"sb-flyout-link" + (route.name === "category" && route.id === flyout.id ? " active" : "")}
-            onClick={() => { onNav({ name: "category", id: flyout.id }); setFlyout(null); }}>
-            📋 게시판 보기
-          </div>
           {flyout.subs.map((s) => (
             <div
               key={s.label}
