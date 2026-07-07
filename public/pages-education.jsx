@@ -629,9 +629,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               {saving ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {isEditMode ? "수정 저장" : "저장"}</>}
             </button>
           )}
-          <button className="btn btn-secondary" onClick={handlePrint}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton onClick={handlePrint} />
         </div>
       </div>
 
@@ -1006,9 +1004,7 @@ const EducationAttendeeSheet = ({ onNav, currentUser }) => {
         </button>
         <span style={{ fontWeight: 700, fontSize: 15 }}>참석자 명단 (별도 출력)</span>
         <div style={{ marginLeft: "auto" }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton />
         </div>
       </div>
 
@@ -1196,9 +1192,7 @@ const EducationPhotoBoard = ({ onNav }) => {
           <button className="btn btn-primary btn-sm eduphoto-no-print" onClick={handleSave}>
             <Icon name="check" size={13} /> 저장{savedAt && ` · ${savedAt}`}
           </button>
-          <button className="btn btn-secondary btn-sm eduphoto-no-print" onClick={() => window.print()}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton className="eduphoto-no-print" />
         </div>
       </div>
 

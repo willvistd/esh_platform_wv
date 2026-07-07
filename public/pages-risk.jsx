@@ -3730,9 +3730,7 @@ const RiskSubHeader = ({ onNav, stepInfo, extra }) => {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           {extra}
-          <button className="btn btn-secondary btn-sm no-print" onClick={() => window.print()}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton />
         </div>
       </div>
       {ctx && (
@@ -7617,7 +7615,7 @@ const RiskAttendeesView = ({ onNav }) => {
         <button className="risk-back-btn" onClick={() => onNav({ name: "risk-assessment" })}><Icon name="arrow-left" size={14} /> 목록</button>
         <span style={{ fontWeight: 700, fontSize: 15 }}>참석자 명단 (보조 서류)</span>
         <div style={{ marginLeft: "auto" }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => window.print()}><Icon name="printer" size={13} /> PDF 출력</button>
+          <PrintButton />
         </div>
       </div>
 
@@ -7821,9 +7819,7 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
           <button className="btn btn-primary btn-sm mtgphoto-no-print" onClick={handleSave}>
             <Icon name="check" size={13} /> 저장{savedAt && ` · ${savedAt}`}
           </button>
-          <button className="btn btn-secondary btn-sm mtgphoto-no-print" onClick={() => window.print()}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton className="mtgphoto-no-print" />
         </div>
       </div>
 
@@ -7914,7 +7910,7 @@ const RiskCriteriaView = ({ onNav }) => {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         <button className="risk-back-btn" onClick={() => onNav({ name: "risk-assessment" })}><Icon name="arrow-left" size={14} /> 목록</button>
         <span style={{ fontWeight: 700, fontSize: 15 }}>추정기준 (보조 서류)</span>
-        <div style={{ marginLeft: "auto" }}><button className="btn btn-secondary btn-sm no-print" onClick={() => window.print()}><Icon name="printer" size={13} /> PDF 출력</button></div>
+        <div style={{ marginLeft: "auto" }}><PrintButton /></div>
       </div>
       <div className="risk-form-card risk-print-area">
         <h2 style={{ textAlign: "center", fontSize: 18, fontWeight: 700, marginBottom: 8 }}>추정기준</h2>
@@ -7972,7 +7968,7 @@ const RiskHazardTypesView = ({ onNav }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
       <button className="risk-back-btn" onClick={() => onNav({ name: "risk-assessment" })}><Icon name="arrow-left" size={14} /> 목록</button>
       <span style={{ fontWeight: 700, fontSize: 15 }}>유해위험요인 및 재해유형 분류표 (보조 서류)</span>
-      <div style={{ marginLeft: "auto" }}><button className="btn btn-secondary btn-sm no-print" onClick={() => window.print()}><Icon name="printer" size={13} /> PDF 출력</button></div>
+      <div style={{ marginLeft: "auto" }}><PrintButton /></div>
     </div>
     <div style={{ background: "var(--card-bg)", border: "1px solid var(--line)", borderRadius: 12, padding: "20px 24px" }} className="risk-print-area">
       <h2 style={{ textAlign: "center", fontSize: 18, fontWeight: 700, marginBottom: 20 }}>유해위험요인 및 재해유형 분류표</h2>

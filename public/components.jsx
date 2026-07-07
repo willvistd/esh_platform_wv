@@ -231,6 +231,19 @@ const NavLink = ({ active, icon, onClick, children, style }) =>
   </div>;
 
 
+// ─── 공통 인쇄/PDF 출력 버튼 (모든 페이지 통일) ───
+// props: onClick(기본 window.print), label(기본 "PDF 출력"), className(추가), style(추가)
+const PrintButton = ({ onClick, label = "PDF 출력", className = "", style }) => (
+  <button
+    className={("btn btn-secondary btn-sm no-print " + className).trim()}
+    onClick={onClick || (() => window.print())}
+    style={style}
+  >
+    <Icon name="printer" size={13} /> {label}
+  </button>
+);
+
+
 // ─── TopBar with search + compose button (역할 스위처는 보안상 제거됨 — 로그인 권한으로 대체)
 // 검색: searchableItems prop으로 받은 모든 항목에서 keyword 매칭, 드롭다운으로 결과 표시
 const TopBar = ({ role, currentUser, searchableItems, onNav, onCompose, onLogout, onUpdateProfile }) => {
@@ -556,4 +569,4 @@ const MyProfileModal = ({ currentUser, roleInfo, onClose, onUpdate }) => {
   );
 };
 
-Object.assign(window, { LogoMark, Sidebar, NavLink, TopBar, MyProfileModal, PriorityChip, TypeChip, StatusChip, CAT_ICON, dDay, KOSHORTDATE });
+Object.assign(window, { LogoMark, Sidebar, NavLink, PrintButton, TopBar, MyProfileModal, PriorityChip, TypeChip, StatusChip, CAT_ICON, dDay, KOSHORTDATE });

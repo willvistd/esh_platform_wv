@@ -241,9 +241,7 @@ const ApprovalDetail = ({ onNav, docId, currentUser }) => {
         <button className="btn btn-ghost" onClick={() => onNav({ name: "approval-inbox" })}>
           <Icon name="arrow-left" size={14} /> 돌아가기
         </button>
-        <button className="btn btn-secondary btn-sm" onClick={() => window.print()}>
-          <Icon name="printer" size={13} /> PDF 출력
-        </button>
+        <PrintButton />
       </div>
 
       <div className="card approval-doc" style={{ padding: 32 }}>

@@ -243,9 +243,7 @@ const SafetySignsView = ({ onNav }) => {
         <span style={{ fontSize: 12, color: "var(--fg-3)" }}>표지를 누르면 A3 시트에 채워집니다 · 100%로 출력</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           <button className="btn btn-secondary btn-sm" onClick={() => setItems([])}>전체 비우기</button>
-          <button className="btn btn-secondary btn-sm no-print" onClick={handlePrint}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton onClick={handlePrint} />
         </div>
       </div>
 

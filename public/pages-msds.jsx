@@ -741,7 +741,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       <div className="msds-R">
         <div className="msds-R-hdr">
           <div style={{ fontSize: 15, fontWeight: 700 }}>칸에 마우스를 올리면 수정 버튼이 나타납니다!</div>
-          <button className="msds-print-btn" onClick={handlePrint}><Icon name="printer" size={13} /> PDF 출력</button>
+          <PrintButton onClick={handlePrint} />
         </div>
         <div className="msds-otabs">
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>

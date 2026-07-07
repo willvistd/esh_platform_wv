@@ -657,10 +657,7 @@ function FieldInspectionView({ onNav, currentUser }) {
           📄 총괄표 미리보기{activeCount > 0 ? ` (${activeCount}건)` : ''}
         </button>
         {tab === 'preview' && (
-          <button className="btn btn-secondary btn-sm no-print" onClick={() => window.print()}
-            style={{ marginLeft:'auto', marginRight:16, display:'flex', alignItems:'center', gap:6 }}>
-            <Icon name="printer" size={13} /> PDF 출력
-          </button>
+          <PrintButton style={{ marginLeft:'auto', marginRight:16 }} />
         )}
       </div>
 

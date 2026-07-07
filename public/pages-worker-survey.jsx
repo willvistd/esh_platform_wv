@@ -148,10 +148,7 @@ function WorkerSurveyView({ onNav }) {
             border:"1px solid var(--line)", background:"var(--bg-elev)", color:"var(--fg-2)", cursor:"pointer" }}>
           ↺ 초기화
         </button>
-        <button className="btn btn-secondary btn-sm no-print" onClick={handlePrint}
-          style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <Icon name="printer" size={13} /> PDF 출력
-        </button>
+        <PrintButton onClick={handlePrint} />
       </div>
 
       {/* ══════════ 1페이지 ══════════ */}
