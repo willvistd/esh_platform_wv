@@ -1053,9 +1053,13 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
   const btn = { width: 22, height: 22, border: "1px solid var(--line)", borderRadius: 4, background: "var(--bg)", cursor: "pointer", fontSize: 11, color: "var(--fg-2)", padding: 0 };
   const upd = (i, patch) => onChange(list.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
   const del = (i) => onChange(list.filter((_, idx) => idx !== i));
-  const move = (i, dir) => {
-    const j = i + dir; if (j < 0 || j >= list.length) return;
-    const arr = [...list]; [arr[i], arr[j]] = [arr[j], arr[i]]; onChange(arr);
+  // 드래그 핸들 정렬 (카테고리 목록과 동일 방식)
+  const [dragI, setDragI] = React.useState(null);
+  const [overI, setOverI] = React.useState(null);
+  const drop = (i) => {
+    if (dragI === null || dragI === i) { setDragI(null); setOverI(null); return; }
+    const arr = [...list]; const [moved] = arr.splice(dragI, 1); arr.splice(i, 0, moved);
+    onChange(arr); setDragI(null); setOverI(null);
   };
   const add = () => {
     const sep = addVal.indexOf(":");
@@ -1081,12 +1085,24 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
       )}
       {list.map((it, i) => {
         const enabled = it.enabled !== false;
+        const isOver = overI === i && dragI !== null && dragI !== i;
         return (
-          <div key={it.uid} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: enabled ? 1 : 0.5 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <button style={btn} onClick={() => move(i, -1)} disabled={i === 0} title="위로">▲</button>
-              <button style={btn} onClick={() => move(i, 1)} disabled={i === list.length - 1} title="아래로">▼</button>
-            </div>
+          <div key={it.uid}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (overI !== i) setOverI(i); }}
+            onDragLeave={() => setOverI(null)}
+            onDrop={(e) => { e.preventDefault(); drop(i); }}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "5px 0",
+              opacity: dragI === i ? 0.4 : (enabled ? 1 : 0.5),
+              borderTop: isOver && i < dragI ? "2px solid var(--primary)" : "2px solid transparent",
+              borderBottom: isOver && i > dragI ? "2px solid var(--primary)" : "2px solid transparent",
+              transition: "opacity .15s",
+            }}>
+            <span title="드래그하여 순서 변경"
+              draggable
+              onDragStart={(e) => { setDragI(i); e.dataTransfer.effectAllowed = "move"; }}
+              onDragEnd={() => { setDragI(null); setOverI(null); }}
+              style={{ cursor: "grab", color: "var(--fg-3)", fontFamily: "monospace", fontSize: 14, fontWeight: 700, userSelect: "none", padding: "0 2px", flexShrink: 0 }}>⋮⋮</span>
             <span style={{ fontSize: 10, color: "var(--fg-4)", width: 34, textAlign: "center", flexShrink: 0 }}>{it.kind === "tool" ? "기능" : "게시판"}</span>
             <input value={it.label || ""} onChange={(e) => upd(i, { label: e.target.value })} placeholder={phOf(it)}
               style={{ flex: 1, fontFamily: "inherit", fontSize: 13, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
