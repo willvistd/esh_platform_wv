@@ -1046,113 +1046,47 @@ const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit
   );
 };
 
-// ─── 하위메뉴(사이드바 날개) 관리 — 이름/순서/표시여부 (기능 자체는 고정) ───
-const SubmenuManagerSection = ({ cats }) => {
-  const CATALOG = window.WV_SUBMENUS || [];
-  const [cfg, setCfg] = React.useState({});
-  const [loading, setLoading] = React.useState(true);
-  const [saving, setSaving] = React.useState(false);
-  const [msg, setMsg] = React.useState("");
-
-  React.useEffect(() => {
-    fetch("/api/settings/submenus")
-      .then((r) => r.json())
-      .then((d) => { setCfg((d && d.value) || {}); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
-
-  const catName = (m) => (cats.find((c) => c.id === m.catId)?.name) || m.catName || m.catId;
-  const get = (key, field, dflt) => { const c = cfg[key] || {}; return c[field] != null ? c[field] : dflt; };
-  const setField = (key, field, val) => setCfg((prev) => ({ ...prev, [key]: { ...(prev[key] || {}), [field]: val } }));
-
-  // 카테고리별 그룹
-  const groups = {};
-  CATALOG.forEach((m, idx) => { (groups[m.catId] = groups[m.catId] || []).push({ ...m, idx }); });
-
-  const applyOrder = (arr) => setCfg((prev) => {
-    const next = { ...prev };
-    arr.forEach((m, i) => { next[m.key] = { ...(next[m.key] || {}), order: i }; });
-    return next;
-  });
-
-  const save = async () => {
-    setSaving(true); setMsg("");
-    try {
-      const res = await fetch("/api/settings/submenus", {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ value: cfg }),
-      });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      setMsg("저장 완료 · 새로고침(F5)하면 사이드바에 반영됩니다.");
-    } catch (e) { setMsg("저장 실패: " + e.message); }
-    setSaving(false);
-  };
-
+// ─── 하위메뉴 인라인 에디터 (카테고리 행 안에서 펼쳐서 편집) — 이름/순서/표시 (기능 고정) ───
+const CategorySubmenuInline = ({ items, get, setField, applyOrder, onSave, saving, msg }) => {
   const btn = { width: 22, height: 22, border: "1px solid var(--line)", borderRadius: 4, background: "var(--bg)", cursor: "pointer", fontSize: 11, color: "var(--fg-2)", padding: 0 };
-
+  const sorted = [...items].sort((a, b) => get(a.key, "order", a.idx) - get(b.key, "order", b.idx));
+  const moveItem = (i, dir) => {
+    const arr = [...sorted]; const j = i + dir;
+    if (j < 0 || j >= arr.length) return;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+    applyOrder(arr);
+  };
   return (
-    <div className="card" style={{ marginTop: 20, padding: 0, overflow: "hidden" }}>
-      <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>하위메뉴 관리 (사이드바 날개)</div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 2 }}>
-            카테고리에 마우스 올리면 나오는 하위메뉴의 이름·순서·표시여부를 조정합니다. (연결 기능 자체는 고정)
+    <div style={{ padding: "10px 18px 14px 58px", background: "var(--bg-sunk)", borderBottom: "1px solid var(--line-2)" }}>
+      <div style={{ fontSize: 11, color: "var(--fg-4)", marginBottom: 8 }}>하위메뉴 (사이드바 날개) — 이름·순서·표시 조정</div>
+      {sorted.map((m, i) => {
+        const enabled = get(m.key, "enabled", true);
+        return (
+          <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: enabled ? 1 : 0.5 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <button style={btn} onClick={() => moveItem(i, -1)} disabled={i === 0} title="위로">▲</button>
+              <button style={btn} onClick={() => moveItem(i, 1)} disabled={i === sorted.length - 1} title="아래로">▼</button>
+            </div>
+            <input
+              value={get(m.key, "label", m.defaultLabel)}
+              onChange={(e) => setField(m.key, "label", e.target.value)}
+              placeholder={m.defaultLabel}
+              style={{ flex: 1, fontFamily: "inherit", fontSize: 13, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
+            <button onClick={() => setField(m.key, "label", m.defaultLabel)} title="기본 이름으로"
+              style={{ ...btn, width: "auto", height: 30, padding: "0 8px", fontSize: 11 }}>기본값</button>
+            <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--fg-2)", cursor: "pointer", whiteSpace: "nowrap" }}>
+              <input type="checkbox" checked={enabled} onChange={(e) => setField(m.key, "enabled", e.target.checked)} />
+              표시
+            </label>
           </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {msg && <span style={{ fontSize: 12, color: msg.startsWith("저장 완료") ? "#166534" : "#dc2626" }}>{msg}</span>}
-          <button className="btn btn-primary btn-sm" onClick={save} disabled={saving || loading}>
-            {saving ? <span className="login-spinner" /> : <><Icon name="check" size={13} /> 저장</>}
-          </button>
-        </div>
+        );
+      })}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
+        <button className="btn btn-primary btn-sm" onClick={onSave} disabled={saving}>
+          {saving ? <span className="login-spinner" /> : <><Icon name="check" size={12} /> 하위메뉴 저장</>}
+        </button>
+        {msg && <span style={{ fontSize: 11, color: msg.startsWith("저장 완료") ? "#166534" : "#dc2626" }}>{msg}</span>}
       </div>
-      {loading ? (
-        <div style={{ padding: 24, textAlign: "center", color: "var(--fg-3)", fontSize: 13 }}>불러오는 중…</div>
-      ) : (
-        <div style={{ padding: "6px 18px 16px" }}>
-          {Object.keys(groups).map((gid) => {
-            const sorted = [...groups[gid]].sort((a, b) => get(a.key, "order", a.idx) - get(b.key, "order", b.idx));
-            const moveItem = (i, dir) => {
-              const arr = [...sorted]; const j = i + dir;
-              if (j < 0 || j >= arr.length) return;
-              [arr[i], arr[j]] = [arr[j], arr[i]];
-              applyOrder(arr);
-            };
-            return (
-              <div key={gid} style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 6 }}>
-                  {catName(sorted[0])} <span style={{ color: "var(--fg-4)", fontWeight: 400 }}>({gid})</span>
-                </div>
-                {sorted.map((m, i) => {
-                  const enabled = get(m.key, "enabled", true);
-                  return (
-                    <div key={m.key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", opacity: enabled ? 1 : 0.5 }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <button style={btn} onClick={() => moveItem(i, -1)} disabled={i === 0} title="위로">▲</button>
-                        <button style={btn} onClick={() => moveItem(i, 1)} disabled={i === sorted.length - 1} title="아래로">▼</button>
-                      </div>
-                      <input
-                        value={get(m.key, "label", m.defaultLabel)}
-                        onChange={(e) => setField(m.key, "label", e.target.value)}
-                        placeholder={m.defaultLabel}
-                        style={{ flex: 1, fontFamily: "inherit", fontSize: 13, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
-                      <button
-                        onClick={() => setField(m.key, "label", m.defaultLabel)}
-                        title="기본 이름으로"
-                        style={{ ...btn, width: "auto", height: 30, padding: "0 8px", fontSize: 11 }}>기본값</button>
-                      <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--fg-2)", cursor: "pointer", whiteSpace: "nowrap" }}>
-                        <input type="checkbox" checked={enabled} onChange={(e) => setField(m.key, "enabled", e.target.checked)}
-                          style={{ width: 15, height: 15 }} />
-                        표시
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };
@@ -1167,6 +1101,30 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   const [saving, setSaving] = React.useState(false);
   const [form, setForm] = React.useState({ name: "", desc: "", type: "board", icon: "doc", approval: false });
   const reset = () => { setForm({ name: "", desc: "", type: "board", icon: "doc", approval: false }); setEditing(null); };
+
+  // ── 하위메뉴(사이드바 날개) 인라인 관리 ──
+  const SUBMENU_CATALOG = window.WV_SUBMENUS || [];
+  const [subCfg, setSubCfg] = React.useState({});
+  const [subSaving, setSubSaving] = React.useState(false);
+  const [subMsg, setSubMsg] = React.useState("");
+  const [expandedCat, setExpandedCat] = React.useState(null);
+  React.useEffect(() => {
+    fetch("/api/settings/submenus").then((r) => r.json())
+      .then((d) => { if (d && d.value) setSubCfg(d.value); }).catch(() => {});
+  }, []);
+  const subGet = (key, field, dflt) => { const c = subCfg[key] || {}; return c[field] != null ? c[field] : dflt; };
+  const subSetField = (key, field, val) => { setSubMsg(""); setSubCfg((p) => ({ ...p, [key]: { ...(p[key] || {}), [field]: val } })); };
+  const subApplyOrder = (arr) => { setSubMsg(""); setSubCfg((p) => { const n = { ...p }; arr.forEach((m, i) => { n[m.key] = { ...(n[m.key] || {}), order: i }; }); return n; }); };
+  const subItemsOf = (c) => SUBMENU_CATALOG.filter((m) => m.catId === c.id || (m.catName && m.catName === c.name)).map((m, idx) => ({ ...m, idx }));
+  const saveSubs = async () => {
+    setSubSaving(true); setSubMsg("");
+    try {
+      const res = await fetch("/api/settings/submenus", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value: subCfg }) });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      setSubMsg("저장 완료 · F5하면 사이드바에 반영");
+    } catch (e) { setSubMsg("저장 실패: " + e.message); }
+    setSubSaving(false);
+  };
 
   // ── 드래그앤드롭 정렬 ──
   const [dragIndex, setDragIndex] = React.useState(null);
@@ -1299,9 +1257,11 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
         {cats.map((c, i) => {
           const isDragging = dragIndex === i;
           const isDropTarget = dragOverIndex === i && dragIndex !== null && dragIndex !== i;
+          const subItems = subItemsOf(c);
+          const expanded = expandedCat === c.id;
           return (
+            <React.Fragment key={c.id}>
             <div
-              key={c.id}
               className="cat-mng-row"
               draggable
               onDragStart={handleDragStart(i)}
@@ -1335,11 +1295,23 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
               <div className="meta" style={{whiteSpace: "normal", lineHeight: 1.4}}>{c.desc}</div>
               <div className="mono" style={{ color: "var(--fg-2)" }}>{c.count}</div>
               <div style={{ display: "flex", gap: 4 }}>
+                {subItems.length > 0 && (
+                  <button className="btn btn-ghost btn-sm" title="하위메뉴 편집"
+                    onClick={(e) => { e.stopPropagation(); setExpandedCat(expanded ? null : c.id); }}
+                    style={{ color: expanded ? "var(--primary)" : undefined }}>
+                    <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} /> 하위 {subItems.length}
+                  </button>
+                )}
                 <button className="btn btn-ghost btn-sm" onClick={() => startEdit(c)}><Icon name="edit" size={12} /></button>
                 <button className="btn btn-ghost btn-sm" onClick={() => remove(c)}><Icon name="trash" size={12} /></button>
                 <button className="btn btn-ghost btn-sm"><Icon name="more-horizontal" size={12} /></button>
               </div>
             </div>
+            {subItems.length > 0 && expanded && (
+              <CategorySubmenuInline items={subItems} get={subGet} setField={subSetField}
+                applyOrder={subApplyOrder} onSave={saveSubs} saving={subSaving} msg={subMsg} />
+            )}
+            </React.Fragment>
           );
         })}
       </div>
@@ -1419,9 +1391,6 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
           </div>
         </div>
       )}
-
-      {/* 하위메뉴(사이드바 날개) 관리 */}
-      <SubmenuManagerSection cats={cats} />
 
       <style>{`
         .cat-mng-hd, .cat-mng-row {
