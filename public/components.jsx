@@ -71,24 +71,32 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
     return false;
   };
 
-  // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃으로 표시) ───
-  const SUBCATS = {
-    training: [
-      { label: "교육일지 작성/조회", nav: { name: "education-log" }, act: (r) => ["education-log", "education-log-new", "education-log-list"].includes(r.name) },
-    ],
-    msds: [
-      { label: "MSDS 서식 생성", nav: { name: "msds-generate" }, act: (r) => r.name === "msds-generate" },
-    ],
-    "risk-assessment": [
-      { label: "위험성평가 서류 작성", nav: { name: "risk-assessment" }, act: (r) => r.name === "risk-assessment" || r.name.startsWith("risk-") },
-      { label: "근무환경 조사표 출력", nav: { name: "tool-worker-survey" }, act: (r) => r.name === "tool-worker-survey" },
-      { label: "현장점검 보고서", nav: { name: "field-inspection" }, act: (r) => r.name === "field-inspection" },
-    ],
-    signage: [
-      { label: "출입문 표지 생성", nav: { name: "tool-safety-signs" }, act: (r) => r.name === "tool-safety-signs" },
-    ],
+  // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃) — 카탈로그(data.js) + 관리자 설정(DB) ───
+  const SUBMENU_CATALOG = window.WV_SUBMENUS || [];
+  const [subCfg, setSubCfg] = React.useState({}); // { key: { label, order, enabled } }
+  React.useEffect(() => {
+    fetch("/api/settings/submenus")
+      .then((r) => r.json())
+      .then((d) => { if (d && d.value) setSubCfg(d.value); })
+      .catch(() => {});
+  }, []);
+  const getSubs = (c) => {
+    const items = SUBMENU_CATALOG
+      .filter((m) => m.catId === c.id || (m.catName && m.catName === c.name))
+      .map((m) => {
+        const cfg = subCfg[m.key] || {};
+        if (cfg.enabled === false) return null;
+        return {
+          label: cfg.label || m.defaultLabel,
+          order: cfg.order != null ? cfg.order : SUBMENU_CATALOG.indexOf(m),
+          nav: m.nav,
+          act: (r) => (m.actNames || []).includes(r.name) || (m.actPrefix && r.name.startsWith(m.actPrefix)),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.order - b.order);
+    return items.length ? items : null;
   };
-  const getSubs = (c) => SUBCATS[c.id] || (c.name === "안전보건표지" ? SUBCATS.signage : null);
 
   const [flyout, setFlyout] = React.useState(null);
   const flyTimer = React.useRef(null);

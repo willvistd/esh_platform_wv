@@ -109,6 +109,10 @@ async function initDB() {
       name TEXT, description TEXT, type TEXT,
       icon TEXT, "groupName" TEXT, approval BOOLEAN DEFAULT false
     );
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    );
     CREATE TABLE IF NOT EXISTS sites (
       id SERIAL PRIMARY KEY,
       name TEXT, region TEXT, client TEXT,
@@ -646,6 +650,31 @@ app.put('/api/categories/:id', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
   await pool.query('DELETE FROM categories WHERE id = $1', [req.params.id]);
   res.json({ success: true });
+});
+
+// ── 앱 설정 저장소 (key-value JSON). 하위메뉴 이름/순서/표시여부 등 ──
+app.get('/api/settings/:key', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT value FROM app_settings WHERE key = $1', [req.params.key]);
+    res.json({ value: r.rows[0] ? JSON.parse(r.rows[0].value) : null });
+  } catch (e) {
+    console.error('GET /api/settings 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+app.put('/api/settings/:key', async (req, res) => {
+  try {
+    const val = JSON.stringify(req.body.value ?? null);
+    await pool.query(
+      `INSERT INTO app_settings (key, value) VALUES ($1, $2)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+      [req.params.key, val]
+    );
+    res.json({ success: true });
+  } catch (e) {
+    console.error('PUT /api/settings 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 카테고리 순서 일괄 변경 — body: { order: ["id1", "id2", ...] }

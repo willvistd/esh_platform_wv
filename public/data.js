@@ -120,3 +120,16 @@ window.WV_DATA = (() => {
 
   return { today, fmt, daysFromNow, daysAgo, categories, typeLabel, roles, menuCatalog, roleMenus, can, users, signupRequests, posts, submissions, depts, activity };
 })();
+
+// ── 카테고리 하위메뉴 카탈로그 (사이드바 날개 + 카테고리 관리 공용) ──
+//   key: 고유 식별자 / catId·catName: 어느 카테고리 아래 / defaultLabel: 기본 표시명
+//   nav: 클릭 시 이동 라우트 / actNames·actPrefix: 활성(하이라이트) 판단
+//   ⚠ 각 항목은 전용 페이지가 있어야 작동 — 임의 추가 불가(이름/순서/표시여부만 관리)
+window.WV_SUBMENUS = [
+  { key: "risk-doc",      catId: "risk-assessment", defaultLabel: "위험성평가 서류 작성", nav: { name: "risk-assessment" }, actNames: ["risk-assessment"], actPrefix: "risk-" },
+  { key: "worker-survey", catId: "risk-assessment", defaultLabel: "근무환경 조사표 출력", nav: { name: "tool-worker-survey" }, actNames: ["tool-worker-survey"] },
+  { key: "field-insp",    catId: "risk-assessment", defaultLabel: "현장점검 보고서",       nav: { name: "field-inspection" }, actNames: ["field-inspection"] },
+  { key: "edu-log",       catId: "training",        defaultLabel: "교육일지 작성/조회",    nav: { name: "education-log" }, actNames: ["education-log", "education-log-new", "education-log-list"] },
+  { key: "msds-gen",      catId: "msds",            defaultLabel: "MSDS 서식 생성",         nav: { name: "msds-generate" }, actNames: ["msds-generate"] },
+  { key: "safety-signs",  catId: "signage", catName: "안전보건표지", defaultLabel: "출입문 표지 생성", nav: { name: "tool-safety-signs" }, actNames: ["tool-safety-signs"] },
+];
