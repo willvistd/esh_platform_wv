@@ -28,35 +28,36 @@ const api = {
     return data.posts || [];
   },
   async login(email, password) {
-    const users = await this.getUsers();
-    const inputEmail = email.toLowerCase().trim();
-    const inputPw = password.trim();
-    const user = users.find(u =>
-      String(u.email).toLowerCase().trim() === inputEmail &&
-      String(u.password).trim() === inputPw
-    );
-    if (!user) return { success: false, message: "이메일 또는 비밀번호가 올바르지 않습니다." };
-    if (user.status === "pending") return { success: false, message: "관리자 승인 대기 중인 계정입니다. 승인 후 로그인할 수 있습니다." };
-    if (user.status === "inactive") return { success: false, message: "비활성화된 계정입니다." };
-    if (user.status === "dormant") return { success: false, message: "휴면 계정입니다. 관리자에게 문의하세요." };
+    // 비밀번호 검증은 서버에서 (비번이 프론트로 내려오지 않음)
+    let result;
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password: password.trim() }),
+      });
+      result = await res.json();
+    } catch (e) {
+      return { success: false, message: "서버 연결 오류가 발생했습니다." };
+    }
+    if (!result || !result.success || !result.user) {
+      return { success: false, message: (result && result.message) || "이메일 또는 비밀번호가 올바르지 않습니다." };
+    }
+    const u = result.user;
     fetch(SHEETY.sessions, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: user.id, email: user.email, loginAt: new Date().toISOString() })
+      body: JSON.stringify({ userId: u.id, email: u.email, loginAt: new Date().toISOString() })
     }).catch(() => {});
     return {
       success: true,
       user: {
-        id: String(user.id),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        dept: user.dept,
-        phone: user.phone || "",
-        position: user.position || "",
-        hqId: user.hqId || null,
-        siteIds: user.siteIds || "",
-        status: user.status,
+        ...u,
+        id: String(u.id),
+        phone: u.phone || "",
+        position: u.position || "",
+        hqId: u.hqId || null,
+        siteIds: u.siteIds || "",
       }
     };
   },

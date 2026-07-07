@@ -6,6 +6,17 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
+const bcrypt = require('bcryptjs');
+
+// ── 비밀번호 해싱 헬퍼 (평문↔해시 전환기 안전) ──
+const hashPw = (pw) => bcrypt.hashSync(String(pw), 10);
+const isHashed = (v) => typeof v === 'string' && v.startsWith('$2');
+// 저장값이 해시면 bcrypt 비교, 아직 평문이면 직접 비교(마이그레이션 과도기 호환)
+const verifyPw = (input, stored) => {
+  if (stored == null) return false;
+  const s = String(stored);
+  return isHashed(s) ? bcrypt.compareSync(String(input), s) : String(input) === s;
+};
 
 // ── WebSocket 폴리필 (supabase-js Node 호환) ──
 if (typeof globalThis.WebSocket === 'undefined') {
@@ -338,6 +349,15 @@ async function initDB() {
     `);
   }
 
+  // ── 기존 평문 비밀번호 일괄 해싱 (이미 해시($2..)인 건 건너뜀) ──
+  try {
+    const plain = await pool.query("SELECT id, password FROM users WHERE password IS NOT NULL AND password NOT LIKE '$2%'");
+    for (const row of plain.rows) {
+      await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(row.password), row.id]);
+    }
+    if (plain.rowCount > 0) console.log(`[DB] 비밀번호 해싱 마이그레이션: ${plain.rowCount}건`);
+  } catch (e) { console.error('[DB] 비번 해싱 마이그레이션 오류:', e.message); }
+
   const catExisting = await pool.query('SELECT COUNT(*) FROM categories');
   if (parseInt(catExisting.rows[0].count) === 0) {
     await pool.query(`
@@ -409,7 +429,9 @@ async function initDB() {
 // ── Users ──
 app.get('/api/users', async (req, res) => {
   const result = await pool.query('SELECT * FROM users');
-  res.json({ users: result.rows });
+  // 비밀번호는 절대 내보내지 않음 (해시라도 노출 금지)
+  const users = result.rows.map(({ password, ...rest }) => rest);
+  res.json({ users });
 });
 
 app.post('/api/users', async (req, res) => {
@@ -428,9 +450,10 @@ app.post('/api/users', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO users (name, email, password, dept, role, status, "hqId", "siteIds", phone, position)
        VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,$9) RETURNING *`,
-      [name, email, password, dept, role, hqId||null, siteIds||'', phone||'', position||'']
+      [name, email, hashPw(password), dept, role, hqId||null, siteIds||'', phone||'', position||'']
     );
-    res.json({ user: result.rows[0] });
+    const { password: _pw, ...safeUser } = result.rows[0];
+    res.json({ user: safeUser });
   } catch (e) {
     console.error('POST /api/users 오류:', e);
     res.status(500).json({ error: e.message });
@@ -458,10 +481,11 @@ app.put('/api/users/:id', async (req, res) => {
         `UPDATE users SET name=$1, email=$2, password=$3, dept=$4, role=$5, status=$6,
                           phone=$7, position=$8, "hqId"=$9, "siteIds"=$10
          WHERE id=$11 RETURNING *`,
-        [name||'', email||'', password, dept||'', role||'staff', status||'active',
+        [name||'', email||'', hashPw(password), dept||'', role||'staff', status||'active',
          phone||'', position||'', hqId||null, siteIds||'', req.params.id]
       );
-      res.json({ user: result.rows[0] });
+      const { password: _p, ...safe } = result.rows[0];
+      res.json({ user: safe });
     } else {
       const result = await pool.query(
         `UPDATE users SET name=$1, email=$2, dept=$3, role=$4, status=$5,
@@ -470,7 +494,8 @@ app.put('/api/users/:id', async (req, res) => {
         [name||'', email||'', dept||'', role||'staff', status||'active',
          phone||'', position||'', hqId||null, siteIds||'', req.params.id]
       );
-      res.json({ user: result.rows[0] });
+      const { password: _p, ...safe } = result.rows[0];
+      res.json({ user: safe });
     }
   } catch (e) {
     console.error('PUT /api/users 오류:', e);
@@ -497,7 +522,7 @@ app.post('/api/users/:id/reset-password', async (req, res) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
     let newPw = '';
     for (let i = 0; i < 8; i++) newPw += chars[Math.floor(Math.random() * chars.length)];
-    const result = await pool.query('UPDATE users SET password=$1 WHERE id=$2 RETURNING id, name, email', [newPw, req.params.id]);
+    const result = await pool.query('UPDATE users SET password=$1 WHERE id=$2 RETURNING id, name, email', [hashPw(newPw), req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: '해당 사용자가 없습니다.' });
     res.json({ success: true, user: result.rows[0], newPassword: newPw });
   } catch (e) {
@@ -522,7 +547,7 @@ app.post('/api/register', async (req, res) => {
       `INSERT INTO users (name, email, password, dept, role, status, phone, "hqId", "siteIds", position, "joinedAt", "requestedAt")
        VALUES ($1,$2,$3,$4,$5,'pending',$6,$7,$8,$9,$10,$11) RETURNING id, name, email, dept, status`,
       [
-        name, email, password, dept||'', role||'staff',
+        name, email, hashPw(password), dept||'', role||'staff',
         phone||'', hqId||null, siteIds||'', position||'',
         new Date().toISOString(), new Date().toISOString()
       ]
@@ -593,6 +618,32 @@ app.post('/api/sessions', async (req, res) => {
 // ── 사이트 메타 (데모 모드 여부 등) — 프론트가 데모 안내/배너 표시에 사용 ──
 app.get('/api/meta', (req, res) => {
   res.json({ demo: DEMO_MODE });
+});
+
+// ── 서버 로그인 (비번 검증을 서버에서 — 비번이 프론트로 안 나감) ──
+app.post('/api/login', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').toLowerCase().trim();
+    const pw = String(req.body.password || '').trim();
+    if (!email || !pw) return res.json({ success: false, message: '이메일과 비밀번호를 입력하세요.' });
+    const r = await pool.query('SELECT * FROM users WHERE LOWER(TRIM(email)) = $1 LIMIT 1', [email]);
+    const u = r.rows[0];
+    if (!u || !verifyPw(pw, u.password)) {
+      return res.json({ success: false, message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+    }
+    if (u.status === 'pending')  return res.json({ success: false, message: '관리자 승인 대기 중인 계정입니다. 승인 후 로그인할 수 있습니다.' });
+    if (u.status === 'inactive') return res.json({ success: false, message: '비활성화된 계정입니다.' });
+    if (u.status === 'dormant')  return res.json({ success: false, message: '휴면 계정입니다. 관리자에게 문의하세요.' });
+    // 평문이었으면 이번 로그인 기회에 해시로 승격 (지연 마이그레이션)
+    if (!isHashed(u.password)) {
+      try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
+    }
+    const { password, ...safe } = u;
+    res.json({ success: true, user: safe });
+  } catch (e) {
+    console.error('POST /api/login 오류:', e);
+    res.status(500).json({ success: false, message: '로그인 처리 중 오류가 발생했습니다.' });
+  }
 });
 
 // ── Posts ──
