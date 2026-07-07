@@ -15,6 +15,13 @@ const LoginScreen = ({ onLogin }) => {
   const [locked, setLocked] = React.useState({});      // {email: true}
   const [forgotOpen, setForgotOpen] = React.useState(false);
   const [policyOpen, setPolicyOpen] = React.useState(false);
+  const [demo, setDemo] = React.useState(false);
+
+  // 데모 모드 여부 확인 (데모 배포에서만 true)
+  React.useEffect(() => {
+    fetch("/api/meta").then(r => r.json()).then(m => setDemo(!!(m && m.demo))).catch(() => {});
+  }, []);
+  const fillDemo = () => { setEmail("demo@demo.com"); setPassword("demo1234"); };
 
   // 가입 화면이면 RegisterScreen만 렌더링
   if (mode === "register") {
@@ -143,6 +150,17 @@ const LoginScreen = ({ onLogin }) => {
             {error && (
               <div className="login-error" role="alert">
                 <Icon name="alert" size={13} /> {error}
+              </div>
+            )}
+
+            {demo && (
+              <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#1e40af", lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>🎯 포트폴리오 데모</div>
+                아이디 <b>demo@demo.com</b> / 비번 <b>demo1234</b>
+                <button type="button" onClick={fillDemo}
+                  style={{ display: "block", marginTop: 8, width: "100%", padding: "7px 0", border: "1px solid #1e40af", borderRadius: 6, background: "#fff", color: "#1e40af", fontWeight: 700, fontSize: 12.5, cursor: "pointer" }}>
+                  데모 계정으로 자동 입력
+                </button>
               </div>
             )}
 

@@ -86,6 +86,9 @@ const pool = new Pool({
     : false,
 });
 
+// 데모 모드: 포트폴리오용 별도 배포에서 DEMO_MODE=true 설정 시 가짜 데이터 시딩 + 데모 안내 표시
+const DEMO_MODE = /^(1|true|yes|on)$/i.test(process.env.DEMO_MODE || '');
+
 async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -307,7 +310,18 @@ async function initDB() {
   }
 
   const existing = await pool.query('SELECT COUNT(*) FROM users');
-  if (parseInt(existing.rows[0].count) === 0) {
+  if (parseInt(existing.rows[0].count) === 0 && DEMO_MODE) {
+    // ── 데모 전용 가짜 계정 (실제 개인정보 없음) ──
+    await pool.query(`
+      INSERT INTO users (name, email, password, dept, role, status) VALUES
+      ('데모 관리자', 'demo@demo.com',   'demo1234', '데모본부', 'admin',        'active'),
+      ('홍길동',      'hong@demo.com',   'demo1234', '안전관리팀', 'safety',       'active'),
+      ('김철수',      'kim@demo.com',    'demo1234', 'FM운영팀',  'manager',      'active'),
+      ('이영희',      'lee@demo.com',    'demo1234', 'CRM운영팀', 'staff',        'active'),
+      ('박현장',      'site@demo.com',   'demo1234', '현장',      'site_manager', 'active')
+    `);
+    console.log('[DB] 데모 계정 시드 완료 (demo@demo.com / demo1234)');
+  } else if (parseInt(existing.rows[0].count) === 0) {
     await pool.query(`
       INSERT INTO users (name, email, password, dept, role, status) VALUES
       ('관리자', 'admin@willvi.co.kr', 'admin1234', '시스템관리자', 'admin', 'active'),
@@ -574,6 +588,11 @@ app.put('/api/users/:id/self', async (req, res) => {
 // ── Sessions (noop) ──
 app.post('/api/sessions', async (req, res) => {
   res.json({ success: true });
+});
+
+// ── 사이트 메타 (데모 모드 여부 등) — 프론트가 데모 안내/배너 표시에 사용 ──
+app.get('/api/meta', (req, res) => {
+  res.json({ demo: DEMO_MODE });
 });
 
 // ── Posts ──
