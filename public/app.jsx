@@ -1,5 +1,24 @@
 // 윌앤비전 안전보건관리 - 메인 앱
 
+// ── 세션 만료 자동 처리 ──
+// 모든 /api 응답에서 401(세션 쿠키 만료/없음)이 오면 로그인 화면으로.
+// fetch를 한 곳에서 감싸므로 개별 호출부는 수정 불필요.
+(() => {
+  const origFetch = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const res = await origFetch(input, init);
+    try {
+      const url = typeof input === "string" ? input : (input && input.url) || "";
+      if (res.status === 401 && url.startsWith("/api") && !url.startsWith("/api/login") && !url.startsWith("/api/logout")) {
+        localStorage.removeItem("wv_auth_v1");
+        localStorage.removeItem("wv_user");
+        if (!window.__wvReloading) { window.__wvReloading = true; window.location.reload(); }
+      }
+    } catch (e) {}
+    return res;
+  };
+})();
+
 // ── Sheety API 연동 ──
 const API_BASE = "/api";
 const SHEETY = {
@@ -695,6 +714,7 @@ function App() {
     setRoute({ name: "dashboard" });
   };
   const logout = () => {
+    fetch("/api/logout", { method: "POST" }).catch(() => {}); // 세션 쿠키 제거
     localStorage.removeItem(AUTH_KEY);
     localStorage.removeItem("wv_user");
     setCurrentUserData(null);

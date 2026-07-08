@@ -7,6 +7,38 @@ const path = require('path');
 const fs = require('fs');
 const https = require('https');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+
+// ── 세션 (HMAC 서명 쿠키, 무상태) ──
+// SESSION_SECRET 권장. 없으면 PGPASSWORD 기반 파생(재시작에도 안정 — 새 env 없이 동작)
+const SESSION_SECRET = process.env.SESSION_SECRET ||
+  crypto.createHash('sha256').update('wv-session|' + (process.env.PGPASSWORD || 'dev')).digest('hex');
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
+const b64u = (buf) => Buffer.from(buf).toString('base64url');
+const signSession = (user) => {
+  const payload = b64u(JSON.stringify({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS }));
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+  return payload + '.' + sig;
+};
+const verifySession = (token) => {
+  try {
+    if (!token) return null;
+    const [payload, sig] = String(token).split('.');
+    const expect = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
+    if (!sig || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expect))) return null;
+    const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    if (!data.exp || Date.now() > data.exp) return null;
+    return data; // { uid, role, exp }
+  } catch { return null; }
+};
+const getCookie = (req, name) => {
+  const raw = req.headers.cookie || '';
+  for (const part of raw.split(';')) {
+    const i = part.indexOf('=');
+    if (i > -1 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return null;
+};
 
 // ── 비밀번호 해싱 헬퍼 (평문↔해시 전환기 안전) ──
 const hashPw = (pw) => bcrypt.hashSync(String(pw), 10);
@@ -54,6 +86,29 @@ app.use(express.static(frontendDir, {
 // ── 도구: 안전보건표지 인쇄 (자기완결형 HTML). .html 없이도 접근 가능하게 ──
 app.get('/tools/safety-signs', (req, res) => {
   res.sendFile(path.join(frontendDir, 'tools', 'safety-signs.html'));
+});
+
+// ── API 전체 인증 미들웨어 ──
+// 로그인 세션 쿠키(wv_sess) 없으면 /api/* 접근 401.
+// 예외(인증 불필요):
+//  - /api/login, /api/logout, /api/register: 로그인/가입 자체
+//  - /api/meta: 로그인 화면이 데모 여부 조회
+//  - /api/hq (GET): 회원가입 화면의 본부 선택 드롭다운 (로그인 전 호출)
+//  - /api/risk/print-data/:token: puppeteer 내부 호출 (자체 랜덤 토큰으로 보호)
+const AUTH_EXEMPT = [
+  { method: 'POST', re: /^\/login$/ },
+  { method: 'POST', re: /^\/logout$/ },
+  { method: 'POST', re: /^\/register$/ },
+  { method: 'GET',  re: /^\/meta$/ },
+  { method: 'GET',  re: /^\/hq$/ },
+  { method: 'GET',  re: /^\/risk\/print-data\/[^/]+$/ },
+];
+app.use('/api', (req, res, next) => {
+  if (AUTH_EXEMPT.some(r => r.method === req.method && r.re.test(req.path))) return next();
+  const sess = verifySession(getCookie(req, 'wv_sess'));
+  if (!sess) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  req.session = sess;
+  next();
 });
 
 // ── multer: Supabase면 메모리, 로컬이면 디스크 ──
@@ -620,6 +675,12 @@ app.get('/api/meta', (req, res) => {
   res.json({ demo: DEMO_MODE });
 });
 
+// ── 로그아웃 (세션 쿠키 제거) ──
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('wv_sess', { path: '/' });
+  res.json({ success: true });
+});
+
 // ── 서버 로그인 (비번 검증을 서버에서 — 비번이 프론트로 안 나감) ──
 app.post('/api/login', async (req, res) => {
   try {
@@ -638,6 +699,14 @@ app.post('/api/login', async (req, res) => {
     if (!isHashed(u.password)) {
       try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
     }
+    // 세션 쿠키 발급 (httpOnly — JS로 탈취 불가, 이후 모든 API 요청에 자동 첨부)
+    res.cookie('wv_sess', signSession(u), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: (req.headers['x-forwarded-proto'] === 'https') || req.secure,
+      maxAge: SESSION_TTL_MS,
+      path: '/',
+    });
     const { password, ...safe } = u;
     res.json({ success: true, user: safe });
   } catch (e) {
