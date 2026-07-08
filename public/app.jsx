@@ -9,7 +9,9 @@
     const res = await origFetch(input, init);
     try {
       const url = typeof input === "string" ? input : (input && input.url) || "";
-      if (res.status === 401 && url.startsWith("/api") && !url.startsWith("/api/login") && !url.startsWith("/api/logout")) {
+      // 로그인돼 있다고 여기는 상태(wv_user 존재)에서만 세션만료 처리 → 리로드.
+      // 로그인 화면(wv_user 없음)에선 401 나도 아무것도 안 함(무한 새로고침 방지).
+      if (res.status === 401 && url.startsWith("/api") && !url.startsWith("/api/login") && !url.startsWith("/api/logout") && localStorage.getItem("wv_user")) {
         localStorage.removeItem("wv_auth_v1");
         localStorage.removeItem("wv_user");
         if (!window.__wvReloading) { window.__wvReloading = true; window.location.reload(); }
