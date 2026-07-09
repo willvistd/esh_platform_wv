@@ -6263,7 +6263,9 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           <option value="">{row.세부작업 ? "선택..." : "세부작업 먼저"}</option>
                           {getAllowedHazardCats(row.세부작업).map(c => <option key={c}>{c}</option>)}
                         </select>
-                        <span className="no-print" style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", pointerEvents: "none" }}>▾</span>
+                        <span className="no-print" title="목록 열기"
+                          onClick={(e) => { const s = e.currentTarget.parentElement.querySelector("select"); if (s) { try { s.showPicker(); } catch { s.focus(); } } }}
+                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", cursor: "pointer" }}>▾</span>
                       </div>
                     </TD>
                     {/* 원인: textarea + 추천 드롭다운 */}
@@ -6378,7 +6380,9 @@ const RiskTableView = ({ onNav, currentUser }) => {
                           <option value="">선택...</option>
                           {ACCIDENT_TYPES.map(a => <option key={a}>{a}</option>)}
                         </select>
-                        <span className="no-print" style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", pointerEvents: "none" }}>▾</span>
+                        <span className="no-print" title="목록 열기"
+                          onClick={(e) => { const s = e.currentTarget.parentElement.querySelector("select"); if (s) { try { s.showPicker(); } catch { s.focus(); } } }}
+                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", cursor: "pointer" }}>▾</span>
                         <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
                       </div>
                     </TD>
