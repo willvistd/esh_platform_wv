@@ -6215,6 +6215,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                       <div className="task-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
                         <textarea value={row.세부작업} rows={1}
                           onChange={e => { updRow(i, "세부작업", e.target.value); autoGrow(e.target); }}
+                          onFocus={() => setTaskSuggestRow(i)}
                           ref={autoGrow}
                           placeholder="직접 입력 또는 ▾ 목록"
                           style={{ ...inTA, paddingRight: taskList.length > 0 ? 22 : 6 }} />
@@ -6270,6 +6271,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                       <div className="cause-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
                         <textarea value={row.원인} rows={1}
                           onChange={e => { updRow(i, "원인", e.target.value); autoGrow(e.target); }}
+                          onFocus={() => setCauseSuggestRow(i)}
                           ref={autoGrow}
                           placeholder="직접 입력 또는 ▾ 목록"
                           style={{ ...inTA, paddingRight: causeOpts.length > 0 ? 22 : 6 }} />
@@ -6314,6 +6316,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                       <div className="env-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
                         <textarea value={row.위험발생환경} rows={1}
                           onChange={e => { updRow(i, "위험발생환경", e.target.value); autoGrow(e.target); }}
+                          onFocus={() => setEnvSuggestRow(i)}
                           ref={autoGrow}
                           style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.위험발생환경}</div>
@@ -6384,6 +6387,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                       <div className="safety-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
                         <textarea value={row.현재안전조치} rows={1}
                           onChange={e => { updRow(i, "현재안전조치", e.target.value); autoGrow(e.target); }}
+                          onFocus={() => setSafetySuggestRow(i)}
                           ref={autoGrow}
                           style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.현재안전조치}</div>
@@ -6466,6 +6470,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
                       <div className="measure-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
                         <textarea value={row.감소대책} rows={1}
                           onChange={e => { updRow(i, "감소대책", e.target.value); autoGrow(e.target); }}
+                          onFocus={() => setMeasureSuggestRow(i)}
                           ref={autoGrow}
                           style={{ ...inTA, paddingRight: 22 }} />
                         <div className="tx-mirror">{row.감소대책}</div>
