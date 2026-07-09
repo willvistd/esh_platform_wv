@@ -694,8 +694,9 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
       });
   }, [users, form.hqId, assigneeSearch, assigneeIds]);
 
+  // 담당자는 사업장당 1명 — 체크하면 그 사람만 남기고, 같은 사람 다시 누르면 해제
   const toggleAssignee = (uid) => {
-    setAssigneeIds(prev => prev.includes(uid) ? prev.filter(x => x !== uid) : [...prev, uid]);
+    setAssigneeIds(prev => (prev.length === 1 && prev[0] === uid) ? [] : [uid]);
   };
 
   // 선택된 사용자들의 이름 → form.담당자 자동 동기화
@@ -826,7 +827,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
           {/* 담당자 표시 텍스트 (자동/수동) */}
           <div className="field">
-            <label className="field-label">담당자 표기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(목록에 보이는 이름. 비워두면 선택한 직원 이름들로 자동)</span></label>
+            <label className="field-label">담당자 표기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(목록에 보이는 이름. 비워두면 선택한 직원 이름으로 자동)</span></label>
             <input className="field-input"
               value={form.담당자}
               onChange={e => update("담당자", e.target.value)}
