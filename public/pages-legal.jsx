@@ -103,9 +103,9 @@ const LEGAL_ITEMS = [
   { n:"3",  t:"관리감독자 업무수행 증빙",               owner:"사업장",      keep:"3년", docs:["업무 일지(매일)"],
     r:c=>c.n>=5?REQ("관리감독자 지정 사업장 — 업무수행 증빙 보존"):COND("5인 미만 — 해당 시") },
   { n:"4",  t:"근로자 채용 시 교육",                    owner:"사업장",      keep:"3년", docs:["교육일지/수료증"],
-    r:c=>c.n>=5?REQ("상시 5인↑ — 채용 시 교육 의무"):NO("5인 미만 — 교육 적용 제외") },
+    r:c=>c.n<5?NO("5인 미만 — 교육 적용 제외"):(c.office?COND("사무직만 종사 사업장 — 산안법 시행령 별표1에 따라 채용 시 교육 제외 여부 확인 필요"):REQ("상시 5인↑ — 채용 시 교육 의무")) },
   { n:"5",  t:"근로자 정기교육",                        owner:"사업장",      keep:"3년", docs:["교육일지/수료증(매반기)"],
-    r:c=>c.n>=5?REQ("상시 5인↑ — 정기교육(매반기) 의무"):NO("5인 미만 — 교육 적용 제외") },
+    r:c=>c.n<5?NO("5인 미만 — 교육 적용 제외"):(c.office?COND("사무직만 종사 사업장 — 별표1에 따라 사무직 근로자 정기교육 제외 여부 확인 필요"):REQ("상시 5인↑ — 정기교육(매반기) 의무")) },
   { n:"6",  t:"작업내용 변경 시 교육",                  owner:"사업장",      keep:"3년", docs:["교육일지/수료증"],
     r:c=>c.n>=5?COND("작업내용 변경이 발생할 때"):NO("5인 미만 — 교육 적용 제외") },
   { n:"7",  t:"근로자 특별교육",                        owner:"사업장",      keep:"3년", docs:["교육일지"],
@@ -128,12 +128,14 @@ const LEGAL_ITEMS = [
     r:_=>COND("안전인증 대상 기계기구·보호구 보유 시") },
   { n:"16", t:"안전보호구 지급 및 관리대장",            owner:"사업장",      keep:"3년", docs:["지급대장","관리대장"],
     r:c=>c.n>=5?REQ("보호구 지급 사업장 — 지급·관리대장 비치"):COND("해당 시") },
-  { n:"17", t:"건강검진 실시 (일반/특수)",              owner:"사업장",      keep:"3년", docs:["개인별 건강검진 결과"],
-    r:c=>REQ("일반건강진단 전 근로자 의무"+(c.chem?" · 유해인자 노출자 특수건강진단 추가":" (특수검진은 유해인자 노출 시)")) },
+  { n:"17", t:"건강검진 실시 (일반/특수)",              owner:"사업장",      keep:"일반 5년 · 발암성 특수 30년", docs:["개인별 건강검진 결과"],
+    r:c=>REQ("일반건강진단(사무직 2년 1회·그 외 1년 1회) 전 근로자 의무"+(c.chem?" · 유해인자 노출자 특수건강진단(유해인자별 주기) 추가":" (특수검진은 유해인자 노출 시)")) },
   { n:"18", t:"건강검진 유소견자 관리",                 owner:"사업장",      keep:"3년", docs:["유소견자 상담일지(관리감독자 자필)"],
     r:_=>COND("건강검진 유소견자(D·R 판정) 발생 시") },
   { n:"19", t:"근골격계부담작업",                       owner:"사업장",      keep:"3년", docs:["체크리스트","유해요인조사표","증상조사표","개선계획서"],
     r:_=>COND("근골격계부담작업 보유 시 — 3년 주기 유해요인조사") },
+  { n:"20", t:"안전보건관리규정 작성·게시",             owner:"본사",        keep:"상시 비치", docs:["안전보건관리규정"],
+    r:c=>{ const th=c.tier==='B'?300:100; return c.n>=th?REQ(`상시 ${th}인↑ — 산안법 제25조, 안전보건관리규정 작성·게시 의무 (별표2 기준 업종별 100인 또는 300인)`):NO(`${th}인 미만 — 작성 의무 대상 아님(별표2)`); } },
   { n:"22", t:"고객 폭언 등 건강장해 예방조치",        owner:"사업장",      keep:"3년", docs:["고객응대 매뉴얼","건강장해 예방교육"],
     r:c=>c.customer?REQ("고객응대 직종(보안·안내) — 예방조치 의무"):COND("보안·안내 등 고객응대 직종 있을 시") },
   { n:"23", t:"산업재해 발생보고 및 재발방지",         owner:"사업장",      keep:"3년", docs:["산업재해조사표","재발방지 대책","수시 위험성평가"],
@@ -178,6 +180,7 @@ const COND_CHIPS = [
   { k:"outdoor",  label:"옥외·고열 작업 (폭염 노출)" },
   { k:"contract", label:"도급·협력업체 운영" },
   { k:"customer", label:"고객응대 직종 (보안·안내)" },
+  { k:"office",   label:"사무직만 종사 (교육 일부 제외 검토)" },
 ];
 
 function LegalCheckerView({ onNav, currentUser }) {
@@ -185,7 +188,7 @@ function LegalCheckerView({ onNav, currentUser }) {
   const [biz, setBiz] = React.useState({ v: "C|0", l: "건물관리·시설관리업 (FM)" });
   const [search, setSearch] = React.useState("");
   const [showDrop, setShowDrop] = React.useState(false);
-  const [conds, setConds] = React.useState({ chem:false, conf:false, outdoor:false, contract:false, customer:false });
+  const [conds, setConds] = React.useState({ chem:false, conf:false, outdoor:false, contract:false, customer:false, office:false });
   const [showNo, setShowNo] = React.useState(false);
   const dropRef = React.useRef(null);
 
