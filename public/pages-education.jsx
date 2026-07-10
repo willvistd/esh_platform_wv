@@ -850,47 +850,34 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
 
 // ── 교육일지 바로가기 ──
 const EducationLogView = ({ onNav, currentUser }) => {
-  // 위험성평가 6단계 카드와 동일한 스타일(컬러 아이콘 아바타 + 호버 리프트 + 하단 안내문구)
+  // 위험성평가 '종류 선택' 카드(최초/정기/수시)와 동일한 스타일·크기.
+  // 컨테이너도 법적의무판정처럼 maxWidth로 좁혀 화면 중앙에 오도록 함.
   const cards = [
-    { icon: "plus",  color: "#1e5fcf", title: "교육일지 작성", desc: "새 교육일지 작성 및 저장",     route: "education-log-new" },
-    { icon: "file",  color: "#16a34a", title: "교육일지 목록", desc: "작성된 일지 조회 및 출력",     route: "education-log-list" },
-    { icon: "users", color: "#f59e0b", title: "참석자 명단",   desc: "별도 참석자 명단 출력",         route: "education-attendee-sheet" },
-    { icon: "image", color: "#8b5cf6", title: "사진 대지",     desc: "교육 현장 사진 첨부 및 출력",   route: "education-photo-board" },
+    { icon: "plus",  color: "#1e5fcf", bg: "#eff6ff", title: "교육일지 작성", desc: "새 교육일지 작성 및 저장",   route: "education-log-new" },
+    { icon: "file",  color: "#16a34a", bg: "#f0fdf4", title: "교육일지 목록", desc: "작성된 일지 조회 및 출력",   route: "education-log-list" },
+    { icon: "users", color: "#d97706", bg: "#fffbeb", title: "참석자 명단",   desc: "별도 참석자 명단 출력",       route: "education-attendee-sheet" },
+    { icon: "image", color: "#8b5cf6", bg: "#f5f3ff", title: "사진 대지",     desc: "교육 현장 사진 첨부 및 출력", route: "education-photo-board" },
   ];
   return (
-    <div className="content">
+    <div className="content" style={{ maxWidth: 900 }}>
       <h1 className="content-title">안전보건교육 일지</h1>
       <div className="content-sub">교육일지를 작성하거나 기존 일지를 조회할 수 있습니다.</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 24, maxWidth: 900 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18, marginTop: 28 }}>
         {cards.map(c => (
           <div key={c.route}
             onClick={() => onNav({ name: c.route })}
             style={{
-              position: "relative",
-              background: "var(--card-bg)",
-              border: "1.5px solid var(--line)",
-              borderRadius: 14, padding: "20px 18px", cursor: "pointer",
-              transition: "transform 0.15s, box-shadow 0.15s",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              background: c.bg, border: `2px solid ${c.color}`, borderRadius: 16,
+              padding: "30px 24px", cursor: "pointer",
+              transition: "transform .12s, box-shadow .15s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 10px 24px ${c.color}33`; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 12px 28px rgba(0,0,0,0.12)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
           >
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 12,
-                background: c.color, color: "#fff",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, boxShadow: `0 4px 10px ${c.color}55`,
-              }}>
-                <Icon name={c.icon} size={22} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--fg-1)", lineHeight: 1.3, marginBottom: 6 }}>{c.title}</div>
-                <div style={{ fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5 }}>{c.desc}</div>
-              </div>
-            </div>
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)", fontSize: 11, color: c.color, fontWeight: 600, textAlign: "right" }}>
+            <Icon name={c.icon} size={36} style={{ color: c.color }} />
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: c.color, marginTop: 14, marginBottom: 8 }}>{c.title}</h2>
+            <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.6 }}>{c.desc}</div>
+            <div style={{ marginTop: 16, fontSize: 12, color: c.color, fontWeight: 600 }}>
               열기 →
             </div>
           </div>
