@@ -648,19 +648,16 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
         </div>
       )}
 
-      {/* ═══ 인쇄 영역 (A4 한 페이지) ═══ */}
-      <div className="edu-print-area card" style={{ padding: 30, border: "none", borderRadius: 0, background: "#fff", minHeight: 1100, boxShadow: "none" }}>
+      {/* ═══ 인쇄 영역 (A4 한 페이지) — 위험성평가 문서와 동일 규격(padding 40px 50px, minHeight 미지정) ═══ */}
+      <div className="edu-print-area card" style={{ padding: "40px 50px", border: "none", borderRadius: 0, background: "#fff", boxShadow: "none" }}>
 
-        {/* 제목 (결재란 제거됨) */}
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
-            {eduType}
-          </div>
-          <div style={{ fontSize: 13, color: "#666", marginTop: 2 }}>교 육 일 지</div>
+        {/* 제목 — 위험성평가와 동일 스타일(26px/800 중앙정렬) */}
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <h2 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>{eduType} 교육일지</h2>
           {/* 화면에서만 보이는 드롭다운 */}
           {!isView && (
             <select className="edu-no-print"
-              style={{ marginTop: 6, fontSize: 13, border: "1px solid #ddd", padding: "4px 8px", borderRadius: 4 }}
+              style={{ marginTop: 10, fontSize: 13, border: "1px solid #ddd", padding: "4px 8px", borderRadius: 4 }}
               value={eduType} onChange={e => setEduType(e.target.value)}>
               {eduTypes.map(t => <option key={t.id} value={t.label}>{t.label}</option>)}
             </select>
