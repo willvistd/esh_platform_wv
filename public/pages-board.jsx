@@ -995,6 +995,66 @@ const Check = ({ label, desc, icon, color = "#3b82f6", checked, onChange }) => (
   </button>
 );
 
+// ─── PDF 첫 페이지 자동 썸네일 (pdf.js 지연 로드) ───────────────
+// 교육자료 등 이미지가 아닌 PDF도 포스터처럼 미리보기 이미지로 표시
+let _wvPdfjsPromise = null;
+const loadPdfJs = () => {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (_wvPdfjsPromise) return _wvPdfjsPromise;
+  _wvPdfjsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js";
+    s.onload = () => {
+      try {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      } catch (e) {}
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return _wvPdfjsPromise;
+};
+
+const PdfThumb = ({ url }) => {
+  const [dataUrl, setDataUrl] = React.useState(null);
+  const [failed, setFailed] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    loadPdfJs()
+      .then(async (pdfjs) => {
+        const pdf = await pdfjs.getDocument(url).promise;
+        const page = await pdf.getPage(1);
+        const base = page.getViewport({ scale: 1 });
+        const scale = 400 / base.width;
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = vp.width;
+        canvas.height = vp.height;
+        await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+        if (!cancelled) setDataUrl(canvas.toDataURL("image/jpeg", 0.82));
+      })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [url]);
+  if (failed)
+    return (
+      <div style={{ textAlign: "center", color: "var(--fg-3)" }}>
+        <Icon name="file" size={36} />
+        <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 없음</div>
+      </div>
+    );
+  if (!dataUrl)
+    return (
+      <div style={{ textAlign: "center", color: "var(--fg-3)" }}>
+        <Icon name="file" size={36} />
+        <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 생성 중…</div>
+      </div>
+    );
+  return <img src={dataUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />;
+};
+
 // ═══════════════════════════════════════════════════════════════
 // 자료실 (library 타입 카테고리: 안전보건표지 / 안전보건 포스터)
 //   - 썸네일 카드 그리드 + 하위분류 탭 + 검색
@@ -1123,10 +1183,12 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                 }}>
                   {thumb
                     ? <img src={thumb} alt={it.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ textAlign: "center", color: "var(--fg-3)" }}>
-                        <Icon name="file" size={36} />
-                        <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 없음</div>
-                      </div>}
+                    : (fileUrl && /\.pdf(\?|$)/i.test(fileUrl))
+                      ? <PdfThumb url={fileUrl} />
+                      : <div style={{ textAlign: "center", color: "var(--fg-3)" }}>
+                          <Icon name="file" size={36} />
+                          <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 없음</div>
+                        </div>}
                   {it.subCategory && (
                     <span style={{
                       position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 10,
