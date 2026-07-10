@@ -220,7 +220,7 @@ a { color: inherit; text-decoration: none; }
 
 /* ─── 하위카테고리 플라이아웃 (호버 시 오른쪽에 표시) ─── */
 .sb-flyout {
-  position: fixed; z-index: 200;
+  position: fixed; z-index: 9999;
   min-width: 190px;
   background: var(--primary);
   border-radius: var(--r-sm);

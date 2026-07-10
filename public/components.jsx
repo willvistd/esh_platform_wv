@@ -206,8 +206,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
         )}
       </div>
 
-      {/* 하위카테고리 플라이아웃 (호버 시 오른쪽, 파란 바탕/흰 글씨) */}
-      {flyout && (
+      {/* 플라이아웃은 document.body에 포털 렌더링 — 특정 페이지(예: MSDS 그림문자 그리드)의
+          z-index/쌓임 맥락과 무관하게 항상 최상단에 보이도록 함 */}
+      {flyout && ReactDOM.createPortal(
         <div
           className="sb-flyout"
           style={{ top: flyout.top, left: flyout.left }}
@@ -222,7 +223,8 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
               {s.label}
             </div>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </aside>);
 
