@@ -850,35 +850,51 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
 
 // ── 교육일지 바로가기 ──
 const EducationLogView = ({ onNav, currentUser }) => {
+  // 위험성평가 6단계 카드와 동일한 스타일(컬러 아이콘 아바타 + 호버 리프트 + 하단 안내문구)
+  const cards = [
+    { icon: "plus",  color: "#1e5fcf", title: "교육일지 작성", desc: "새 교육일지 작성 및 저장",     route: "education-log-new" },
+    { icon: "file",  color: "#16a34a", title: "교육일지 목록", desc: "작성된 일지 조회 및 출력",     route: "education-log-list" },
+    { icon: "users", color: "#f59e0b", title: "참석자 명단",   desc: "별도 참석자 명단 출력",         route: "education-attendee-sheet" },
+    { icon: "image", color: "#8b5cf6", title: "사진 대지",     desc: "교육 현장 사진 첨부 및 출력",   route: "education-photo-board" },
+  ];
   return (
     <div className="content">
       <h1 className="content-title">안전보건교육 일지</h1>
       <div className="content-sub">교육일지를 작성하거나 기존 일지를 조회할 수 있습니다.</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginTop: 24, maxWidth: 800 }}>
-        <div className="card" style={{ padding: 28, cursor: "pointer", textAlign: "center" }}
-          onClick={() => onNav({ name: "education-log-new" })}>
-          <Icon name="plus" size={32} style={{ color: "var(--primary)" }} />
-          <div style={{ fontWeight: 700, marginTop: 12 }}>교육일지 작성</div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>새 교육일지 작성 및 저장</div>
-        </div>
-        <div className="card" style={{ padding: 28, cursor: "pointer", textAlign: "center" }}
-          onClick={() => onNav({ name: "education-log-list" })}>
-          <Icon name="file" size={32} style={{ color: "var(--success)" }} />
-          <div style={{ fontWeight: 700, marginTop: 12 }}>교육일지 목록</div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>작성된 일지 조회 및 출력</div>
-        </div>
-        <div className="card" style={{ padding: 28, cursor: "pointer", textAlign: "center" }}
-          onClick={() => onNav({ name: "education-attendee-sheet" })}>
-          <Icon name="users" size={32} style={{ color: "var(--warning)" }} />
-          <div style={{ fontWeight: 700, marginTop: 12 }}>참석자 명단</div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>별도 참석자 명단 출력</div>
-        </div>
-        <div className="card" style={{ padding: 28, cursor: "pointer", textAlign: "center" }}
-          onClick={() => onNav({ name: "education-photo-board" })}>
-          <Icon name="image" size={32} style={{ color: "#8b5cf6" }} />
-          <div style={{ fontWeight: 700, marginTop: 12 }}>사진 대지</div>
-          <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>교육 현장 사진 첨부 및 출력</div>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginTop: 24 }}>
+        {cards.map(c => (
+          <div key={c.route}
+            onClick={() => onNav({ name: c.route })}
+            style={{
+              position: "relative",
+              background: "var(--card-bg)",
+              border: "1.5px solid var(--line)",
+              borderRadius: 14, padding: "20px 18px", cursor: "pointer",
+              transition: "transform 0.15s, box-shadow 0.15s",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 10px 24px ${c.color}33`; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12,
+                background: c.color, color: "#fff",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, boxShadow: `0 4px 10px ${c.color}55`,
+              }}>
+                <Icon name={c.icon} size={22} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0, paddingTop: 4 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--fg-1)", lineHeight: 1.3, marginBottom: 6 }}>{c.title}</div>
+                <div style={{ fontSize: 12, color: "var(--fg-3)", lineHeight: 1.5 }}>{c.desc}</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--line)", fontSize: 11, color: c.color, fontWeight: 600, textAlign: "right" }}>
+              열기 →
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
