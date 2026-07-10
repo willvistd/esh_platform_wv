@@ -861,7 +861,7 @@ const EducationLogView = ({ onNav, currentUser }) => {
     <div className="content">
       <h1 className="content-title">안전보건교육 일지</h1>
       <div className="content-sub">교육일지를 작성하거나 기존 일지를 조회할 수 있습니다.</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16, marginTop: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 24, maxWidth: 900 }}>
         {cards.map(c => (
           <div key={c.route}
             onClick={() => onNav({ name: c.route })}
