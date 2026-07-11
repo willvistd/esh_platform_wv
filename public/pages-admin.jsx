@@ -10,8 +10,14 @@ const COMPLIANCE_ITEMS = [
   { key: "supervisor-log",        label: "관리감독자 업무일지",  sub: "",      cycle: "주간",          color: "#ef4444", icon: "doc" },
 ];
 
-// 이행 현재 기간 (UI 표시용)
-const CURRENT_PERIOD = "2026년 1분기";
+// 이행 기간 유틸 — 현재 분기 자동 계산 + 최근 분기 선택 목록
+const quarterNow = () => { const d = new Date(); return `${d.getFullYear()}년 ${Math.ceil((d.getMonth() + 1) / 3)}분기`; };
+const periodOptions = () => {
+  const out = []; const d = new Date();
+  let y = d.getFullYear(), q = Math.ceil((d.getMonth() + 1) / 3);
+  for (let i = 0; i < 8; i++) { out.push(`${y}년 ${q}분기`); q--; if (q < 1) { q = 4; y--; } }
+  return out;
+};
 
 // 매트릭스용 mock 데이터 — 빈 상태로 시작 (사용자가 직접 제출해서 채우면 됨)
 // key: `${siteId}__${itemKey}` → status: "submitted" | "in-progress" | "missing"
@@ -23,6 +29,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
   const can = D.can[role] || D.can["staff"];
   const [status, setStatus] = React.useState("all");
   const [search, setSearch] = React.useState("");
+  const [period, setPeriod] = React.useState(quarterNow());
 
   // 매트릭스용 사이트/본부 로드
   const [sites, setSites] = React.useState([]);
@@ -34,7 +41,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
   // 백엔드에서 제출 내역 로드 → compliance state로 매핑
   const loadCompliance = React.useCallback(() => {
     if (!window.WV_API?.getComplianceSubmissions) return;
-    window.WV_API.getComplianceSubmissions(CURRENT_PERIOD).then(subs => {
+    window.WV_API.getComplianceSubmissions(period).then(subs => {
       const map = {};
       (subs || []).forEach(s => {
         const key = `${s.siteId}__${s.itemKey}`;
@@ -50,7 +57,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
       });
       setCompliance(map);
     }).catch(() => {});
-  }, []);
+  }, [period]);
 
   React.useEffect(() => {
     if (window.WV_API?.getSites) {
@@ -84,7 +91,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
         siteId: parseInt(data.siteId),
         itemKey: data.itemKey,
         itemLabel: data.itemLabel,
-        period: CURRENT_PERIOD,
+        period: period,
         submitterUserId: currentUser?.id || null,
         submitterName: currentUser?.name || "—",
         fileName: data.fileName || "",
@@ -191,12 +198,16 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
         <div>
           <h1 className="content-title">{can.approve ? "이행사항 제출 현황" : "이행사항 제출"}</h1>
           <div className="content-sub">
-            {CURRENT_PERIOD} · {can.approve
+            {period} · {can.approve
               ? "자료를 업로드하고 사업장별 이행 현황을 확인합니다."
               : "이행 자료를 업로드하고 본인 제출 내역을 확인합니다."}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <select className="field-select" style={{ width: 150, height: 36, padding: "0 10px" }}
+            value={period} onChange={e => setPeriod(e.target.value)} title="조회할 분기 선택">
+            {periodOptions().map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
           <button className="btn btn-secondary"
             onClick={() => alert("CSV 내보내기 (개발 예정)")}>
             <Icon name="download" size={14} /> CSV 내보내기
@@ -269,7 +280,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
       {/* ── 사업장 × 이행항목 매트릭스 ── */}
       <SectionHd
         title={isCrossHQ ? "사업장 × 이행항목 매트릭스" : `${accessibleHQs[0]?.name || "내 본부"} 사업장 매트릭스`}
-        sub={`${CURRENT_PERIOD} · 전체 ${totalCells}건 중 ${submittedCells}건 제출 (${complianceRate}%)${!isCrossHQ ? " · 본인 본부 사업장만 표시" : ""}`}
+        sub={`${period} · 전체 ${totalCells}건 중 ${submittedCells}건 제출 (${complianceRate}%)${!isCrossHQ ? " · 본인 본부 사업장만 표시" : ""}`}
         action={
           isCrossHQ && accessibleHQs.length > 1 ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -721,6 +732,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
           onClose={() => setShowSubmitModal(false)}
           onSubmit={handleNewSubmission}
           onDelete={handleDeleteSubmission}
+          period={period}
         />
       )}
     </div>
@@ -819,7 +831,7 @@ const ComplianceMatrix = ({ sites, hqs, compliance, hqFilter, onCellClick }) => 
 };
 
 // ─── 새 제출 / 수정 모달 (existing 있으면 수정 모드)
-const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit, onDelete }) => {
+const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit, onDelete, period }) => {
   const existing = preset?.existing;
   const isEdit = !!(existing && existing.status === "submitted");
   const [siteId, setSiteId] = React.useState(preset?.presetSite?.id || "");
@@ -998,7 +1010,7 @@ const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit
           {/* 기간 (현재는 고정) */}
           <div className="field">
             <label className="field-label">기간</label>
-            <input className="field-input" value={CURRENT_PERIOD} readOnly
+            <input className="field-input" value={period} readOnly
               style={{ background: "var(--bg-sunk)", color: "var(--fg-3)" }} />
           </div>
 

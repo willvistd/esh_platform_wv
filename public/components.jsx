@@ -249,6 +249,20 @@ const PrintButton = ({ onClick, label = "PDF 출력", className = "", style }) =
   </button>
 );
 
+// ── 한국식 날짜 필드 — 달력(date input)은 유지, 화면·인쇄엔 yyyy. mm. dd.로 표시 ──
+//   (type=date 표시형식이 브라우저/OS 로케일 따라 mm/dd/yyyy로 나오는 문제를 앱에서 고정)
+const KDate = ({ value, onChange, className = "", style = {}, ...rest }) => {
+  const k = value ? String(value).replace(/-/g, ". ") + "." : "";
+  return (
+    <span className="kdate-wrap">
+      <input type="date" value={value || ""} onChange={onChange} className={className}
+        style={{ ...style, color: value ? "transparent" : (style.color || undefined) }} {...rest} />
+      {value && <span className="kdate-ovl" aria-hidden="true"
+        style={{ fontSize: style.fontSize, color: style.color || "var(--fg)" }}>{k}</span>}
+    </span>
+  );
+};
+
 
 // ─── TopBar with search + compose button (역할 스위처는 보안상 제거됨 — 로그인 권한으로 대체)
 // 검색: searchableItems prop으로 받은 모든 항목에서 keyword 매칭, 드롭다운으로 결과 표시

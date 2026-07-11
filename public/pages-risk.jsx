@@ -4884,10 +4884,10 @@ const RiskCoverView = ({ onNav, currentUser }) => {
           </div>
           <div style={{ textAlign: "center", fontSize: 21, color: "#111", fontStyle: "normal", fontWeight: 600 }}>
             (&nbsp;
-            <input type="date" className="cover-line-input" value={form.평가기간_시작} onChange={e => upd("평가기간_시작", e.target.value)}
+            <KDate className="cover-line-input" value={form.평가기간_시작} onChange={e => upd("평가기간_시작", e.target.value)}
               style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal" }} />
             &nbsp; ~ &nbsp;
-            <input type="date" className="cover-line-input" value={form.평가기간_종료} onChange={e => upd("평가기간_종료", e.target.value)}
+            <KDate className="cover-line-input" value={form.평가기간_종료} onChange={e => upd("평가기간_종료", e.target.value)}
               style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal" }} />
             &nbsp;)
           </div>
@@ -4974,6 +4974,8 @@ const RiskSiteView = ({ onNav, currentUser }) => {
   const evalId  = ctx?.evalId  || "";
   const SAVE_KEY = evalId ? `wv_risk_site_${evalId}` : `wv_risk_site_${company}`;
   const _saved = riskLoad(SAVE_KEY);
+  // 표지(STEP1)의 평가기간을 평가진행기간 기본값으로 연동 (사용자가 수정 가능)
+  const _coverForm = evalId ? riskLoad(`wv_risk_cover_${evalId}`)?.form : null;
   const teamProcesses = company ? (RISK_COMPANIES[company] || []) : [];
   const defaults = {
     사업장명:        ctx?.사업장명 || "",  // 새 평가 작성 시 입력한 사업장명 사용 (본부명 아님)
@@ -4982,8 +4984,8 @@ const RiskSiteView = ({ onNav, currentUser }) => {
     근로자수:        "",
     주소:            "",
     참여자:          "",
-    평가진행기간_시작: "",
-    평가진행기간_종료: "",
+    평가진행기간_시작: _coverForm?.평가기간_시작 || "",
+    평가진행기간_종료: _coverForm?.평가기간_종료 || "",
     업종중분류:      "",
     업종소분류:      "",
     관리분야선택:    teamProcesses,      // 기본값: 팀의 모든 공정 선택됨
