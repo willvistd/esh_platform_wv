@@ -4086,12 +4086,13 @@ const TimelineArrow = ({ label, currentMarker }) => {
 };
 
 // ── 허브 (6단계 순서도) ──
-const RiskAssessmentView = ({ onNav, currentUser }) => {
+const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   // 화면 단계: 'type' (종류 선택) → 'list' (본부+평가 목록)
-  // 작성 중인 평가가 있으면 해당 종류·본부의 목록으로 자동 진입 (목록 → 작성 → 목록 흐름)
+  // 작성 단계에서 "목록"으로 돌아온 경우(fromRiskFlow)에만 해당 종류 목록으로 자동 진입.
+  // 사이드바 메뉴·대시보드 등 새 진입 시엔 항상 종류 선택 허브('type')부터 시작.
   const initialCtx = getEvalContext();
   const initialType = initialCtx ? RISK_EVAL_TYPES.find(t => t.id === initialCtx.type) : null;
-  const [stage, setStage] = React.useState(initialCtx ? "list" : "type");
+  const [stage, setStage] = React.useState((initialCtx && fromRiskFlow) ? "list" : "type");
   const [selectedType, setSelectedType] = React.useState(initialType);
   const [selectedCompany, setSelectedCompany] = React.useState(initialCtx?.company || "");
   const [showNewModal, setShowNewModal] = React.useState(false);

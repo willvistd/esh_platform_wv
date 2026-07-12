@@ -594,6 +594,7 @@ function App() {
     } catch { return null; }
   });
   const [route, setRoute] = React.useState({ name: "dashboard" });
+  const prevRouteNameRef = React.useRef(null);   // 직전 화면 추적 (위험성평가 허브 진입 판별용)
   const [composing, setComposing] = React.useState(null);
   // search state: TopBar 내부에서 query state 관리 (글로벌 state 불필요)
   const [liveCategories, setLiveCategories] = React.useState(window.WV_DATA.categories);
@@ -724,7 +725,7 @@ function App() {
   };
 
   window.__setView = (v) => setTweak("view", v);
-  const onNav = (r) => { setRoute(r); window.scrollTo({ top: 0 }); };
+  const onNav = (r) => { prevRouteNameRef.current = route.name; setRoute(r); window.scrollTo({ top: 0 }); };
   const onCompose = (categoryId) => setComposing({ categoryId: categoryId || (route.id) });
   const closeCompose = () => setComposing(null);
 
@@ -901,7 +902,8 @@ function App() {
         ) : route.name === "legal-checker" ? (
           <LegalCheckerView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "risk-assessment" ? (
-          <RiskAssessmentView onNav={onNav} currentUser={currentUser} />
+          <RiskAssessmentView onNav={onNav} currentUser={currentUser}
+            fromRiskFlow={(() => { const p = prevRouteNameRef.current || ""; return p.startsWith("risk-") && p !== "risk-assessment"; })()} />
         ) : route.name === "risk-overview" ? (
           <RiskOverviewView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "risk-cover" ? (
