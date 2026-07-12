@@ -4885,10 +4885,10 @@ const RiskCoverView = ({ onNav, currentUser }) => {
           <div style={{ textAlign: "center", fontSize: 21, color: "#111", fontStyle: "normal", fontWeight: 600 }}>
             (&nbsp;
             <KDate className="cover-line-input" value={form.평가기간_시작} onChange={e => upd("평가기간_시작", e.target.value)}
-              style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal" }} />
+              style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal", textAlign: "center" }} />
             &nbsp; ~ &nbsp;
             <KDate className="cover-line-input" value={form.평가기간_종료} onChange={e => upd("평가기간_종료", e.target.value)}
-              style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal" }} />
+              style={{ width: 170, fontSize: 19, color: "#000", fontStyle: "normal", textAlign: "center" }} />
             &nbsp;)
           </div>
         </div>
@@ -5138,10 +5138,10 @@ const RiskSiteView = ({ onNav, currentUser }) => {
               <td style={cellInput}>
                 <div style={{ display: "flex", alignItems: "center", padding: "8px 12px" }}>
                   <KDate value={form.평가진행기간_시작} onChange={e => upd("평가진행기간_시작", e.target.value)}
-                    style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0 }} />
+                    style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0, textAlign: "center" }} />
                   <span style={{ margin: "0 16px", flexShrink: 0 }}>~</span>
                   <KDate value={form.평가진행기간_종료} onChange={e => upd("평가진행기간_종료", e.target.value)}
-                    style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0 }} />
+                    style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0, textAlign: "center" }} />
                 </div>
               </td>
             </tr>
