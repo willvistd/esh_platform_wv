@@ -183,7 +183,6 @@ const Dashboard = ({ role, currentUser, onNav }) => {
         <>
           <SectionHd
             title={isAdmin ? "본부별 이행 현황" : `${accessibleHQs[0]?.name || "내 본부"} 사업장 현황`}
-            sub={`전체 ${accessibleSites.length}개 사업장`}
             action={<button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: "submissions" })}>
               매트릭스 전체 보기 <Icon name="arrow" size={12} />
             </button>}
