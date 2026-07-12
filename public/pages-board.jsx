@@ -891,7 +891,7 @@ const Compose = ({ catId, editPost, onCancel, onSubmit, role }) => {
           </div>
           <div className="field">
             <label className="field-label">마감일 (선택)</label>
-            <input className="field-input" type="date" value={form.dueAt} onChange={e => update("dueAt", e.target.value)} />
+            <KDate block className="field-input" value={form.dueAt} onChange={e => update("dueAt", e.target.value)} />
           </div>
         </div>
 

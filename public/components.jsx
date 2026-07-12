@@ -251,14 +251,19 @@ const PrintButton = ({ onClick, label = "PDF 출력", className = "", style }) =
 
 // ── 한국식 날짜 필드 — 달력(date input)은 유지, 화면·인쇄엔 yyyy. mm. dd.로 표시 ──
 //   (type=date 표시형식이 브라우저/OS 로케일 따라 mm/dd/yyyy로 나오는 문제를 앱에서 고정)
-const KDate = ({ value, onChange, className = "", style = {}, ...rest }) => {
+//   block=true → 래퍼가 셀/컨테이너 전폭을 채움(width:100% 입력용). 정렬은 style.textAlign 따라감.
+//   ⚠️ Chrome은 인쇄 시 input[type=date] 값을 color:transparent 무시하고 그대로 찍음
+//      → styles.css @media print에서 .kdate-wrap의 input을 숨기고 오버레이만 인쇄.
+const KDate = ({ value, onChange, className = "", style = {}, block = false, ...rest }) => {
   const k = value ? String(value).replace(/-/g, ". ") + "." : "";
+  const ta = style.textAlign;
+  const justify = ta === "center" ? "center" : ta === "right" ? "flex-end" : "flex-start";
   return (
-    <span className="kdate-wrap">
+    <span className={"kdate-wrap" + (block ? " kdate-block" : "")}>
       <input type="date" value={value || ""} onChange={onChange} className={className}
         style={{ ...style, color: value ? "transparent" : (style.color || undefined) }} {...rest} />
       {value && <span className="kdate-ovl" aria-hidden="true"
-        style={{ fontSize: style.fontSize, color: style.color || "var(--fg)" }}>{k}</span>}
+        style={{ fontSize: style.fontSize, color: style.color || "var(--fg)", justifyContent: justify }}>{k}</span>}
     </span>
   );
 };

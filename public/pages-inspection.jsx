@@ -671,7 +671,7 @@ function FieldInspectionView({ onNav, currentUser }) {
               <div className="insp-meta-grid">
                 <div className="insp-field">
                   <label>점검일자</label>
-                  <input type="date" value={meta.점검일자} onChange={e => updMeta('점검일자', e.target.value)} />
+                  <KDate value={meta.점검일자} onChange={e => updMeta('점검일자', e.target.value)} />
                 </div>
                 <div className="insp-field">
                   <label>점검장소</label>

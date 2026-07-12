@@ -688,7 +688,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
             <tr>
               <td className="lbl">교육일자</td>
               <td>
-                <input type="date" value={form.교육일자}
+                <KDate value={form.교육일자}
                   onChange={e => update("교육일자", e.target.value)} readOnly={isView} />
               </td>
               <td className="lbl">교육시간</td>
@@ -1031,7 +1031,7 @@ const EducationAttendeeSheet = ({ onNav, currentUser }) => {
               </td>
               <td className="lbl">일자</td>
               <td>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+                <KDate value={date} onChange={e => setDate(e.target.value)} />
               </td>
             </tr>
             <tr>
@@ -1212,7 +1212,7 @@ const EducationPhotoBoard = ({ onNav }) => {
               </td>
               <td style={{ border: "1px solid #333", background: "#f0f0f0", fontWeight: 600, textAlign: "center", padding: "8px 12px", width: 90 }}>일자</td>
               <td style={{ border: "1px solid #333", padding: "6px 10px", width: 160 }}>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                <KDate block value={date} onChange={e => setDate(e.target.value)}
                   style={{ width: "100%", border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
               </td>
             </tr>

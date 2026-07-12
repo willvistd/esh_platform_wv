@@ -3918,7 +3918,7 @@ const RiskEvalCalculator = ({ onNav }) => {
             <span style={{ background: "#dbeafe", color: "#1e40af", borderRadius: 99, width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>1</span>
             사업 개시일
           </label>
-          <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
+          <KDate block value={startDate} onChange={e => setStartDate(e.target.value)}
             style={{ width: "100%", maxWidth: 280, padding: "10px 14px", border: "1px solid var(--line)", borderRadius: 8, fontSize: 14 }} />
         </div>
 
@@ -3949,7 +3949,7 @@ const RiskEvalCalculator = ({ onNav }) => {
               <span style={{ background: "#dbeafe", color: "#1e40af", borderRadius: 99, width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>3</span>
               최초평가 실시일
             </label>
-            <input type="date" value={initialDate} onChange={e => setInitialDate(e.target.value)} min={startDate}
+            <KDate block value={initialDate} onChange={e => setInitialDate(e.target.value)} min={startDate}
               style={{ width: "100%", maxWidth: 280, padding: "10px 14px", border: "1px solid var(--line)", borderRadius: 8, fontSize: 14 }} />
           </div>
         )}
@@ -4403,7 +4403,7 @@ const RiskAssessmentView = ({ onNav, currentUser }) => {
               <>
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>평가 일자</label>
-                  <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
+                  <KDate block value={newDate} onChange={e => setNewDate(e.target.value)}
                     style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 13 }} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
@@ -4940,7 +4940,7 @@ const RiskCoverView = ({ onNav, currentUser }) => {
                   <td style={{ border: "1px solid #555", padding: "10px 2px", textAlign: "center", fontSize: 14, fontWeight: 600, background: "#fafafa" }}>일자</td>
                   {["관리감독자_일자", "근로자대표_일자", "안전관리자_일자", "안전보건관리책임자_일자"].map(k => (
                     <td key={k} style={{ border: "1px solid #555", height: 42, padding: "4px 6px", textAlign: "center" }}>
-                      <input type="date" value={form[k]} onChange={e => upd(k, e.target.value)}
+                      <KDate block value={form[k]} onChange={e => upd(k, e.target.value)}
                         style={{ width: "100%", border: "none", textAlign: "center", fontSize: 13, background: "transparent", outline: "none", fontFamily: "inherit" }} />
                     </td>
                   ))}
@@ -5137,10 +5137,10 @@ const RiskSiteView = ({ onNav, currentUser }) => {
               <td style={cellLabel}>평가진행기간</td>
               <td style={cellInput}>
                 <div style={{ display: "flex", alignItems: "center", padding: "8px 12px" }}>
-                  <input type="date" value={form.평가진행기간_시작} onChange={e => upd("평가진행기간_시작", e.target.value)}
+                  <KDate value={form.평가진행기간_시작} onChange={e => upd("평가진행기간_시작", e.target.value)}
                     style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0 }} />
                   <span style={{ margin: "0 16px", flexShrink: 0 }}>~</span>
-                  <input type="date" value={form.평가진행기간_종료} onChange={e => upd("평가진행기간_종료", e.target.value)}
+                  <KDate value={form.평가진행기간_종료} onChange={e => upd("평가진행기간_종료", e.target.value)}
                     style={{ ...inp, padding: "5px 8px", width: 160, border: "1px solid #ddd", borderRadius: 4, flexShrink: 0 }} />
                 </div>
               </td>
@@ -5375,7 +5375,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               <td style={cellLabel}>회의일자</td>
               <td style={cellInput}>
                 <div style={{ display: "flex", alignItems: "center" }}>
-                  <input type="date" value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto" }} />
+                  <KDate value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto" }} />
                   {form.회의일자 && <span style={{ fontSize: 13, color: "#333", paddingRight: 12 }}>{weekdayKo(form.회의일자)}</span>}
                 </div>
               </td>
@@ -7103,7 +7103,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               <td className="lbl">교육일자</td>
               <td>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="date" value={form.교육일자} onChange={e => upd("교육일자", e.target.value)} style={{ width: "auto" }} />
+                  <KDate value={form.교육일자} onChange={e => upd("교육일자", e.target.value)} style={{ width: "auto" }} />
                   {form.교육일자 && <span style={{ fontSize: 13, color: "#333" }}>{weekdayKo(form.교육일자)}</span>}
                 </div>
               </td>
@@ -7653,7 +7653,7 @@ const RiskAttendeesView = ({ onNav }) => {
               </td>
               <td className="lbl">일자</td>
               <td>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+                <KDate value={date} onChange={e => setDate(e.target.value)} />
               </td>
             </tr>
             <tr>
@@ -7850,7 +7850,7 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
               </td>
               <td style={{ border: "1px solid #333", background: "#f0f0f0", fontWeight: 600, textAlign: "center", padding: "8px 12px", width: 90 }}>일자</td>
               <td style={{ border: "1px solid #333", padding: "6px 10px", width: 160 }}>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)}
+                <KDate block value={date} onChange={e => setDate(e.target.value)}
                   style={{ width: "100%", border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
               </td>
             </tr>
