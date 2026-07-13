@@ -51,6 +51,7 @@ window.WV_DATA = (() => {
     { id: "cat:ergonomic",       name: "근골격계 부담작업",  group: "카테고리" },
     { id: "cat:signage",         name: "안전보건표지",       group: "카테고리" },
     { id: "cat:posters",         name: "안전보건 포스터",    group: "카테고리" },
+    { id: "cat:worker-feedback", name: "종사자 의견 청취",   group: "카테고리" },
     { id: "manage-categories",   name: "카테고리 관리",     group: "관리자" },
     { id: "manage-sites",        name: "사업장 관리",       group: "관리자" },
     { id: "manage-approvals",    name: "가입 승인 관리",    group: "관리자" },
