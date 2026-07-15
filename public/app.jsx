@@ -637,31 +637,46 @@ function App() {
   // 백엔드(DB)에서 카테고리 불러오기 — DB가 진실의 원천
   // mock 카테고리 정보는 누락된 필드(icon 등)만 보충용으로 사용
   React.useEffect(() => {
-    window.WV_API.getCategories().then(data => {
-      if (data && data.length > 0) {
-        // 백엔드에 있는 카테고리만 표시 (삭제된 것은 사라짐)
-        const mockMap = Object.fromEntries(
-          (window.WV_DATA.categories || []).map(c => [c.id, c])
-        );
-        const merged = data.map(c => {
-          const mock = mockMap[c.id] || {};
-          return {
-            id: c.id,
-            name: c.name || mock.name || "",
-            desc: c.desc || mock.desc || "",
-            type: c.type || mock.type || "board",
-            icon: c.icon || mock.icon || "doc",
-            approval: c.approval ?? mock.approval ?? false,
-            rowNumber: c.rowNumber,
-            count: 0,
-          };
-        });
-        setLiveCategories(merged);
-      } else {
-        // 백엔드 비어있으면 mock fallback (초기 셋업용 안전망)
-        setLiveCategories(window.WV_DATA.categories || []);
-      }
-    }).catch(() => {});
+    let cancelled = false;
+    // ⚠️ 백엔드(Railway) 콜드스타트/일시 네트워크 오류로 fetch가 실패하면
+    //   초기 seed(window.WV_DATA.categories)에 남게 되는데, seed엔 DB에만 있는
+    //   카테고리(예: 종사자 의견 청취)가 빠져 있어 그 항목만 사라져 보임.
+    //   → 실패/빈응답 시 몇 차례 재시도해 DB 목록을 확실히 받아온다.
+    const load = (attempt = 0) => {
+      window.WV_API.getCategories().then(data => {
+        if (cancelled) return;
+        if (data && data.length > 0) {
+          // 백엔드에 있는 카테고리만 표시 (삭제된 것은 사라짐)
+          const mockMap = Object.fromEntries(
+            (window.WV_DATA.categories || []).map(c => [c.id, c])
+          );
+          const merged = data.map(c => {
+            const mock = mockMap[c.id] || {};
+            return {
+              id: c.id,
+              name: c.name || mock.name || "",
+              desc: c.desc || mock.desc || "",
+              type: c.type || mock.type || "board",
+              icon: c.icon || mock.icon || "doc",
+              approval: c.approval ?? mock.approval ?? false,
+              rowNumber: c.rowNumber,
+              count: 0,
+            };
+          });
+          setLiveCategories(merged);
+        } else if (attempt < 3) {
+          setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
+        } else {
+          // 끝까지 빈응답이면 mock fallback (초기 셋업용 안전망)
+          setLiveCategories(window.WV_DATA.categories || []);
+        }
+      }).catch(() => {
+        // 오류 시 재시도 (콜드스타트 대비). 최종 실패는 초기 seed 유지.
+        if (!cancelled && attempt < 3) setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
+      });
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   // Override admin user identity from tweaks (for the demo admin's name field)

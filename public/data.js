@@ -21,6 +21,7 @@ window.WV_DATA = (() => {
     { id: "ergonomic",        name: "근골격계부담작업 유해요인조사", type: "board",        desc: "3년 1회 정기 조사 및 수시 조사 자료", icon: "body",     count: 0 },
     { id: "signage",          name: "안전보건표지",               type: "library",      desc: "현장 부착용 표지, 라벨, 안내문 다운로드", icon: "sign",     count: 0 },
     { id: "posters",          name: "안전보건 포스터",            type: "library",      desc: "월간 캠페인 포스터, 게시판 부착용 자료", icon: "image",    count: 0 },
+    { id: "worker-feedback",  name: "종사자 의견 청취",           type: "form",         desc: "산업안전보건법 제4조 7호에 따라 종사자의 안전보건 관련 의견 청취", icon: "comment", count: 0 },
   ];
 
   const typeLabel = {

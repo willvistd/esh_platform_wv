@@ -424,7 +424,8 @@ async function initDB() {
       ('msds',            '물질안전보건자료 (MSDS)',      '화학물질 MSDS 비치 자료 및 제출 양식',               'board-form', 'flask',      '', false),
       ('ergonomic',       '근골격계부담작업 유해요인조사', '3년 1회 정기 조사 및 수시 조사 자료',                'board',      'body',       '', false),
       ('signage',         '안전보건표지',                '현장 부착용 표지, 라벨, 안내문 다운로드',             'library',    'sign',       '', false),
-      ('posters',         '안전보건 포스터',             '월간 캠페인 포스터, 게시판 부착용 자료',              'library',    'image',      '', false)
+      ('posters',         '안전보건 포스터',             '월간 캠페인 포스터, 게시판 부착용 자료',              'library',    'image',      '', false),
+      ('worker-feedback', '종사자 의견 청취',            '산업안전보건법 제4조 7호에 따라 종사자의 안전보건 관련 의견 청취', 'form',       'comment',    '', false)
     `);
   }
 
