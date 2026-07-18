@@ -139,6 +139,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [apiResults, setApiResults] = React.useState([]);
   const [ghsSel,     setGhsSel]     = React.useState([]);
   const [ppeSel,     setPpeSel]     = React.useState([]);
+  const [detailLoading, setDetailLoading] = React.useState(false);
   const [form, setForm] = React.useState({
     productName: '', signalWord: '',
     hazard: '', handling: '', storage: '',
@@ -695,7 +696,9 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
               <button className="btn btn-primary" style={{ fontSize: 12, padding: '7px 11px', whiteSpace: 'nowrap' }}
                 onClick={handleSearch} disabled={apiLoading}>{apiLoading ? '…' : '검색'}</button>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 6 }}>산업안전보건공단 MSDS DB</div>
+            {detailLoading && (
+              <div style={{ fontSize: 11, color: 'var(--fg-3)', marginBottom: 6 }}>⏳ 상세 정보(유해성·응급조치 등) 불러오는 중…</div>
+            )}
             {apiResults.length > 0 && (
               <div className="msds-api-box">
                 {apiResults[0]?._error
@@ -704,7 +707,18 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                   ? <div className="msds-api-row" style={{ color: 'var(--fg-3)', cursor: 'default' }}>검색 결과가 없습니다.</div>
                   : apiResults.map((item, i) => (
                       <div key={i} className="msds-api-row"
-                        onClick={() => { applyData(item); setApiResults([]); setApiQuery(item.productName || apiQuery); }}>
+                        onClick={async () => {
+                          applyData(item);                    // 제품명·CAS 즉시 반영
+                          setApiResults([]); setApiQuery(item.productName || apiQuery);
+                          if (!item.chemId) return;
+                          setDetailLoading(true);              // 유해성·응급조치 등 상세 절 로드
+                          try {
+                            const r = await fetch(`/api/msds/detail?chemId=${encodeURIComponent(item.chemId)}`);
+                            const dd = await r.json();
+                            if (r.ok && !dd.error) applyData({ ...dd, productName: item.productName });
+                          } catch (e) { /* 상세 실패해도 제품명·CAS는 유지 */ }
+                          finally { setDetailLoading(false); }
+                        }}>
                         <div style={{ fontWeight: 600 }}>{item.productName}</div>
                         {item.casNo && <div style={{ fontSize: 11, color: 'var(--fg-3)' }}>CAS: {item.casNo}</div>}
                       </div>

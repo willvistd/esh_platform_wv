@@ -1533,10 +1533,13 @@ function httpsGet(url) {
       const chunks = [];
       res.on('data', c => chunks.push(c));
       res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
         if (res.statusCode >= 400) {
-          reject(new Error(`KOSHA API 연결 실패 (HTTP ${res.statusCode}): 키 전파 지연이거나 API 서버 점검 중일 수 있습니다. 잠시 후 다시 시도해 주세요.`));
+          // data.go.kr은 500 본문에 실제 사유(키 미등록·트래픽 초과 등)를 담아 보냄 → 같이 노출
+          const detail = body.replace(/\s+/g, ' ').trim().slice(0, 300);
+          reject(new Error(`KOSHA API 연결 실패 (HTTP ${res.statusCode}): ${detail || '응답 본문 없음. 키 전파 지연이거나 API 서버 점검 중일 수 있습니다.'}`));
         } else {
-          resolve(Buffer.concat(chunks).toString('utf8'));
+          resolve(body);
         }
       });
     }).on('error', reject);
@@ -1670,8 +1673,11 @@ app.get('/api/msds/search', async (req, res) => {
   }
 
   try {
-    const encodedKey = encodeURIComponent(MSDS_API_KEY);
-    const url = `https://apis.data.go.kr/B552468/msdschem?serviceKey=${encodedKey}&numOfRows=15&pageNo=1&prdtNm=${encodeURIComponent(q)}`;
+    // 키가 이미 URL 인코딩된 형태(인코딩 키, %XX 포함)면 그대로 쓰고,
+    // 아니면(디코딩 키) encodeURIComponent 적용 → 인코딩·디코딩 키 아무거나 동작 (이중 인코딩 방지)
+    const encodedKey = /%[0-9A-Fa-f]{2}/.test(MSDS_API_KEY) ? MSDS_API_KEY : encodeURIComponent(MSDS_API_KEY);
+    // ⚠️ 올바른 오퍼레이션은 /msdschem/getChemList (검색). 예전엔 /msdschem만 호출해 항상 HTTP 500이었음.
+    const url = `https://apis.data.go.kr/B552468/msdschem/getChemList?serviceKey=${encodedKey}&searchWrd=${encodeURIComponent(q)}&searchCnd=0&numOfRows=15&pageNo=1`;
     console.log('[MSDS search] URL:', url.replace(encodedKey, '***'));
     const xml = await httpsGet(url);
     console.log('[MSDS search] Raw XML (first 800):', xml.substring(0, 800));
@@ -1684,31 +1690,100 @@ app.get('/api/msds/search', async (req, res) => {
       return res.status(502).json({ error: `MSDS API 오류: ${resultCode} ${resultMsg}` });
     }
 
-    // 각 <item> 블록 파싱
+    // getChemList <item> 파싱 — 검색은 화학물질 식별정보(chemId·국문명·CAS 등)만 반환.
+    //   상세 절(유해성·응급조치·취급저장 등)은 chemId로 getChemDetail01~16을 따로 호출(아래 /api/msds/detail).
     const itemsXml = parseXmlAll(xml, 'item');
     const items = itemsXml.map(itemXml => ({
-      productName:    parseXml(itemXml, 'prdt_nm')    || parseXml(itemXml, 'chem_nm'),
-      casNo:          parseXml(itemXml, 'cas_no'),
-      signalWord:     parseXml(itemXml, 'signal_word'),
-      hazard:         parseXml(itemXml, 'hzd_st_prdc_nm'),
-      handling:       parseXml(itemXml, 'hlnd_hndlg_precaut'),
-      storage:        parseXml(itemXml, 'stor_precaut'),
-      eyeEmergency:   parseXml(itemXml, 'eye_cntact_1aid'),
-      skinEmergency:  parseXml(itemXml, 'skin_cntact_1aid'),
-      inhaleEmergency:parseXml(itemXml, 'inhal_1aid'),
-      ingestEmergency:parseXml(itemXml, 'ingest_1aid'),
-      fireEmergency:  parseXml(itemXml, 'fire_1aid'),
-      spillEmergency: parseXml(itemXml, 'spill_1aid'),
-      supplier:       [parseXml(itemXml, 'mnfct_nm'), parseXml(itemXml, 'mnfct_telno'), parseXml(itemXml, 'mnfct_addr')].filter(Boolean).join(' · '),
-      // 경고표지 공급자정보 칸용 분리 필드
-      companyName:    parseXml(itemXml, 'mnfct_nm'),
-      companyPhone:   parseXml(itemXml, 'mnfct_telno'),
-      companyAddress: parseXml(itemXml, 'mnfct_addr'),
+      chemId:      parseXml(itemXml, 'chemId'),
+      productName: parseXml(itemXml, 'chemNameKor'),   // 실제 필드명은 chemNameKor (chemNm 아님)
+      casNo:       parseXml(itemXml, 'casNo'),
+      enNo:        parseXml(itemXml, 'enNo'),
+      unNo:        parseXml(itemXml, 'unNo'),
     })).filter(item => item.productName);
 
     res.json({ items });
   } catch (err) {
     console.error('[MSDS search]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/msds/detail?chemId= — getChemDetail01~08을 모아 MSDS 폼 데이터로 조립 (AI 불필요) ──
+// KOSHA 상세 응답은 절마다 <item>{msdsItemCode, msdsItemNameKor, itemDetail(| 구분)} 행 구조.
+const GHS_FILE_TO_APPID = { '01': 1, '02': 2, '03': 6, '04': 7, '05': 8, '06': 3, '07': 9, '08': 4, '09': 5 };
+const PPE_KEYWORDS = [
+  [/보안경|보호안경|고글/, 301], [/방독/, 302], [/방진/, 303], [/보안면|안면\s*보호/, 304],
+  [/안전모|보호모|헬멧/, 305], [/안전화|보호화/, 307], [/장갑/, 308], [/보호복|안전복|보호의|앞치마/, 309],
+];
+const kosDecode = s => String(s || '')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+const kosClean = s => kosDecode(s).split('|').map(x => x.trim())
+  .filter(x => x && !/^자료\s*없음$/.test(x)).join('\n');
+function kosItems(xml) {
+  return parseXmlAll(xml, 'item').map(it => ({
+    code: parseXml(it, 'msdsItemCode') || '',
+    name: parseXml(it, 'msdsItemNameKor') || '',
+    detail: parseXml(it, 'itemDetail') || '',
+  }));
+}
+function kosPick(items, ...kws) {
+  const hit = items.find(i => kws.some(k => i.name.includes(k)) && i.detail && !/^자료\s*없음$/.test(i.detail.trim()));
+  return hit ? kosClean(hit.detail) : '';
+}
+const kosJoin = items => items.map(i => kosClean(i.detail)).filter(Boolean).join('\n');
+async function kosGetDetail(sec, chemId, key) {
+  const url = `https://apis.data.go.kr/B552468/msdschem/getChemDetail${sec}?serviceKey=${key}&chemId=${encodeURIComponent(chemId)}&numOfRows=100&pageNo=1`;
+  return kosItems(await httpsGet(url));
+}
+
+app.get('/api/msds/detail', async (req, res) => {
+  const chemId = (req.query.chemId || '').trim();
+  if (!chemId) return res.status(400).json({ error: 'chemId가 필요합니다.' });
+  if (!MSDS_API_KEY) return res.status(503).json({ error: 'MSDS_API_KEY가 설정되지 않았습니다.' });
+  try {
+    const key = /%[0-9A-Fa-f]{2}/.test(MSDS_API_KEY) ? MSDS_API_KEY : encodeURIComponent(MSDS_API_KEY);
+    const [s01, s02, s04, s05, s06, s07, s08] = await Promise.all(
+      ['01', '02', '04', '05', '06', '07', '08'].map(s => kosGetDetail(s, chemId, key).catch(() => []))
+    );
+
+    // GHS 그림문자 (GHS02.gif …) → 앱 내부 id
+    const ghsRaw = kosPick(s02, '그림문자');
+    const ghsIds = [...new Set((ghsRaw.match(/GHS(\d{2})/g) || []).map(m => GHS_FILE_TO_APPID[m.slice(3)]).filter(Boolean))];
+
+    // 예방조치문구 P코드 → 예방(P2)/대응(P3)/저장(P4)/폐기(P5) 분류
+    const pAll = [...new Set((s02.map(i => kosDecode(i.detail)).join('|').match(/P\d{3}[^|]*/g) || []).map(x => x.trim()))];
+    const pBucket = { '2': [], '3': [], '4': [], '5': [] };
+    pAll.forEach(p => { const b = pBucket[p[1]]; if (b) b.push(p); });
+
+    // 개인보호구 텍스트 → 앱 보호구 id
+    const ppeText = s08.map(i => i.name + ' ' + kosDecode(i.detail)).join(' ');
+    const ppeIds = PPE_KEYWORDS.filter(([re]) => re.test(ppeText)).map(([, id]) => id);
+
+    const signalWord = kosPick(s02, '신호어');
+    res.json({
+      signalWord:      (signalWord === '위험' || signalWord === '경고') ? signalWord : '',
+      hazard:          kosPick(s02, '유해성·위험성 분류', '위험성 분류', '분류'),
+      hazardCodes:     kosPick(s02, '유해·위험문구', '유해위험문구'),
+      preventPhrases:  pBucket['2'].join('\n'),
+      responsePhrases: pBucket['3'].join('\n'),
+      storagePhrases:  pBucket['4'].join('\n'),
+      disposalPhrases: pBucket['5'].join('\n'),
+      eyeEmergency:    kosPick(s04, '눈'),
+      skinEmergency:   kosPick(s04, '피부'),
+      inhaleEmergency: kosPick(s04, '흡입'),
+      ingestEmergency: kosPick(s04, '먹었', '섭취'),
+      fireEmergency:   kosJoin(s05),
+      spillEmergency:  kosJoin(s06),
+      handling:        kosPick(s07, '안전취급요령', '취급'),
+      storage:         kosPick(s07, '안전한 저장방법', '저장'),
+      companyName:     kosPick(s01, '회사명'),
+      companyAddress:  kosPick(s01, '주소'),
+      companyPhone:    kosPick(s01, '전화', '긴급전화', '긴급'),
+      ghsIds,
+      ppeIds,
+    });
+  } catch (err) {
+    console.error('[MSDS detail]', err.message);
     res.status(500).json({ error: err.message });
   }
 });
