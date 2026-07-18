@@ -643,6 +643,10 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       {/* ══ 왼쪽 패널 ═══════════════════════════════════════ */}
       <div className="msds-L">
 
+        <div className="bcr" onClick={() => onNav({ name: "dashboard" })}>
+          <Icon name="arrow-left" size={14} /> 대시보드
+        </div>
+
         <div className="msds-sec-label">MSDS 불러오기</div>
         <div className="msds-itab-bar">
           <button className={`msds-itab${inputTab === 0 ? ' on' : ''}`} onClick={() => setInputTab(0)}>📄 PDF 업로드</button>

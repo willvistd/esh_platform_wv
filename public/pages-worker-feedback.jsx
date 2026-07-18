@@ -453,6 +453,10 @@ const WorkerFeedbackList = ({ onNav, role }) => {
 
   return (
     <div className="content">
+      <div className="bcr" onClick={() => onNav({ name: "dashboard" })}>
+        <Icon name="arrow-left" size={14} /> 대시보드
+      </div>
+
       <div className="content-hd">
         <div>
           <h1 className="content-title">종사자 의견 청취 관리</h1>
