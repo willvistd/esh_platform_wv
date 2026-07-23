@@ -129,6 +129,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
       {allow("legal-checker") && (
         <NavLink active={route.name === "legal-checker"} icon="shield" onClick={() => onNav({ name: "legal-checker" })}>법적의무 자동판정</NavLink>
       )}
+      {allow("tool-org-chart") && (
+        <NavLink active={route.name === "tool-org-chart"} icon="users" onClick={() => onNav({ name: "tool-org-chart" })}>안전보건 조직도</NavLink>
+      )}
 
       {categories.some((c) => allow("cat:" + c.id)) && (
         <>

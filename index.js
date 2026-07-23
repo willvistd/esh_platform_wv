@@ -344,6 +344,15 @@ async function initDB() {
     FROM ranked WHERE c.id = ranked.id;
   `);
 
+  // 안전보건 조직도 — scope('hq'|'site')별 1행, data는 JSON(제목·박스·연결)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_charts (
+      scope TEXT PRIMARY KEY,
+      data JSONB NOT NULL,
+      "updatedAt" TEXT
+    );
+  `);
+
   // 본부(HQ) 시드 — 위험성평가 코드 본부명단과 일치
   const hqExisting = await pool.query('SELECT COUNT(*) FROM hq');
   if (parseInt(hqExisting.rows[0].count) === 0) {
@@ -842,6 +851,35 @@ app.post('/api/categories/reorder', async (req, res) => {
     res.json({ success: true, count: order.length });
   } catch (e) {
     console.error('POST /api/categories/reorder 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── 안전보건 조직도 (본사용/사업장용) ───
+app.get('/api/org-charts', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT scope, data FROM org_charts');
+    const out = {};
+    result.rows.forEach(r => { out[r.scope] = r.data; });
+    res.json(out);
+  } catch (e) {
+    console.error('GET /api/org-charts 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/org-charts/:scope', async (req, res) => {
+  try {
+    const scope = req.params.scope;
+    const data = (req.body && req.body.data !== undefined) ? req.body.data : req.body;
+    await pool.query(
+      `INSERT INTO org_charts (scope, data, "updatedAt") VALUES ($1, $2::jsonb, $3)
+       ON CONFLICT (scope) DO UPDATE SET data = EXCLUDED.data, "updatedAt" = EXCLUDED."updatedAt"`,
+      [scope, JSON.stringify(data), new Date().toISOString()]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('PUT /api/org-charts 오류:', e);
     res.status(500).json({ error: e.message });
   }
 });

@@ -35,6 +35,7 @@ const ENDPOINTS = {
   categories:  API_BASE + "/categories",
   workerFeedback: API_BASE + "/worker-feedback",
   compliance: API_BASE + "/compliance-submissions",
+  orgCharts:  API_BASE + "/org-charts",
 };
 
 const api = {
@@ -440,6 +441,21 @@ const api = {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `순서 변경 실패 (${res.status})`);
     return data;
+  },
+  // 안전보건 조직도 — { hq: {...}, site: {...} } 형태로 반환
+  async getOrgCharts() {
+    const res = await fetch(ENDPOINTS.orgCharts);
+    if (!res.ok) return {};
+    return await res.json();
+  },
+  async saveOrgChart(scope, data) {
+    const res = await fetch(`${ENDPOINTS.orgCharts}/${scope}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data }),
+    });
+    if (!res.ok) throw new Error(`저장 실패 (${res.status})`);
+    return await res.json();
   },
 };
 
@@ -910,6 +926,8 @@ function App() {
           <MsdsGeneratorView onNav={onNav} currentUser={currentUser} role={role} />
         ) : route.name === "tool-safety-signs" ? (
           <SafetySignsView onNav={onNav} />
+        ) : route.name === "tool-org-chart" ? (
+          <OrgChartView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "field-inspection" ? (
           <FieldInspectionView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "tool-worker-survey" ? (

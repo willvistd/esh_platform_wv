@@ -44,6 +44,7 @@ window.WV_DATA = (() => {
     { id: "dashboard",       name: "대시보드",         group: "공통" },
     { id: "submissions",     name: "이행사항 제출 현황", group: "공통" },
     { id: "legal-checker",   name: "법적의무 자동판정", group: "공통" },
+    { id: "tool-org-chart",  name: "안전보건 조직도",   group: "공통" },
     { id: "cat:board-docs",      name: "게시판 게시 서류",   group: "카테고리" },
     { id: "cat:procedures",      name: "절차서 및 지침서",   group: "카테고리" },
     { id: "cat:training",        name: "안전보건교육",       group: "카테고리" },
