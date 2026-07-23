@@ -21,11 +21,16 @@ FM / HR / CRM / 공항사업본부 + KBCI / 동부캐리어 / 윌비모터스
 - AI: Google Gemini API (MSDS PDF 추출 / 현장점검 사진 분석)
 
 ## 환경변수
+> ⚠️ 모든 키·비밀값은 **환경변수로만** 주입합니다. 소스 코드에 직접 입력하거나 커밋하지 마세요.
+> `.env` 파일은 `.gitignore`로 제외되어 있습니다.
 ```
 DATABASE_URL         (Railway가 자동 주입)
 PORT                 (Railway가 자동 주입)
-GEMINI_API_KEY       (Gemini AI 추출용)
+GEMINI_API_KEY       (AI 추출용 API 키)
 MSDS_API_KEY         (한국산업안전보건공단 OpenAPI)
+SESSION_SECRET       (세션 서명용 — 미설정 시 자동 파생)
+SUPABASE_URL         (선택, 파일 업로드 스토리지)
+SUPABASE_SERVICE_KEY (선택, 파일 업로드 스토리지)
 UPLOADS_DIR          (선택, Railway 볼륨 경로)
 PUPPETEER_EXECUTABLE_PATH  (Railway nixpacks가 자동 설정)
 ```

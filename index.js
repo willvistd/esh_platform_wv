@@ -1394,7 +1394,7 @@ app.delete('/api/approvals/:id', async (req, res) => {
 //  MSDS 자동생성 API
 // ══════════════════════════════════════════════════════
 
-// Google Gemini API 키 — 환경변수 또는 아래 직접 입력
+// AI 추출용 API 키 — 반드시 환경변수 GEMINI_API_KEY 로만 주입 (소스에 직접 입력 금지)
 // 유효 문자(영문/숫자/_/-)만 남김 — Railway 등 환경변수 붙여넣기 시 딸려오는
 // 개행·공백·따옴표 등 모든 이상문자 제거. (미제거 시 https 경로에 이상문자 →
 // "Request path contains unescaped characters" 에러)
