@@ -21,9 +21,9 @@
   };
 })();
 
-// ── Sheety API 연동 ──
+// ── 백엔드 API 엔드포인트 (자체 서버 /api 프록시) ──
 const API_BASE = "/api";
-const SHEETY = {
+const ENDPOINTS = {
   users:       API_BASE + "/users",
   posts:       API_BASE + "/posts",
   sessions:    API_BASE + "/sessions",
@@ -39,12 +39,12 @@ const SHEETY = {
 
 const api = {
   async getUsers() {
-    const res = await fetch(SHEETY.users);
+    const res = await fetch(ENDPOINTS.users);
     const data = await res.json();
     return data.users || [];
   },
   async getPosts() {
-    const res = await fetch(SHEETY.posts);
+    const res = await fetch(ENDPOINTS.posts);
     const data = await res.json();
     return data.posts || [];
   },
@@ -65,7 +65,7 @@ const api = {
       return { success: false, message: (result && result.message) || "이메일 또는 비밀번호가 올바르지 않습니다." };
     }
     const u = result.user;
-    fetch(SHEETY.sessions, {
+    fetch(ENDPOINTS.sessions, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: u.id, email: u.email, loginAt: new Date().toISOString() })
@@ -83,7 +83,7 @@ const api = {
     };
   },
   async addPost(post) {
-    const res = await fetch(SHEETY.posts, {
+    const res = await fetch(ENDPOINTS.posts, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -105,7 +105,7 @@ const api = {
   },
   async getEduLogs() {
     try {
-      const res = await fetch(SHEETY.eduLogs);
+      const res = await fetch(ENDPOINTS.eduLogs);
       const data = await res.json();
       return data.logs || [];
     } catch (e) {
@@ -114,7 +114,7 @@ const api = {
     }
   },
   async addEduLog(log) {
-    const res = await fetch(SHEETY.eduLogs, {
+    const res = await fetch(ENDPOINTS.eduLogs, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(log),
@@ -123,7 +123,7 @@ const api = {
     return await res.json();
   },
   async updateEduLog(id, log) {
-    const res = await fetch(`${SHEETY.eduLogs}/${id}`, {
+    const res = await fetch(`${ENDPOINTS.eduLogs}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(log),
@@ -133,20 +133,20 @@ const api = {
     return data;
   },
   async deleteEduLog(id) {
-    const res = await fetch(`${SHEETY.eduLogs}/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${ENDPOINTS.eduLogs}/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `교육일지 삭제 실패 (${res.status})`);
     return data;
   },
   async deleteEduAttendeesByEdu(educationId) {
-    const res = await fetch(`${SHEETY.eduAttendees}?educationId=${educationId}`, { method: 'DELETE' });
+    const res = await fetch(`${ENDPOINTS.eduAttendees}?educationId=${educationId}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `참석자 삭제 실패 (${res.status})`);
     return data;
   },
   async getEduAttendees(eduId) {
     try {
-      const url = eduId ? `${SHEETY.eduAttendees}?educationId=${eduId}` : SHEETY.eduAttendees;
+      const url = eduId ? `${ENDPOINTS.eduAttendees}?educationId=${eduId}` : ENDPOINTS.eduAttendees;
       const res = await fetch(url);
       const data = await res.json();
       return data.attendees || [];
@@ -156,7 +156,7 @@ const api = {
     }
   },
   async addEduAttendee(attendee) {
-    const res = await fetch(SHEETY.eduAttendees, {
+    const res = await fetch(ENDPOINTS.eduAttendees, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(attendee),
@@ -166,7 +166,7 @@ const api = {
   },
   async getEduTypes({ includeHidden = false } = {}) {
     try {
-      const url = includeHidden ? `${SHEETY.eduTypes}?includeHidden=true` : SHEETY.eduTypes;
+      const url = includeHidden ? `${ENDPOINTS.eduTypes}?includeHidden=true` : ENDPOINTS.eduTypes;
       const res = await fetch(url);
       const data = await res.json();
       return data.types || [];
@@ -176,7 +176,7 @@ const api = {
     }
   },
   async addEduType(type) {
-    const res = await fetch(SHEETY.eduTypes, {
+    const res = await fetch(ENDPOINTS.eduTypes, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(type),
@@ -186,7 +186,7 @@ const api = {
     return data;
   },
   async updateEduType(id, patch) {
-    const res = await fetch(`${SHEETY.eduTypes}/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${ENDPOINTS.eduTypes}/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -196,13 +196,13 @@ const api = {
     return data;
   },
   async deleteEduType(id) {
-    const res = await fetch(`${SHEETY.eduTypes}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const res = await fetch(`${ENDPOINTS.eduTypes}/${encodeURIComponent(id)}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `교육종류 삭제 실패 (${res.status})`);
     return data;
   },
   async getSites() {
-    const res = await fetch(SHEETY.sites);
+    const res = await fetch(ENDPOINTS.sites);
     const data = await res.json();
     const items = data.sites || [];
     return items.map(s => ({
@@ -219,7 +219,7 @@ const api = {
     }));
   },
   async addSite(site) {
-    const res = await fetch(SHEETY.sites, {
+    const res = await fetch(ENDPOINTS.sites, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -236,17 +236,17 @@ const api = {
     return await res.json();
   },
   async deleteSite(rowId) {
-    const res = await fetch(`${SHEETY.sites}/${rowId}`, { method: "DELETE" });
+    const res = await fetch(`${ENDPOINTS.sites}/${rowId}`, { method: "DELETE" });
     return await res.json();
   },
   // ── HQ (본부) ──
   async getHQs() {
-    const res = await fetch(SHEETY.hq);
+    const res = await fetch(ENDPOINTS.hq);
     const data = await res.json();
     return data.hq || [];
   },
   async addHQ(hq) {
-    const res = await fetch(SHEETY.hq, {
+    const res = await fetch(ENDPOINTS.hq, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(hq),
@@ -254,7 +254,7 @@ const api = {
     return await res.json();
   },
   async updateHQ(id, hq) {
-    const res = await fetch(`${SHEETY.hq}/${id}`, {
+    const res = await fetch(`${ENDPOINTS.hq}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(hq),
@@ -262,17 +262,17 @@ const api = {
     return await res.json();
   },
   async deleteHQ(id) {
-    const res = await fetch(`${SHEETY.hq}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${ENDPOINTS.hq}/${id}`, { method: "DELETE" });
     return await res.json();
   },
   // ── Worker Feedback (종사자 의견 청취) ──
   async getWorkerFeedback() {
-    const res = await fetch(SHEETY.workerFeedback);
+    const res = await fetch(ENDPOINTS.workerFeedback);
     const data = await res.json();
     return data.feedback || [];
   },
   async submitWorkerFeedback(data) {
-    const res = await fetch(SHEETY.workerFeedback, {
+    const res = await fetch(ENDPOINTS.workerFeedback, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -280,7 +280,7 @@ const api = {
     return await res.json();
   },
   async updateWorkerFeedback(id, data) {
-    const res = await fetch(`${SHEETY.workerFeedback}/${id}`, {
+    const res = await fetch(`${ENDPOINTS.workerFeedback}/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -288,7 +288,7 @@ const api = {
     return await res.json();
   },
   async deleteWorkerFeedback(id) {
-    const res = await fetch(`${SHEETY.workerFeedback}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${ENDPOINTS.workerFeedback}/${id}`, { method: "DELETE" });
     return await res.json();
   },
   // ── 파일 업로드 (multer) ──
@@ -300,13 +300,13 @@ const api = {
   },
   // ── Compliance Submissions (이행사항 제출) ──
   async getComplianceSubmissions(period) {
-    const url = period ? `${SHEETY.compliance}?period=${encodeURIComponent(period)}` : SHEETY.compliance;
+    const url = period ? `${ENDPOINTS.compliance}?period=${encodeURIComponent(period)}` : ENDPOINTS.compliance;
     const res = await fetch(url);
     const data = await res.json();
     return data.submissions || [];
   },
   async submitCompliance(payload) {
-    const res = await fetch(SHEETY.compliance, {
+    const res = await fetch(ENDPOINTS.compliance, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -314,11 +314,11 @@ const api = {
     return await res.json();
   },
   async deleteCompliance(id) {
-    const res = await fetch(`${SHEETY.compliance}/${id}`, { method: "DELETE" });
+    const res = await fetch(`${ENDPOINTS.compliance}/${id}`, { method: "DELETE" });
     return await res.json();
   },
   async updateUser(rowId, data) {
-    const res = await fetch(`${SHEETY.users}/${rowId}`, {
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -326,7 +326,7 @@ const api = {
     return await res.json();
   },
   async addUser(data) {
-    const res = await fetch(SHEETY.users, {
+    const res = await fetch(ENDPOINTS.users, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -334,11 +334,11 @@ const api = {
     return await res.json();
   },
   async deleteUser(rowId) {
-    const res = await fetch(`${SHEETY.users}/${rowId}`, { method: "DELETE" });
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}`, { method: "DELETE" });
     return await res.json();
   },
   async resetUserPassword(rowId) {
-    const res = await fetch(`${SHEETY.users}/${rowId}/reset-password`, {
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}/reset-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -355,7 +355,7 @@ const api = {
   },
   // ── 관리자: 가입 신청 승인 ──
   async approveUser(rowId) {
-    const res = await fetch(`${SHEETY.users}/${rowId}/approve`, {
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -363,7 +363,7 @@ const api = {
   },
   // ── 관리자: 가입 신청 거부 (계정 삭제) ──
   async rejectUser(rowId) {
-    const res = await fetch(`${SHEETY.users}/${rowId}/reject`, {
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     });
@@ -371,7 +371,7 @@ const api = {
   },
   // ── 본인이 자기 정보 수정 (phone, dept만) ──
   async updateMyProfile(rowId, data, currentUserId) {
-    const res = await fetch(`${SHEETY.users}/${rowId}/self`, {
+    const res = await fetch(`${ENDPOINTS.users}/${rowId}/self`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...data, currentUserId }),
@@ -379,7 +379,7 @@ const api = {
     return await res.json();
   },
   async updatePost(rowId, data) {
-    const res = await fetch(`${SHEETY.posts}/${rowId}`, {
+    const res = await fetch(`${ENDPOINTS.posts}/${rowId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -387,10 +387,10 @@ const api = {
     return await res.json();
   },
   async deletePost(rowId) {
-    await fetch(`${SHEETY.posts}/${rowId}`, { method: "DELETE" });
+    await fetch(`${ENDPOINTS.posts}/${rowId}`, { method: "DELETE" });
   },
   async updateSite(rowId, data) {
-    const res = await fetch(`${SHEETY.sites}/${rowId}`, {
+    const res = await fetch(`${ENDPOINTS.sites}/${rowId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -407,12 +407,12 @@ const api = {
     return await res.json();
   },
   async getCategories() {
-    const res = await fetch(SHEETY.categories);
+    const res = await fetch(ENDPOINTS.categories);
     const data = await res.json();
     return data.categories || [];
   },
   async addCategory(cat) {
-    const res = await fetch(SHEETY.categories, {
+    const res = await fetch(ENDPOINTS.categories, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cat)
@@ -420,7 +420,7 @@ const api = {
     return await res.json();
   },
   async updateCategory(catId, data) {
-    const res = await fetch(`${SHEETY.categories}/${catId}`, {
+    const res = await fetch(`${ENDPOINTS.categories}/${catId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -428,11 +428,11 @@ const api = {
     return await res.json();
   },
   async deleteCategory(catId) {
-    await fetch(`${SHEETY.categories}/${catId}`, { method: "DELETE" });
+    await fetch(`${ENDPOINTS.categories}/${catId}`, { method: "DELETE" });
   },
   // 카테고리 순서 일괄 변경 — ids 배열 순서대로 sortOrder 부여
   async reorderCategories(ids) {
-    const res = await fetch(`${SHEETY.categories}/reorder`, {
+    const res = await fetch(`${ENDPOINTS.categories}/reorder`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ order: ids }),
