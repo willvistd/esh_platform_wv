@@ -208,7 +208,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       const res = await fetch('/api/msds/extract', { method: 'POST', body: fd });
       const d = await res.json();
       if (!res.ok || d.error) {
-        if (res.status === 503) setUploadErr('AI 추출 키가 설정되지 않았습니다. 서버 관리자에게 환경변수(GEMINI_API_KEY) 설정을 요청하세요.');
+        if (res.status === 503) setUploadErr('AI 추출 키가 설정되지 않았습니다. 서버 관리자에게 환경변수(OPENAI_API_KEY) 설정을 요청하세요.');
         else setUploadErr(d.error || 'AI 분석 실패');
         setUploadSt('error'); return;
       }

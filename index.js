@@ -1432,17 +1432,17 @@ app.delete('/api/approvals/:id', async (req, res) => {
 //  MSDS 자동생성 API
 // ══════════════════════════════════════════════════════
 
-// AI 추출용 API 키 — 반드시 환경변수 GEMINI_API_KEY 로만 주입 (소스에 직접 입력 금지)
+// AI 추출용 API 키 — 반드시 환경변수 OPENAI_API_KEY 로만 주입 (소스에 직접 입력 금지)
 // 유효 문자(영문/숫자/_/-)만 남김 — Railway 등 환경변수 붙여넣기 시 딸려오는
 // 개행·공백·따옴표 등 모든 이상문자 제거. (미제거 시 https 경로에 이상문자 →
 // "Request path contains unescaped characters" 에러)
-const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').replace(/[^A-Za-z0-9_\-]/g, '');
+const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\-]/g, '');
 
 // 한국산업안전보건공단 MSDS OpenAPI 서비스 키 — 원문에 특수문자 포함될 수 있어 공백/개행만 제거
 const MSDS_API_KEY = (process.env.MSDS_API_KEY || '').replace(/\s+/g, '');
 
-// ── Gemini API 호출 (PDF → JSON 추출) ──
-const GEMINI_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 아래 JSON 형식으로만 반환하세요. 마크다운 코드블록(\`\`\`) 없이 순수 JSON만 반환하세요.
+// ── OpenAI API 호출 (PDF → JSON 추출) ──
+const MSDS_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 아래 JSON 형식으로만 반환하세요. 마크다운 코드블록(\`\`\`) 없이 순수 JSON만 반환하세요.
 
 {
   "productName": "제품명(한국어)",
@@ -1473,26 +1473,30 @@ const GEMINI_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 �
 주의: ghsIds와 ppeIds는 반드시 숫자(정수) 배열로 반환. 문자열 금지. 해당 항목이 없으면 [] 반환.`;
 
 // 순서대로 시도할 모델 목록 (앞쪽 모델 실패 시 다음으로)
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.0-flash'];
+const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
 
-function callGeminiModel(pdfBase64, model) {
+function callOpenAIModel(pdfBase64, model) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      contents: [{
-        parts: [
-          { inlineData: { mimeType: 'application/pdf', data: pdfBase64 } },
-          { text: GEMINI_PROMPT },
+      model,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: MSDS_PROMPT },
+          { type: 'file', file: { filename: 'msds.pdf', file_data: `data:application/pdf;base64,${pdfBase64}` } },
         ],
       }],
+      max_tokens: 4096,
     });
 
     const options = {
-      hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+      hostname: 'api.openai.com',
+      path: '/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(body),
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
     };
 
@@ -1508,10 +1512,10 @@ function callGeminiModel(pdfBase64, model) {
           const response = JSON.parse(data);
           // API 레벨 오류 (high demand, quota 등)
           if (response.error) {
-            reject(new Error(response.error.message || 'Gemini API 오류'));
+            reject(new Error(response.error.message || 'OpenAI API 오류'));
             return;
           }
-          const text = response.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+          const text = response.choices?.[0]?.message?.content || '{}';
           const jsonMatch = text.match(/\{[\s\S]*\}/);
           if (!jsonMatch) throw new Error('JSON을 찾을 수 없습니다.');
           resolve(JSON.parse(jsonMatch[0]));
@@ -1527,21 +1531,21 @@ function callGeminiModel(pdfBase64, model) {
 }
 
 // 재시도 + 모델 폴백 포함 호출
-async function callGemini(pdfBase64) {
+async function callOpenAI(pdfBase64) {
   let lastErr;
-  for (const model of GEMINI_MODELS) {
+  for (const model of OPENAI_MODELS) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1})`);
-        const result = await callGeminiModel(pdfBase64, model);
-        console.log(`[Gemini] 성공: ${model}`);
+        console.log(`[OpenAI] 시도: ${model} (attempt ${attempt + 1})`);
+        const result = await callOpenAIModel(pdfBase64, model);
+        console.log(`[OpenAI] 성공: ${model}`);
         return result;
       } catch (err) {
         lastErr = err;
-        const isRetryable = /high demand|overload|503|quota/i.test(err.message);
-        console.warn(`[Gemini] 실패 (${model}): ${err.message.substring(0, 80)}`);
+        const isRetryable = /rate limit|overload|429|500|503|quota/i.test(err.message);
+        console.warn(`[OpenAI] 실패 (${model}): ${err.message.substring(0, 80)}`);
         if (isRetryable && attempt === 0) {
-          console.log('[Gemini] 3초 후 재시도...');
+          console.log('[OpenAI] 3초 후 재시도...');
           await new Promise(r => setTimeout(r, 3000));
         } else {
           break; // 재시도 불필요 → 다음 모델로
@@ -1584,7 +1588,7 @@ function httpsGet(url) {
   });
 }
 
-// ── POST /api/msds/extract — PDF 업로드 → Gemini AI 추출 ──
+// ── POST /api/msds/extract — PDF 업로드 → OpenAI AI 추출 ──
 // AI 추출 결과 정제 — AI가 부가문구를 같이 가져오는 복불복 문제를 코드로 확정 처리
 function sanitizeMsds(d) {
   if (!d || typeof d !== 'object') return d;
@@ -1609,15 +1613,15 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   // Supabase 모드=memoryStorage(req.file.buffer) / 로컬=diskStorage(req.file.path)
   const cleanup = () => { if (req.file.path) fs.unlink(req.file.path, () => {}); };
-  if (!GEMINI_API_KEY) {
+  if (!OPENAI_API_KEY) {
     cleanup();
-    return res.status(503).json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' });
+    return res.status(503).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다.' });
   }
   try {
     const pdfBuffer = req.file.buffer || fs.readFileSync(req.file.path);
     const pdfBase64 = pdfBuffer.toString('base64');
     cleanup();
-    const result = sanitizeMsds(await callGemini(pdfBase64));
+    const result = sanitizeMsds(await callOpenAI(pdfBase64));
     res.json(result);
   } catch (err) {
     console.error('[MSDS extract]', err.message);
@@ -1646,18 +1650,21 @@ const INSPECTION_PROMPT = `당신은 산업안전보건 전문가입니다. 첨�
 function callInspectionModel(imageBase64, mimeType, model) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      contents: [{
-        parts: [
-          { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageBase64 } },
-          { text: INSPECTION_PROMPT },
+      model,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: INSPECTION_PROMPT },
+          { type: 'image_url', image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${imageBase64}` } },
         ],
       }],
+      max_tokens: 2048,
     });
     const options = {
-      hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+      hostname: 'api.openai.com',
+      path: '/v1/chat/completions',
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'Authorization': `Bearer ${OPENAI_API_KEY}` },
     };
     const req2 = https.request(options, (r) => {
       const chunks = [];
@@ -1667,7 +1674,7 @@ function callInspectionModel(imageBase64, mimeType, model) {
           const data = Buffer.concat(chunks).toString('utf8');
           const resp = JSON.parse(data);
           if (resp.error) { reject(new Error(resp.error.message)); return; }
-          const text = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+          const text = resp.choices?.[0]?.message?.content || '{}';
           const m = text.match(/\{[\s\S]*\}/);
           if (!m) throw new Error('JSON을 찾을 수 없습니다.');
           resolve(JSON.parse(m[0]));
@@ -1681,11 +1688,11 @@ function callInspectionModel(imageBase64, mimeType, model) {
 }
 
 app.post('/api/inspection/analyze', async (req, res) => {
-  if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GEMINI_API_KEY가 설정되지 않았습니다.' });
+  if (!OPENAI_API_KEY) return res.status(503).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다.' });
   const { imageBase64, mimeType } = req.body;
   if (!imageBase64) return res.status(400).json({ error: 'imageBase64 필드가 없습니다.' });
 
-  const models = ['gemini-2.5-flash', 'gemini-flash-lite-latest', 'gemini-2.0-flash'];
+  const models = ['gpt-4o-mini', 'gpt-4o'];
   let lastErr;
   for (const model of models) {
     try {
