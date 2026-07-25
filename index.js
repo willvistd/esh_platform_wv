@@ -64,6 +64,18 @@ app.use(cors());
 // PDF 생성 시 모든 STEP 데이터(사진 base64 포함) 전송하므로 limit 확대
 app.use(express.json({ limit: '50mb' }));
 
+// ── 서버리스(Vercel) 대비: 요청 처리 전 DB 초기화 1회 보장 ──
+// 상주 서버는 아래 app.listen 전에 initDB가 돌지만, 서버리스는 콜드스타트마다 모듈이
+// 새로 로드되므로 첫 요청 때 지연 초기화(캐시된 Promise로 인스턴스당 1회)한다.
+let _dbReady = null;
+const ensureDb = () => (_dbReady = _dbReady || initDB());
+app.use((req, res, next) => {
+  ensureDb().then(() => next()).catch((e) => {
+    console.error('DB 초기화 실패:', e);
+    res.status(500).json({ error: 'DB 초기화 실패' });
+  });
+});
+
 // ── 파일 업로드 설정 ──
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -148,6 +160,11 @@ const pool = new Pool({
   ssl: (process.env.PGHOST || '').includes('supabase')
     ? { rejectUnauthorized: false }
     : false,
+  // 서버리스(Vercel) 대비: 인스턴스당 커넥션 최소화.
+  // ⚠ Supabase는 반드시 '커넥션 풀러'(포트 6543, ...pooler.supabase.com)를 PGHOST/PGPORT로 사용.
+  max: parseInt(process.env.PG_POOL_MAX || '1'),
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
 });
 
 // 데모 모드: 포트폴리오용 별도 배포에서 DEMO_MODE=true 설정 시 가짜 데이터 시딩 + 데모 안내 표시
@@ -1839,6 +1856,11 @@ app.get('/api/msds/detail', async (req, res) => {
 // 위에서 이미 app.use(express.json()) 되어있으므로, 라우트 단위로 처리 필요시 추가
 
 const PORT = process.env.PORT || 3000;
-initDB().then(() => {
-  app.listen(PORT, () => console.log('서버 실행중: http://localhost:' + PORT));
-});
+// 상주 서버(로컬/사내 서버 등)로 직접 실행할 때만 리슨.
+// 서버리스(Vercel)에서는 이 파일을 함수로 로드하므로 아래 module.exports 로 app만 넘긴다.
+if (require.main === module) {
+  ensureDb().then(() => {
+    app.listen(PORT, () => console.log('서버 실행중: http://localhost:' + PORT));
+  });
+}
+module.exports = app;
