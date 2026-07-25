@@ -78,7 +78,11 @@ app.use((req, res, next) => {
 
 // ── 파일 업로드 설정 ──
 const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// 로컬 디스크 저장 모드일 때만 폴더 생성. Supabase 사용/서버리스(Vercel 읽기전용 FS)에서는 불필요.
+if (!supabase) {
+  try { if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true }); }
+  catch (e) { console.warn('uploads 폴더 생성 생략:', e.message); }
+}
 
 // 로컬 실행 시 로컬 uploads 폴더 정적 서빙 (Railway+Supabase 환경에서는 URL이 절대경로라 미사용)
 if (!supabase) app.use('/uploads', express.static(uploadsDir));
