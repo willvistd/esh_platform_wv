@@ -94,14 +94,12 @@ app.get('/tools/safety-signs', (req, res) => {
 //  - /api/login, /api/logout, /api/register: 로그인/가입 자체
 //  - /api/meta: 로그인 화면이 데모 여부 조회
 //  - /api/hq (GET): 회원가입 화면의 본부 선택 드롭다운 (로그인 전 호출)
-//  - /api/risk/print-data/:token: puppeteer 내부 호출 (자체 랜덤 토큰으로 보호)
 const AUTH_EXEMPT = [
   { method: 'POST', re: /^\/login$/ },
   { method: 'POST', re: /^\/logout$/ },
   { method: 'POST', re: /^\/register$/ },
   { method: 'GET',  re: /^\/meta$/ },
   { method: 'GET',  re: /^\/hq$/ },
-  { method: 'GET',  re: /^\/risk\/print-data\/[^/]+$/ },
 ];
 app.use('/api', (req, res, next) => {
   if (AUTH_EXEMPT.some(r => r.method === req.method && r.re.test(req.path))) return next();
@@ -1833,11 +1831,8 @@ app.get('/api/msds/detail', async (req, res) => {
   }
 });
 
-// ── 위험성평가 PDF 생성 라우트 (puppeteer + pdf-lib) ──
-// frontendBaseUrl에 실제 리슨 포트 반영 — Railway는 PORT=8080이라
-// 기본값(localhost:3000) 그대로면 puppeteer가 ERR_CONNECTION_REFUSED
-const { registerRiskPdfRoutes } = require('./risk-pdf');
-registerRiskPdfRoutes(app, { frontendBaseUrl: `http://localhost:${process.env.PORT || 3000}` });
+// ── 위험성평가 PDF: 클라이언트(브라우저 인쇄)로 생성 ──
+// 서버 Puppeteer 제거 → Vercel 서버리스 호환. 전체 출력은 프론트 window.print()로 처리.
 
 // ── Express body 크기 제한 확장 (PDF 생성 시 사진 base64 + 모든 STEP 데이터 포함) ──
 // app.use(express.json()) 보다 큰 limit 필요 — 기존 use 위치보다 후순위는 안되니까 별도 처리

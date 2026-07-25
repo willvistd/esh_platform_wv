@@ -7324,108 +7324,17 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
         </button>
         <span style={{ fontWeight: 700, fontSize: 15 }}>🖨️ 위험성평가 전체 출력 (6단계)</span>
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-          <button id="server-pdf-btn" className="btn btn-primary" disabled={pdfProgress && !pdfProgress.done && !pdfProgress.error}
-            onClick={async () => {
-              const addLog = (msg, percent) => setPdfProgress(p => {
-                const logs = (p && p.logs) || [];
-                return {
-                  progress: msg,
-                  percent: typeof percent === "number" ? percent : (p?.percent || 0),
-                  done: false,
-                  error: null,
-                  logs: [...logs, msg],
-                };
-              });
-
-              setPdfProgress({ progress: "[PDF] 데이터 수집 중...", percent: 0, done: false, error: null, logs: ["[PDF] 데이터 수집 중..."] });
-              try {
-                const siteData = riskLoad(`wv_risk_site_${evalId}`);
-                const selectedAreas = (siteData && siteData.form && siteData.form.관리분야선택) || [];
-                const tableSheets = selectedAreas.map(area => ({
-                  area,
-                  data: riskLoad(`wv_risk_table_${evalId}_${area}`)
-                })).filter(t => t.data);
-
-                const payload = {
-                  ctx,
-                  coverData:    riskLoad(`wv_risk_cover_${evalId}`),
-                  siteData,
-                  meetingData:  riskLoad(`wv_risk_meeting_${evalId}`),
-                  trainingData: riskLoad(`wv_risk_training_${evalId}`),
-                  photosData:   riskLoad(`wv_risk_photos_${evalId}`),
-                  tableSheets,
-                };
-
-                addLog("[PDF] 서버로 데이터 전송 중...", 1);
-                const startRes = await fetch("/api/risk/generate-pdf", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                });
-                if (!startRes.ok) {
-                  const t = await startRes.text().catch(() => `HTTP ${startRes.status}`);
-                  throw new Error(t || `HTTP ${startRes.status}`);
-                }
-                const { token } = await startRes.json();
-
-                // 진행 상태 폴링 (0.5초) — 백엔드의 모든 로그를 빠짐없이 받기
-                let lastLogIdx = 0;
-                let finishedJob = null;
-                while (!finishedJob) {
-                  await new Promise(r => setTimeout(r, 500));
-                  const sRes = await fetch(`/api/risk/pdf-status/${token}`);
-                  if (!sRes.ok) throw new Error("진행 상태 조회 실패");
-                  const status = await sRes.json();
-
-                  // 백엔드의 새 로그 항목만 누적 추가
-                  const newLogs = (status.logs || []).slice(lastLogIdx);
-                  lastLogIdx = (status.logs || []).length;
-
-                  setPdfProgress(prev => {
-                    const prevLogs = (prev && prev.logs) || [];
-                    return {
-                      progress: status.progress || "처리 중...",
-                      percent: status.percent || 0,
-                      done: status.done,
-                      error: status.error,
-                      logs: [...prevLogs, ...newLogs],
-                    };
-                  });
-
-                  if (status.error) throw new Error(status.error);
-                  if (status.done) finishedJob = status;
-                }
-
-                addLog("[PDF] 브라우저로 다운로드 중...", 99);
-                const dRes = await fetch(`/api/risk/pdf-result/${token}`);
-                if (!dRes.ok) throw new Error("PDF 다운로드 실패");
-                const blob = await dRes.blob();
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                const sitename = (ctx.사업장명 || ctx.company || "위험성평가").replace(/[\\/:*?"<>|]/g, "_");
-                const dateStr = new Date().toISOString().slice(0, 10);
-                a.download = `위험성평가_${sitename}_${dateStr}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                addLog("[PDF] ✅ 다운로드 완료", 100);
-                setPdfProgress(p => ({ ...p, done: true }));
-                setTimeout(() => setPdfProgress(null), 5000);
-              } catch (e) {
-                console.error("[PDF 다운로드] 오류:", e);
-                setPdfProgress(p => ({
-                  progress: "❌ " + (e.message || e),
-                  percent: p?.percent || 0,
-                  done: true,
-                  error: e.message,
-                  logs: [...((p && p.logs) || []), "❌ " + (e.message || e)],
-                }));
-                setTimeout(() => setPdfProgress(null), 10000);
-              }
+          <button className="btn btn-primary"
+            onClick={() => {
+              // 방법2: 브라우저 인쇄 → "PDF로 저장" (서버 Puppeteer 불필요, 클라이언트에서 생성)
+              const sitename = (ctx.사업장명 || ctx.company || "위험성평가").replace(/[\\/:*?"<>|]/g, "_");
+              const prevTitle = document.title;
+              document.title = `위험성평가_${sitename}_${new Date().toISOString().slice(0, 10)}`;
+              const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
+              window.addEventListener("afterprint", restore);
+              window.print();
             }}>
-            <Icon name="download" size={14} /> 📄 PDF 다운로드
+            <Icon name="download" size={14} /> 📄 PDF 저장 (인쇄창에서 "PDF로 저장" 선택)
           </button>
         </div>
       </div>
