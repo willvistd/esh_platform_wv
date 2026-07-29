@@ -3628,6 +3628,11 @@ const RISK_STYLE = `
 
     /* 8) 페이지 단위 분리 */
     .page-break { page-break-before: always; }
+
+    /* 9) 사업장정보 서식: 인쇄 시 섹션 간격을 약간 줄여 공정 4개까지 한 페이지에 수용
+       (개별출력·전체출력 동일 적용 — 글자 크기는 그대로, 표 사이 여백만 28→16) */
+    .site-info-area h2 { margin-bottom: 14px !important; }
+    .site-info-area table { margin-bottom: 16px !important; }
   }
   /* 인쇄 전용(화면에선 숨김) — @media print 블록에서 표시됨 */
   .print-only, .print-only-inline { display: none; }
@@ -5747,12 +5752,12 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
         .risk-print-area-table { page: wv-rt-landscape; }
         @media print {
           /* 스크롤 박스 해제 + 본문 폭에 표 강제 맞춤 */
-          .risk-print-area, .risk-print-area > div {
+          .risk-print-area-table, .risk-print-area-table > div {
             overflow: visible !important;
             overflow-x: visible !important;
           }
-          .risk-print-area { font-size: 5pt !important; }
-          .risk-print-area table {
+          .risk-print-area-table { font-size: 5pt !important; }
+          .risk-print-area-table table {
             font-size: 5pt !important;
             table-layout: fixed !important;
             width: 100% !important;
@@ -5760,27 +5765,27 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             max-width: 100% !important;
           }
           /* 제목은 유지 (10% 축소 대상 아님) */
-          .risk-print-area h2 { font-size: 14pt !important; }
+          .risk-print-area-table h2 { font-size: 14pt !important; }
           /* 컬럼 비율(%) 강제 — A4 가로 폭에 맞춰 17개 컬럼 분배 (합계 100%) */
-          .risk-print-area colgroup col:nth-child(1)  { width: 7%   !important; } /* 세부작업 */
-          .risk-print-area colgroup col:nth-child(2)  { width: 8%   !important; } /* 위험분류 */
-          .risk-print-area colgroup col:nth-child(3)  { width: 8%   !important; } /* 원인 */
-          .risk-print-area colgroup col:nth-child(4)  { width: 13%  !important; } /* 위험발생환경 */
-          .risk-print-area colgroup col:nth-child(5)  { width: 6%   !important; } /* 예상재해 */
-          .risk-print-area colgroup col:nth-child(6)  { width: 8%   !important; } /* 현재안전조치 */
-          .risk-print-area colgroup col:nth-child(7)  { width: 4.5% !important; } /* 가능성 */
-          .risk-print-area colgroup col:nth-child(8)  { width: 4.5% !important; } /* 중대성 */
-          .risk-print-area colgroup col:nth-child(9)  { width: 4%   !important; } /* 위험성 */
-          .risk-print-area colgroup col:nth-child(10) { width: 13%  !important; } /* 감소대책 */
-          .risk-print-area colgroup col:nth-child(11) { width: 4.5% !important; } /* 후가능성 */
-          .risk-print-area colgroup col:nth-child(12) { width: 4.5% !important; } /* 후중대성 */
-          .risk-print-area colgroup col:nth-child(13) { width: 4%   !important; } /* 후위험성 */
-          .risk-print-area colgroup col:nth-child(14) { width: 4%   !important; } /* 개선예정일 */
-          .risk-print-area colgroup col:nth-child(15) { width: 4%   !important; } /* 완료일 */
-          .risk-print-area colgroup col:nth-child(16) { width: 3%   !important; } /* 담당자 */
-          .risk-print-area colgroup col:nth-child(17) { width: 0    !important; display: none !important; } /* 삭제 */
+          .risk-print-area-table colgroup col:nth-child(1)  { width: 7%   !important; } /* 세부작업 */
+          .risk-print-area-table colgroup col:nth-child(2)  { width: 8%   !important; } /* 위험분류 */
+          .risk-print-area-table colgroup col:nth-child(3)  { width: 8%   !important; } /* 원인 */
+          .risk-print-area-table colgroup col:nth-child(4)  { width: 13%  !important; } /* 위험발생환경 */
+          .risk-print-area-table colgroup col:nth-child(5)  { width: 6%   !important; } /* 예상재해 */
+          .risk-print-area-table colgroup col:nth-child(6)  { width: 8%   !important; } /* 현재안전조치 */
+          .risk-print-area-table colgroup col:nth-child(7)  { width: 4.5% !important; } /* 가능성 */
+          .risk-print-area-table colgroup col:nth-child(8)  { width: 4.5% !important; } /* 중대성 */
+          .risk-print-area-table colgroup col:nth-child(9)  { width: 4%   !important; } /* 위험성 */
+          .risk-print-area-table colgroup col:nth-child(10) { width: 13%  !important; } /* 감소대책 */
+          .risk-print-area-table colgroup col:nth-child(11) { width: 4.5% !important; } /* 후가능성 */
+          .risk-print-area-table colgroup col:nth-child(12) { width: 4.5% !important; } /* 후중대성 */
+          .risk-print-area-table colgroup col:nth-child(13) { width: 4%   !important; } /* 후위험성 */
+          .risk-print-area-table colgroup col:nth-child(14) { width: 4%   !important; } /* 개선예정일 */
+          .risk-print-area-table colgroup col:nth-child(15) { width: 4%   !important; } /* 완료일 */
+          .risk-print-area-table colgroup col:nth-child(16) { width: 3%   !important; } /* 담당자 */
+          .risk-print-area-table colgroup col:nth-child(17) { width: 0    !important; display: none !important; } /* 삭제 */
           /* 셀 내부 텍스트 줄바꿈 (세로 가운데만, 가로는 기본 좌측) */
-          .risk-print-area td, .risk-print-area th {
+          .risk-print-area-table td, .risk-print-area-table th {
             word-break: keep-all !important;
             overflow-wrap: break-word !important;
             white-space: normal !important;
@@ -5788,42 +5793,42 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             padding: 1px 2px !important;
           }
           /* 셀 내부 flex 컨테이너 (세로 가운데) — 인쇄 시 행 높이 +15% +10% = ≈88px */
-          .risk-print-area td > div {
+          .risk-print-area-table td > div {
             min-height: 88px !important;   /* 80px → +10% = 88px */
             padding: 5px 5px !important;
             align-items: center !important;
           }
           /* ── 표 제목(h2)·헤더(thead) 행은 고정 — 사용자 조절 영향 X ── */
-          .risk-print-area h2 {
+          .risk-print-area-table h2 {
             font-size: 12pt !important;   /* 표 제목 ("위험성평가표 — 시설관리") 고정 */
           }
-          /* ⚠️ :not(.cover-page) 필수 — 글로벌 ".risk-print-area:not(.cover-page) th { 10.5pt !important }"
+          /* ⚠️ :not(.cover-page) 필수 — 글로벌 ".risk-print-area-table:not(.cover-page) th { 10.5pt !important }"
                 (specificity 0,2,1)을 이기려면 같이 (0,2,2)로 맞춰야 함 */
-          .risk-print-area:not(.cover-page) thead th,
-          .risk-print-area:not(.cover-page) thead td {
+          .risk-print-area-table:not(.cover-page) thead th,
+          .risk-print-area-table:not(.cover-page) thead td {
             font-size: 8pt !important;    /* 헤더 행 (세부작업내용 / 위험분류 / ... / 담당자) 고정 */
             font-weight: 700 !important;
             line-height: 1.2 !important;
           }
           /* 담당자 헤더만 별도 — 칸이 3%로 너무 좁아 "자"가 줄바꿈됨 → 작게 + nowrap */
-          .risk-print-area:not(.cover-page) thead th.th-assignee {
+          .risk-print-area-table:not(.cover-page) thead th.th-assignee {
             font-size: 6pt !important;
             white-space: nowrap !important;
             letter-spacing: -0.2pt !important;
           }
           /* ── 본문(tbody) — 사용자가 조절하는 폰트 ──
              ⚠️ :not(.cover-page) 추가: RISK_STYLE 글로벌 규칙
-             ".risk-print-area:not(.cover-page) input/textarea/select { font-size: 11pt !important; }"
+             ".risk-print-area-table:not(.cover-page) input/textarea/select { font-size: 11pt !important; }"
              (specificity 0,2,1)을 이겨야 빨간박스(세부작업/위험분류/원인/환경/재해/조치 등 콜1~6,10,16)도 조절됨 */
-          .risk-print-area:not(.cover-page) tbody td,
-          .risk-print-area:not(.cover-page) tbody th {
+          .risk-print-area-table:not(.cover-page) tbody td,
+          .risk-print-area-table:not(.cover-page) tbody th {
             font-size: ${printFontSize}pt !important;
             line-height: 1.3 !important;
           }
           /* 본문 안의 select·input·textarea도 동일하게 조절 */
-          .risk-print-area:not(.cover-page) tbody select,
-          .risk-print-area:not(.cover-page) tbody input,
-          .risk-print-area:not(.cover-page) tbody textarea {
+          .risk-print-area-table:not(.cover-page) tbody select,
+          .risk-print-area-table:not(.cover-page) tbody input,
+          .risk-print-area-table:not(.cover-page) tbody textarea {
             font-size: ${printFontSize}pt !important;
             line-height: 1.3 !important;
             vertical-align: middle !important;
@@ -5834,7 +5839,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             border: none !important;
             color: #000 !important;
           }
-          .risk-print-area select {
+          .risk-print-area-table select {
             -webkit-appearance: none !important;
             appearance: none !important;
             text-overflow: clip !important;
@@ -5845,10 +5850,10 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
           }
           /* 가능성·중대성·후가능성·후중대성 컬럼(7,8,11,12)의 select: 강제 한 줄 + 본문 폰트와 동일
              (사용자 요청: 옆 위험성 텍스트와 동일하게 — 작아보이지 않도록 printFontSize 사용) */
-          .risk-print-area tbody td:nth-child(7) select,
-          .risk-print-area tbody td:nth-child(8) select,
-          .risk-print-area tbody td:nth-child(11) select,
-          .risk-print-area tbody td:nth-child(12) select {
+          .risk-print-area-table tbody td:nth-child(7) select,
+          .risk-print-area-table tbody td:nth-child(8) select,
+          .risk-print-area-table tbody td:nth-child(11) select,
+          .risk-print-area-table tbody td:nth-child(12) select {
             white-space: nowrap !important;
             word-break: keep-all !important;
             overflow-wrap: normal !important;
@@ -5856,37 +5861,37 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             text-align: center !important;
           }
           /* 위험성·후위험성 컬럼(9,13)의 b/span 텍스트 한 줄 */
-          .risk-print-area tbody td:nth-child(9),
-          .risk-print-area tbody td:nth-child(13) {
+          .risk-print-area-table tbody td:nth-child(9),
+          .risk-print-area-table tbody td:nth-child(13) {
             white-space: nowrap !important;
             font-size: ${printFontSize}pt !important;
           }
-          .risk-print-area tbody td:nth-child(9) b,
-          .risk-print-area tbody td:nth-child(13) b {
+          .risk-print-area-table tbody td:nth-child(9) b,
+          .risk-print-area-table tbody td:nth-child(13) b {
             font-size: ${printFontSize + 0.5}pt !important;
           }
-          .risk-print-area tbody td:nth-child(9) br,
-          .risk-print-area tbody td:nth-child(13) br {
+          .risk-print-area-table tbody td:nth-child(9) br,
+          .risk-print-area-table tbody td:nth-child(13) br {
             display: none !important;
           }
-          .risk-print-area textarea {
+          .risk-print-area-table textarea {
             white-space: pre-wrap !important;
             word-break: keep-all !important;
             overflow-wrap: break-word !important;
             resize: none !important;
             text-align: center !important;   /* textarea만 가운데 정렬 (드롭다운/입력은 제외) */
           }
-          .risk-print-area tbody input[type="date"] {
+          .risk-print-area-table tbody input[type="date"] {
             font-size: ${Math.max(printFontSize - 2, 4)}pt !important;
           }
           /* 날짜 셀(개선예정일/완료일): YY-MM-DD 오버레이용
              ⚠️ Chrome은 input[type=date]의 값을 내부 pseudo-element(::-webkit-datetime-edit-*)로
                 별도 렌더링해서 color: transparent를 무시하고 YYYY-MM-DD를 그대로 출력함.
              → 인쇄 시에는 input 자체를 display:none으로 숨기고 span만 보이게 처리. */
-          .risk-print-area input.date-yy-input {
+          .risk-print-area-table input.date-yy-input {
             display: none !important;
           }
-          .risk-print-area:not(.cover-page) .date-yy-display {
+          .risk-print-area-table:not(.cover-page) .date-yy-display {
             position: static !important;
             display: block !important;
             width: 100% !important;
@@ -5895,12 +5900,12 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             color: #000 !important;
           }
           /* 삭제 컬럼·관련 셀 인쇄 제외 */
-          .risk-print-area th.no-print,
-          .risk-print-area td.no-print {
+          .risk-print-area-table th.no-print,
+          .risk-print-area-table td.no-print {
             display: none !important;
           }
           /* 가이드 행도 인쇄 제외 */
-          .risk-print-area tr.no-print {
+          .risk-print-area-table tr.no-print {
             display: none !important;
           }
         }
@@ -7334,9 +7339,9 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
                 맞춰서 문제없음). 전체출력은 고정 height를 한 페이지보다 3mm 작게 주고
                 overflow:hidden + break-inside:avoid로 절대 다음 장으로 안 넘어가게 고정. */
           .print-all-wrap .risk-print-area.cover-page {
-            height: calc(297mm - 24mm - 3mm) !important;
+            height: calc(297mm - 24mm - 8mm) !important;
             min-height: 0 !important;
-            max-height: calc(297mm - 24mm - 3mm) !important;
+            max-height: calc(297mm - 24mm - 8mm) !important;
             display: flex !important;
             flex-direction: column !important;
             box-sizing: border-box !important;
