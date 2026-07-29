@@ -7261,7 +7261,8 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
 
         @media print {
           @page { size: A4 portrait; margin: 12mm; }
-          @page wv-portrait { size: A4 portrait !important; margin: 12mm !important; }
+          @page wv-pa { size: A4 portrait !important; margin: 12mm !important; }
+          @page wv-pb { size: A4 portrait !important; margin: 12mm !important; }
           html, body {
             width: 100% !important; margin: 0 !important; padding: 0 !important;
             background: #fff !important; color: #000 !important;
@@ -7287,17 +7288,18 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
           header, nav[role="navigation"], .topbar, .top-bar { display: none !important; }
 
           /* step-page는 STEP 1개의 슬롯 — 페이지 분리만 담당 */
+          /* 각 서식에 번갈아 다른 named-page 부여 → 이름이 바뀌며 자동 페이지 전환.
+             (명시적 page-break를 쓰면 landscape 전환 때 빈페이지가 생겨 제거) */
           .print-all-wrap > div.step-page {
-            page-break-after: always !important;
             page-break-inside: auto;
             margin-bottom: 0 !important;
+            min-height: 0 !important;
             display: block !important;
             box-shadow: none !important;
             background: transparent !important;
           }
-          .print-all-wrap > div.step-page:last-child {
-            page-break-after: auto;
-          }
+          .print-all-wrap > div.step-page:nth-of-type(odd)  { page: wv-pa !important; }
+          .print-all-wrap > div.step-page:nth-of-type(even) { page: wv-pb !important; }
 
           /* 방향 고정 — 모든 STEP은 세로 명시, 위험성평가표만 가로.
              (가로 named-page가 다음 STEP으로 번져 사진대지가 가로로 나오던 문제 + 빈 페이지 방지) */
