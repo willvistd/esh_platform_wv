@@ -3486,7 +3486,7 @@ const RISK_STYLE = `
     }
     .risk-print-area.cover-page .cover-flex-spacer { display: block !important; }
     /* 결재표의 모든 셀 테두리 인쇄 시에도 확실히 표시 */
-    .risk-print-area.cover-page table { border-collapse: collapse !important; }
+    .risk-print-area.cover-page table { border-collapse: collapse !important; table-layout: fixed !important; }
     .risk-print-area.cover-page table td,
     .risk-print-area.cover-page table th {
       border: 1px solid #555 !important;
@@ -4907,14 +4907,14 @@ const RiskCoverView = ({ onNav, currentUser }) => {
               </colgroup>
               <thead>
                 <tr>
-                  <th style={{ border: "1px solid #555", padding: "10px 2px", fontSize: 14, fontWeight: 700, background: "#fafafa", letterSpacing: 4 }}>구&nbsp;분</th>
+                  <th style={{ width: 60, border: "1px solid #555", padding: "10px 2px", fontSize: 14, fontWeight: 700, background: "#fafafa", letterSpacing: 4 }}>구&nbsp;분</th>
                   {[
                     { label: "작 성", ls: 4 },
                     { label: "근로자대표\n검 토", ls: 1 },
                     { label: "검 토", ls: 4 },
                     { label: "승 인", ls: 4 },
                   ].map((h, i) => (
-                    <th key={i} style={{ border: "1px solid #555", padding: "10px 2px", fontSize: 14, fontWeight: 700, background: "#fafafa", letterSpacing: h.ls, lineHeight: 1.25, whiteSpace: "pre-line" }}>{h.label}</th>
+                    <th key={i} style={{ width: 125, border: "1px solid #555", padding: "10px 2px", fontSize: 14, fontWeight: 700, background: "#fafafa", letterSpacing: h.ls, lineHeight: 1.25, whiteSpace: "pre-line" }}>{h.label}</th>
                   ))}
                 </tr>
               </thead>
