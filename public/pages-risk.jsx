@@ -5424,7 +5424,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
                     rows={3}
                     className="no-print"
                     style={{ width: "100%", border: "1px solid #ccc", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "#fff", outline: "none" }}
-                    placeholder="근로자 의견을 입력하세요." />
+                    placeholder="반드시 근로자 의견을 청취한 후 접수된 내용을 기입하세요" />
                   {/* 인쇄용: 내용 길이만큼 높이 자동 확장 */}
                   <div className="print-only" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", padding: "8px 10px", minHeight: 40 }}>{form.근로자의견}</div>
                 </div>
