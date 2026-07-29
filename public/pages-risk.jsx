@@ -5515,7 +5515,7 @@ const TD = ({ children, bg, center, bold, color, w, className }) => (
   </td>
 );
 
-const RiskTableView = ({ onNav, currentUser }) => {
+const RiskTableView = ({ onNav, currentUser, area }) => {
   const info = RISK_STEPS[3];
   const ctx = getEvalContext();
   const company = ctx?.company || localStorage.getItem(RISK_COMPANY_KEY) || "";
@@ -5536,6 +5536,7 @@ const RiskTableView = ({ onNav, currentUser }) => {
   // ⚠ rows·site·date 초기화도 이 initialType을 써야 함
   //    (types[0]로 고정하면 인쇄 시 모든 업무유형이 첫 유형=시설관리 내용으로 나오는 버그)
   const initialType = (() => {
+    if (area && types.includes(area)) return area;  // 전체출력: 공정 직접 지정
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
       const printArea = p.get("area");
@@ -7209,6 +7210,11 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
   const ctx = getEvalContext();
   const company = ctx?.company || "";
   const evalId  = ctx?.evalId  || "";
+  // 위험성평가표: 선택된 관리분야(공정)마다 한 장씩 출력 (예전 puppeteer가 area별로 생성하던 것 복원)
+  const _allTypes = company ? (RISK_COMPANIES[company] || []) : [];
+  const _siteForm = company ? (riskLoad(evalId ? `wv_risk_site_${evalId}` : `wv_risk_site_${company}`)?.form) : null;
+  const _selTypes = Array.isArray(_siteForm?.관리분야선택) ? _siteForm.관리분야선택 : null;
+  const tableTypes = (_selTypes && _selTypes.length > 0) ? _allTypes.filter(t => _selTypes.includes(t)) : _allTypes;
   // 각 STEP 컴포넌트가 onNav를 호출할 수 있으니 무시하는 더미 함수
   const dummyNav = () => {};
   // PDF 다운로드 진행률 상태 ({ progress, percent, done, error })
@@ -7305,6 +7311,8 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
              (가로 named-page가 다음 STEP으로 번져 사진대지가 가로로 나오던 문제 + 빈 페이지 방지) */
           .print-all-wrap > div.step-page { page: wv-portrait !important; }
           .print-all-wrap > div.step-page.table-step { page: wv-rt-landscape !important; }
+          /* 두 번째 표부터 명시적 페이지 나눔 (같은 방향이라 빈페이지 없음) */
+          .print-all-wrap > div.step-page.tbl-break { break-before: page !important; page-break-before: always !important; }
 
           /* 일반 STEP의 .risk-print-area는 자연 흐름(static)으로 처리:
              - absolute로 두면 길어진 콘텐츠(회의록 30명 명단 등)가 부모를 못 늘려 잘림
@@ -7396,7 +7404,9 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
         <div className="step-page"><RiskCoverView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskSiteView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskMeetingView onNav={dummyNav} currentUser={currentUser} /></div>
-        <div className="step-page table-step"><RiskTableView onNav={dummyNav} currentUser={currentUser} /></div>
+        {(tableTypes.length ? tableTypes : [undefined]).map((t, i) => (
+          <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} /></div>
+        ))}
         <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskTrainingView onNav={dummyNav} currentUser={currentUser} /></div>
       </div>
