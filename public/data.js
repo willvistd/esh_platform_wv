@@ -157,7 +157,8 @@ window.WV_SUB = {
   // 저장된 설정(배열) 있으면 그것, 없으면 기본 목록
   listFor: (c, cfg) => (Array.isArray(cfg && cfg[c.id]) ? cfg[c.id] : window.WV_SUB.defaultList(c)),
   // 항목 → { label, nav, act } (사이드바 렌더용)
-  resolve: (item, c) => {
+  //   cats: 현재(라이브) 카테고리 목록 — 다른 카테고리 게시판 링크의 이름을 항상 최신으로 보이게 함
+  resolve: (item, c, cats) => {
     if (item.kind === "tool") {
       const t = window.WV_SUB.toolByKey(item.toolKey);
       if (!t) return null;
@@ -168,8 +169,13 @@ window.WV_SUB = {
       };
     }
     const cid = item.targetCat || c.id; // board
+    // ⚠ 다른 카테고리 게시판 링크(targetCat 지정)는 저장된 label이 '추가 당시 이름 스냅샷'이라
+    //    카테고리명을 바꾸면 옛 이름이 그대로 남는다(호버=옛이름 / 클릭=새이름 불일치).
+    //    → 라이브 카테고리 목록에서 현재 이름을 찾아 항상 최신으로 표시(스냅샷보다 우선).
+    const liveCat = item.targetCat && Array.isArray(cats) ? cats.find((x) => x.id === cid) : null;
+    const label = liveCat ? liveCat.name + " 게시판" : (item.label || "게시판 보기");
     return {
-      label: item.label || "게시판 보기",
+      label,
       nav: { name: "category", id: cid },
       act: (r) => r.name === "category" && r.id === cid,
     };

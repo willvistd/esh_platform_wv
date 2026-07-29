@@ -84,7 +84,7 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
     const list = window.WV_SUB.listFor(c, subCfg);
     const items = list
       .filter((it) => it.enabled !== false)
-      .map((it) => window.WV_SUB.resolve(it, c))
+      .map((it) => window.WV_SUB.resolve(it, c, categories))  // categories(라이브) 전달 → 게시판 링크 이름 최신 반영
       .filter(Boolean);
     return items.length ? items : null;
   };
