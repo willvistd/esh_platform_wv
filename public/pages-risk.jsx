@@ -7261,6 +7261,7 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
 
         @media print {
           @page { size: A4 portrait; margin: 12mm; }
+          @page wv-portrait { size: A4 portrait !important; margin: 12mm !important; }
           html, body {
             width: 100% !important; margin: 0 !important; padding: 0 !important;
             background: #fff !important; color: #000 !important;
@@ -7273,8 +7274,17 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
           }
           .sidebar, aside, nav[role="navigation"] { display: none !important; }
           .print-all-no-print { display: none !important; }
-          /* 안전망: print-all-wrap 내부는 모두 visible */
-          .print-all-wrap, .print-all-wrap * { visibility: visible !important; }
+          /* 각 서식의 '인쇄영역'만 표시 — 편집 UI·사이드바·탭·로고 잔재 숨김.
+             (blanket visible 대신 인쇄영역만 다시 표시해서 각 STEP의 격리를 복원) */
+          .print-all-wrap .risk-print-area, .print-all-wrap .risk-print-area *,
+          .print-all-wrap .risk-print-area-table, .print-all-wrap .risk-print-area-table *,
+          .print-all-wrap .train-print-area, .print-all-wrap .train-print-area *,
+          .print-all-wrap .photos-print-area, .print-all-wrap .photos-print-area * {
+            visibility: visible !important;
+          }
+          /* 편집 전용 요소는 공간까지 제거 */
+          .print-all-wrap .no-print,
+          header, nav[role="navigation"], .topbar, .top-bar { display: none !important; }
 
           /* step-page는 STEP 1개의 슬롯 — 페이지 분리만 담당 */
           .print-all-wrap > div.step-page {
@@ -7289,10 +7299,10 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
             page-break-after: auto;
           }
 
-          /* ⭐ 위험성평가표만 가로 페이지 — RiskTableView가 자체 정의한 named page 적용 */
-          .print-all-wrap > div.step-page.table-step {
-            page: wv-rt-landscape !important;
-          }
+          /* 방향 고정 — 모든 STEP은 세로 명시, 위험성평가표만 가로.
+             (가로 named-page가 다음 STEP으로 번져 사진대지가 가로로 나오던 문제 + 빈 페이지 방지) */
+          .print-all-wrap > div.step-page { page: wv-portrait !important; }
+          .print-all-wrap > div.step-page.table-step { page: wv-rt-landscape !important; }
 
           /* 일반 STEP의 .risk-print-area는 자연 흐름(static)으로 처리:
              - absolute로 두면 길어진 콘텐츠(회의록 30명 명단 등)가 부모를 못 늘려 잘림
