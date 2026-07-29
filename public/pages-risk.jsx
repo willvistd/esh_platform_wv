@@ -7328,12 +7328,21 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
             min-height: 0 !important;
           }
 
-          /* 표지만 예외 — 페이지 전체를 채워야 결재표가 하단에 배치됨 */
+          /* 표지만 예외 — 페이지 전체를 채워야 결재표가 하단에 배치됨.
+             ⚠ min-height를 인쇄영역(273mm)과 똑같이 주면 반올림 오차로 맨 아랫줄
+                테두리가 2페이지로 넘어감(개별출력은 absolute top/bottom으로 정확히
+                맞춰서 문제없음). 전체출력은 고정 height를 한 페이지보다 3mm 작게 주고
+                overflow:hidden + break-inside:avoid로 절대 다음 장으로 안 넘어가게 고정. */
           .print-all-wrap .risk-print-area.cover-page {
-            min-height: calc(297mm - 24mm) !important;
+            height: calc(297mm - 24mm - 3mm) !important;
+            min-height: 0 !important;
+            max-height: calc(297mm - 24mm - 3mm) !important;
             display: flex !important;
             flex-direction: column !important;
             box-sizing: border-box !important;
+            overflow: hidden !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
