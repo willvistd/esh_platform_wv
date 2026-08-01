@@ -5324,6 +5324,10 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
     riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
     setSavedAt(at);
   };
+  // 회의내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게
+  const autoGrow = (el) => { if (!el) return; el.style.height = "auto"; el.style.height = (el.scrollHeight + 2) + "px"; };
+  // 회의내용 textarea: 마운트/렌더 시 내용 높이에 딱 맞춤 (ref 콜백 — 초기 로드 포함 확실히 실행)
+  const contentRefCb = (el) => { if (!el) return; autoGrow(el); requestAnimationFrame(() => autoGrow(el)); };
 
   // 회의시간 자동 산출
   const calcDuration = () => {
@@ -5411,10 +5415,11 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             <tr className="meeting-content-row">
               <td style={{ ...cellLabel, verticalAlign: "middle" }}>회의내용</td>
               <td colSpan={3} style={cellInput}>
-                <textarea value={form.회의내용} onChange={e => upd("회의내용", e.target.value)}
-                  rows={5}
+                <textarea ref={contentRefCb} value={form.회의내용}
+                  onChange={e => { upd("회의내용", e.target.value); autoGrow(e.target); }}
+                  rows={1}
                   className="no-print"
-                  style={{ ...inp, padding: "12px 14px", resize: "vertical", minHeight: 130, lineHeight: 1.7, whiteSpace: "pre-line" }} />
+                  style={{ ...inp, padding: "12px 14px", resize: "none", minHeight: 0, overflow: "hidden", lineHeight: 1.7, whiteSpace: "pre-line" }} />
                 {/* 인쇄용: 내용 길이만큼 높이 자동 확장 (textarea는 인쇄 시 잘림) */}
                 <div className="print-only" style={{ padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word", minHeight: 130 }}>{form.회의내용}</div>
                 {/* 근로자의견 박스 */}
