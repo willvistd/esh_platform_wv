@@ -5404,7 +5404,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               </td>
               <td style={cellLabel}>회의주관</td>
               <td style={cellInput}>
-                <input value={form.회의주관} onChange={e => upd("회의주관", e.target.value)} style={inp} placeholder="주관자 성명" />
+                <input value={form.회의주관} onChange={e => upd("회의주관", e.target.value)} style={inp} placeholder="관리감독자를 강사로 기재" />
               </td>
             </tr>
             {/* 회의내용 */}
@@ -7133,7 +7133,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               </td>
               <td className="lbl">강사명</td>
               <td>
-                <input type="text" value={form.강사명} onChange={e => upd("강사명", e.target.value)} placeholder="강사명" />
+                <input type="text" value={form.강사명} onChange={e => upd("강사명", e.target.value)} placeholder="관리감독자를 강사로 기재" />
               </td>
             </tr>
             <tr>
