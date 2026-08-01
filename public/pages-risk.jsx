@@ -7186,7 +7186,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
                           <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)} />
                         </td>
                         <td style={{ height: 40 }}>
-                          <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)} />
+                          <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
+                            placeholder={idx === 0 ? "반드시 서명을 받으세요" : undefined} />
                         </td>
                       </React.Fragment>
                     ))}
