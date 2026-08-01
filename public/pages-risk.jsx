@@ -5404,7 +5404,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               </td>
               <td style={cellLabel}>회의주관</td>
               <td style={cellInput}>
-                <input value={form.회의주관} onChange={e => upd("회의주관", e.target.value)} style={inp} placeholder="관리감독자를 강사로 기재" />
+                <input value={form.회의주관} onChange={e => upd("회의주관", e.target.value)} style={inp} placeholder="관리감독자를 주관자로 기재" />
               </td>
             </tr>
             {/* 회의내용 */}
