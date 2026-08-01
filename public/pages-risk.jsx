@@ -7036,7 +7036,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
         }
         .train-attendee-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
         .train-attendee-tbl td, .train-attendee-tbl th {
-          border: 1px solid #333; padding: 8px 10px; text-align: center; height: 32px;
+          border: 1px solid #333; padding: 8px 10px; text-align: center; height: 44px;
         }
         .train-attendee-tbl th { background: #f0f0f0; font-weight: 600; font-size: 13px; padding: 8px 12px; }
         .train-attendee-tbl input {
@@ -7111,7 +7111,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
                 <input type="text" value={form.사업장명} onChange={e => upd("사업장명", e.target.value)} placeholder="사업장명 입력" />
               </td>
             </tr>
-            <tr>
+            <tr style={{ height: 48 }}>
               <td className="lbl">교육일자</td>
               <td>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -7131,7 +7131,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
                 </div>
               </td>
             </tr>
-            <tr>
+            <tr style={{ height: 48 }}>
               <td className="lbl">교육장소</td>
               <td>
                 <input type="text" value={form.교육장소} onChange={e => upd("교육장소", e.target.value)} placeholder="교육장소" />
@@ -7146,8 +7146,10 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               <td colSpan={3} style={{ padding: 0, verticalAlign: "middle" }}>
                 {/* textarea를 flex로 감싸 셀 가운데에 배치 (텍스트가 셀 중앙에서 시작) */}
                 <div style={{ display: "flex", alignItems: "center", minHeight: 240, padding: "16px 14px" }}>
-                  <textarea value={form.교육내용} onChange={e => upd("교육내용", e.target.value)}
+                  <textarea className="no-print" value={form.교육내용} onChange={e => upd("교육내용", e.target.value)}
                     style={{ width: "100%", border: "none", background: "transparent", fontSize: 12.5, lineHeight: 1.7, padding: 0, resize: "vertical", minHeight: 90, outline: "none", fontFamily: "inherit", whiteSpace: "pre-wrap" }} />
+                  {/* 인쇄용: textarea는 인쇄 시 줄이 잘려서, 전체 텍스트를 div로 따로 출력 */}
+                  <div className="print-only" style={{ width: "100%", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{form.교육내용}</div>
                 </div>
               </td>
             </tr>
@@ -7190,7 +7192,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
                         <td>
                           <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)} />
                         </td>
-                        <td style={{ height: 40 }}>
+                        <td>
                           <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
                             placeholder={idx === 0 ? "반드시 서명을 받으세요" : undefined} />
                         </td>
