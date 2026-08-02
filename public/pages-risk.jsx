@@ -7054,19 +7054,14 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
         .train-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .train-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
         .train-photo-drop {
-          flex: 1; min-height: 170px; display: flex; align-items: center; justify-content: center;
+          flex: 1; min-height: 300px; display: flex; align-items: center; justify-content: center;
           background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
         }
-        .train-photo-drop img { max-width: 100%; max-height: 210px; object-fit: contain; display: block; }
+        .train-photo-drop img { max-width: 100%; max-height: 330px; object-fit: contain; display: block; }
         .train-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
         .train-photo-del {
           position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
           border: none; background: rgba(220,38,38,0.9); color: #fff; cursor: pointer; font-size: 12px; line-height: 1;
-        }
-        .train-photo-cap { border-top: 1px solid #333; background: #fafafa; }
-        .train-photo-cap input {
-          width: 100%; border: none; background: transparent; text-align: center;
-          font-size: 12px; padding: 6px 8px; outline: none; box-sizing: border-box; font-family: inherit;
         }
         .train-attendee-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
         .train-attendee-tbl td, .train-attendee-tbl th {
@@ -7125,9 +7120,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           }
           /* 교육 사진: 인쇄 시 테두리 유지 + 빈칸은 안내문구 제거 + 사진 표시 */
           .train-print-area .train-photo-cell { border: 1px solid #000 !important; }
-          .train-print-area .train-photo-cap { border-top: 1px solid #000 !important; background: transparent !important; }
-          .train-print-area .train-photo-drop { background: #fff !important; min-height: 150px !important; }
-          .train-print-area .train-photo-drop img { max-height: 195px !important; }
+          .train-print-area .train-photo-drop { background: #fff !important; min-height: 290px !important; }
+          .train-print-area .train-photo-drop img { max-height: 320px !important; }
           .train-print-area .train-photo-hint { display: none !important; }
           .train-print-area .train-tbl .lbl,
           .train-print-area .train-attendee-tbl th {
@@ -7265,10 +7259,6 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
                   {p?.src && (
                     <button type="button" className="train-photo-del no-print" onClick={() => removePhoto(idx)} title="사진 삭제">✕</button>
                   )}
-                  <div className="train-photo-cap">
-                    <input value={p?.caption || ""} placeholder="사진 설명"
-                      onChange={e => setPhotoSlot(idx, { caption: e.target.value })} />
-                  </div>
                 </div>
               );
             })}
