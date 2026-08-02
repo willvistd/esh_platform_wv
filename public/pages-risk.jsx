@@ -5381,7 +5381,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             <col />
           </colgroup>
           <tbody>
-            <tr style={{ height: 52 }}>
+            <tr style={{ height: 48 }}>
               <td style={cellLabel}>회의일자</td>
               <td style={cellInput}>
                 <div style={{ display: "flex", alignItems: "center" }}>
@@ -5401,7 +5401,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
                 </div>
               </td>
             </tr>
-            <tr style={{ height: 52 }}>
+            <tr style={{ height: 48 }}>
               <td style={cellLabel}>회의장소</td>
               <td style={cellInput}>
                 <input value={form.회의장소} onChange={e => upd("회의장소", e.target.value)} style={inp} placeholder="회의 장소" />
@@ -5421,7 +5421,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
                   className="no-print"
                   style={{ ...inp, padding: "12px 14px", resize: "none", minHeight: 0, overflow: "hidden", lineHeight: 1.7, whiteSpace: "pre-line" }} />
                 {/* 인쇄용: 내용 길이만큼 높이 자동 확장 (textarea는 인쇄 시 잘림) */}
-                <div className="print-only" style={{ padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word", minHeight: 130 }}>{form.회의내용}</div>
+                <div className="print-only" style={{ padding: "12px 14px", fontSize: 13, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{form.회의내용}</div>
                 {/* 근로자의견 박스 */}
                 <div style={{ borderTop: "1px solid #333", padding: "10px 14px", background: "#fafafa" }}>
                   <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>○ 근로자의견</div>
