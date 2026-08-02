@@ -5317,11 +5317,24 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
     }));
   });
   const [savedAt, setSavedAt] = React.useState(_saved?._savedAt || "");
+  // 회의 사진 2칸 (드래그·드롭 또는 클릭 업로드)
+  const [photos, setPhotos] = React.useState(() => {
+    const p = _saved?.photos || [];
+    return [p[0] || null, p[1] || null];
+  });
+  const setPhotoSlot = (idx, patch) => setPhotos(ps => ps.map((p, i) => i === idx ? { ...(p || {}), ...patch } : p));
+  const readFileToSlot = (idx, file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = e => setPhotoSlot(idx, { src: e.target.result });
+    reader.readAsDataURL(file);
+  };
+  const removePhoto = (idx) => setPhotos(ps => ps.map((p, i) => i === idx ? null : p));
   const upd = (k, v) => setForm(s => ({ ...s, [k]: v }));
   const updAtt = (i, k, v) => setAttendees(a => a.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
   const handleSave = () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
+    riskSave(SAVE_KEY, { form, attendees, photos, _savedAt: at });
     setSavedAt(at);
   };
   // 회의내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게
@@ -5354,6 +5367,26 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
   return (
     <div className="content" style={{ maxWidth: 900 }}>
       <style>{RISK_STYLE}</style>
+      <style>{`
+        .mtg-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .mtg-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
+        .mtg-photo-drop {
+          flex: 1; min-height: 95px; display: flex; align-items: center; justify-content: center;
+          background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
+        }
+        .mtg-photo-drop img { max-width: 100%; max-height: 150px; object-fit: contain; display: block; }
+        .mtg-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
+        .mtg-photo-del {
+          position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
+          border: none; background: rgba(220,38,38,0.9); color: #fff; cursor: pointer; font-size: 12px; line-height: 1;
+        }
+        @media print {
+          .risk-print-area .mtg-photo-cell { border: 1px solid #000 !important; }
+          .risk-print-area .mtg-photo-drop { background: #fff !important; min-height: 95px !important; }
+          .risk-print-area .mtg-photo-drop img { max-height: 150px !important; }
+          .risk-print-area .mtg-photo-hint { display: none !important; }
+        }
+      `}</style>
       <RiskSubHeader onNav={onNav} stepInfo={info} />
       <RiskStepPanel
         stepNum={info.step} stepLabel={info.label.replace(/\n/g, " ")} stepColor={info.color}
@@ -5370,7 +5403,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
       />
 
       <div className="risk-form-card risk-print-area" style={{ padding: "40px 50px", boxShadow: "none", border: "none", background: "#fff" }}>
-        <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, marginBottom: 28 }}>위험성평가 회의록</h2>
+        <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, marginBottom: 18 }}>위험성평가 회의록</h2>
 
         {/* 1. 기본 정보 표 */}
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 0 }}>
@@ -5426,12 +5459,12 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
                 <div style={{ borderTop: "1px solid #333", padding: "10px 14px", background: "#fafafa" }}>
                   <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>○ 근로자의견</div>
                   <textarea value={form.근로자의견} onChange={e => upd("근로자의견", e.target.value)}
-                    rows={3}
+                    rows={2}
                     className="no-print"
-                    style={{ width: "100%", border: "1px solid #ccc", borderRadius: 4, padding: "8px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 60, background: "#fff", outline: "none" }}
+                    style={{ width: "100%", border: "1px solid #ccc", borderRadius: 4, padding: "6px 10px", fontSize: 13, fontFamily: "inherit", resize: "vertical", minHeight: 36, background: "#fff", outline: "none" }}
                     placeholder="반드시 근로자 의견을 청취한 후 접수된 내용을 기입하세요" />
                   {/* 인쇄용: 내용 길이만큼 높이 자동 확장 */}
-                  <div className="print-only" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", padding: "8px 10px", minHeight: 40 }}>{form.근로자의견}</div>
+                  <div className="print-only" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word", padding: "6px 10px", minHeight: 24 }}>{form.근로자의견}</div>
                 </div>
               </td>
             </tr>
@@ -5440,7 +5473,7 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
         </table>
 
         {/* 2. 참석자 명단 (20명, 직종 제외, 서명이 성명보다 넓음) */}
-        <div style={{ marginTop: 28 }}>
+        <div style={{ marginTop: 14 }}>
           <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, marginBottom: 10 }}>
             &lt; 참석자 명단 &gt;
           </div>
@@ -5488,6 +5521,32 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* 3. 회의 사진 (2칸) — 드래그·드롭 또는 클릭 업로드 */}
+        <div style={{ marginTop: 10 }}>
+          <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, marginBottom: 6 }}>&lt; 회 의 사 진 &gt;</div>
+          <div className="mtg-photo-grid">
+            {[0, 1].map(idx => {
+              const p = photos[idx];
+              return (
+                <div className="mtg-photo-cell" key={idx}>
+                  <label className="mtg-photo-drop"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => { e.preventDefault(); readFileToSlot(idx, e.dataTransfer.files[0]); }}>
+                    {p?.src
+                      ? <img src={p.src} alt="회의 사진" />
+                      : <span className="mtg-photo-hint no-print">클릭 또는 드래그하여<br />사진 추가</span>}
+                    <input type="file" accept="image/*" className="no-print" style={{ display: "none" }}
+                      onChange={e => { readFileToSlot(idx, e.target.files[0]); e.target.value = ""; }} />
+                  </label>
+                  {p?.src && (
+                    <button type="button" className="mtg-photo-del no-print" onClick={() => removePhoto(idx)} title="사진 삭제">✕</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
