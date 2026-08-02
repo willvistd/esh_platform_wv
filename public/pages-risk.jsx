@@ -5368,7 +5368,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
     <div className="content" style={{ maxWidth: 900 }}>
       <style>{RISK_STYLE}</style>
       <style>{`
-        .mtg-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* width를 살짝 줄여(6px) 2번째 칸 오른쪽 테두리가 인쇄영역 경계에서 잘리지 않게 함 */
+        .mtg-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: calc(100% - 6px); margin: 0 auto; }
         .mtg-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
         .mtg-photo-drop {
           flex: 1; min-height: 190px; display: flex; align-items: center; justify-content: center;
@@ -6994,8 +6995,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
   });
   const [attendees, setAttendees] = React.useState(() => {
     const saved = _saved?.attendees || [];
-    // 기존 데이터 보존 + 20명으로 (A4 1장에 맞춤)
-    return Array.from({ length: 20 }, (_, i) => ({
+    // 기존 데이터 보존 + 16명으로 (사진칸이 커서 2열 8행으로 축소)
+    return Array.from({ length: 16 }, (_, i) => ({
       연번: i + 1,
       직종: saved[i]?.직종 || "",
       성명: saved[i]?.성명 || "",
@@ -7109,14 +7110,14 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           width: 100%; border: none; background: transparent; font-size: 12.5px;
           resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.7;
         }
-        /* 교육 사진 2칸 */
-        .train-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        /* 교육 사진 2칸 (width -6px: 오른쪽 테두리 인쇄 잘림 방지) */
+        .train-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: calc(100% - 6px); margin: 0 auto; }
         .train-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
         .train-photo-drop {
-          flex: 1; min-height: 300px; display: flex; align-items: center; justify-content: center;
+          flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;
           background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
         }
-        .train-photo-drop img { max-width: 100%; max-height: 330px; object-fit: contain; display: block; }
+        .train-photo-drop img { max-width: 100%; max-height: 280px; object-fit: contain; display: block; }
         .train-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
         .train-photo-del {
           position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
@@ -7179,8 +7180,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           }
           /* 교육 사진: 인쇄 시 테두리 유지 + 빈칸은 안내문구 제거 + 사진 표시 */
           .train-print-area .train-photo-cell { border: 1px solid #000 !important; }
-          .train-print-area .train-photo-drop { background: #fff !important; min-height: 290px !important; }
-          .train-print-area .train-photo-drop img { max-height: 320px !important; }
+          .train-print-area .train-photo-drop { background: #fff !important; min-height: 240px !important; }
+          .train-print-area .train-photo-drop img { max-height: 275px !important; }
           .train-print-area .train-photo-hint { display: none !important; }
           .train-print-area .train-tbl .lbl,
           .train-print-area .train-attendee-tbl th {
@@ -7275,8 +7276,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 10 }, (_, i) => {
-                const leftIdx = i, rightIdx = i + 10;
+              {Array.from({ length: 8 }, (_, i) => {
+                const leftIdx = i, rightIdx = i + 8;   // 좌 1~8 / 우 9~16 (16명, 2열 8행)
                 return (
                   <tr key={i}>
                     {[leftIdx, rightIdx].map(idx => (
