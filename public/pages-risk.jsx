@@ -6951,6 +6951,9 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
     riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
     setSavedAt(at);
   };
+  // 교육내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게 (회의록과 동일)
+  const autoGrow = (el) => { if (!el) return; el.style.height = "auto"; el.style.height = (el.scrollHeight + 2) + "px"; };
+  const contentRefCb = (el) => { if (!el) return; autoGrow(el); requestAnimationFrame(() => autoGrow(el)); };
 
   // 교육시간 자동 산출 (회의록과 동일)
   const calcDuration = () => {
@@ -7143,14 +7146,14 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
             </tr>
             <tr>
               <td className="lbl">교육내용</td>
-              <td colSpan={3} style={{ padding: 0, verticalAlign: "middle" }}>
-                {/* textarea를 flex로 감싸 셀 가운데에 배치 (텍스트가 셀 중앙에서 시작) */}
-                <div style={{ display: "flex", alignItems: "center", minHeight: 240, padding: "16px 14px" }}>
-                  <textarea className="no-print" value={form.교육내용} onChange={e => upd("교육내용", e.target.value)}
-                    style={{ width: "100%", border: "none", background: "transparent", fontSize: 12.5, lineHeight: 1.7, padding: 0, resize: "vertical", minHeight: 90, outline: "none", fontFamily: "inherit", whiteSpace: "pre-wrap" }} />
-                  {/* 인쇄용: textarea는 인쇄 시 줄이 잘려서, 전체 텍스트를 div로 따로 출력 */}
-                  <div className="print-only" style={{ width: "100%", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{form.교육내용}</div>
-                </div>
+              <td colSpan={3} style={{ padding: "12px 14px", verticalAlign: "top" }}>
+                {/* 내용 높이에 딱 맞춤 + 입력 시 자동 확장 (회의록과 동일) */}
+                <textarea ref={contentRefCb} className="no-print" value={form.교육내용}
+                  onChange={e => { upd("교육내용", e.target.value); autoGrow(e.target); }}
+                  rows={1}
+                  style={{ width: "100%", border: "none", background: "transparent", fontSize: 12.5, lineHeight: 1.7, padding: 0, resize: "none", minHeight: 0, overflow: "hidden", outline: "none", fontFamily: "inherit", whiteSpace: "pre-wrap" }} />
+                {/* 인쇄용: textarea는 인쇄 시 줄이 잘려서, 전체 텍스트를 div로 따로 출력 */}
+                <div className="print-only" style={{ width: "100%", fontSize: 12.5, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{form.교육내용}</div>
               </td>
             </tr>
           </tbody>
