@@ -694,10 +694,10 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               <td className="lbl">교육시간</td>
               <td colSpan={3}>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  <input type="time" value={form.시작시간} style={{ width: 90 }}
+                  <input type="time" step={600} value={form.시작시간} style={{ width: 90 }}
                     onChange={e => update("시작시간", e.target.value)} readOnly={isView} />
                   <span>~</span>
-                  <input type="time" value={form.종료시간} style={{ width: 90 }}
+                  <input type="time" step={600} value={form.종료시간} style={{ width: 90 }}
                     onChange={e => update("종료시간", e.target.value)} readOnly={isView} />
                   <span style={{ color: "#666" }}>({currentEduType.hours})</span>
                 </div>
