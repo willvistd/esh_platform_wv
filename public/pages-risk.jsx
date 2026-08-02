@@ -5309,8 +5309,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
   // 참석자 30명 (직종 컬럼 제거: 연번 / 성명 / 서명)
   const [attendees, setAttendees] = React.useState(() => {
     const saved = _saved?.attendees || [];
-    // 기존 데이터 보존 + 20명으로 (A4 1장에 맞춤)
-    return Array.from({ length: 20 }, (_, i) => ({
+    // 기존 데이터 보존 + 15명으로 (사진칸 확대 위해 축소)
+    return Array.from({ length: 15 }, (_, i) => ({
       연번: i + 1,
       성명: saved[i]?.성명 || "",
       서명: saved[i]?.서명 || "",
@@ -5371,10 +5371,10 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
         .mtg-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .mtg-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
         .mtg-photo-drop {
-          flex: 1; min-height: 95px; display: flex; align-items: center; justify-content: center;
+          flex: 1; min-height: 190px; display: flex; align-items: center; justify-content: center;
           background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
         }
-        .mtg-photo-drop img { max-width: 100%; max-height: 150px; object-fit: contain; display: block; }
+        .mtg-photo-drop img { max-width: 100%; max-height: 230px; object-fit: contain; display: block; }
         .mtg-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
         .mtg-photo-del {
           position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
@@ -5382,8 +5382,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
         }
         @media print {
           .risk-print-area .mtg-photo-cell { border: 1px solid #000 !important; }
-          .risk-print-area .mtg-photo-drop { background: #fff !important; min-height: 95px !important; }
-          .risk-print-area .mtg-photo-drop img { max-height: 150px !important; }
+          .risk-print-area .mtg-photo-drop { background: #fff !important; min-height: 190px !important; }
+          .risk-print-area .mtg-photo-drop img { max-height: 225px !important; }
           .risk-print-area .mtg-photo-hint { display: none !important; }
         }
       `}</style>
@@ -5497,22 +5497,26 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 10 }, (_, i) => {
-                const left = i, right = i + 10;
+              {Array.from({ length: 8 }, (_, i) => {
+                const left = i, right = i + 8;   // 좌 1~8, 우 9~15 (15명, 마지막 우측 1칸 비움)
                 return (
                   <tr key={i} style={{ height: 32 }}>
                     {[left, right].map(idx => (
                       <React.Fragment key={idx}>
                         <td style={{ border: "1px solid #333", padding: "10px 6px", textAlign: "center", fontWeight: 600, fontSize: 13, background: "#fafafa", color: "#444" }}>
-                          {idx + 1}
+                          {idx < 15 ? idx + 1 : ""}
                         </td>
                         <td style={{ border: "1px solid #333", padding: 0 }}>
-                          <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)}
-                            style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+                          {idx < 15 && (
+                            <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)}
+                              style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+                          )}
                         </td>
                         <td style={{ border: "1px solid #333", padding: 0, height: 32 }}>
-                          <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
-                            style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+                          {idx < 15 && (
+                            <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
+                              style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
+                          )}
                         </td>
                       </React.Fragment>
                     ))}
