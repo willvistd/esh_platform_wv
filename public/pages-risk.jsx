@@ -6944,11 +6944,24 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
     }));
   });
   const [savedAt, setSavedAt] = React.useState(_saved?._savedAt || "");
+  // 교육 사진 2칸 (드래그·드롭 또는 클릭 업로드 + 캡션)
+  const [photos, setPhotos] = React.useState(() => {
+    const p = _saved?.photos || [];
+    return [p[0] || null, p[1] || null];
+  });
+  const setPhotoSlot = (idx, patch) => setPhotos(ps => ps.map((p, i) => i === idx ? { ...(p || {}), ...patch } : p));
+  const readFileToSlot = (idx, file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = e => setPhotoSlot(idx, { src: e.target.result });
+    reader.readAsDataURL(file);
+  };
+  const removePhoto = (idx) => setPhotos(ps => ps.map((p, i) => i === idx ? null : p));
   const upd = (k, v) => setForm(s => ({ ...s, [k]: v }));
   const updAtt = (i, k, v) => setAttendees(a => a.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
   const handleSave = () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
+    riskSave(SAVE_KEY, { form, attendees, photos, _savedAt: at });
     setSavedAt(at);
   };
   // 교육내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게 (회의록과 동일)
@@ -7037,6 +7050,24 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           width: 100%; border: none; background: transparent; font-size: 12.5px;
           resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.7;
         }
+        /* 교육 사진 2칸 */
+        .train-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .train-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
+        .train-photo-drop {
+          flex: 1; min-height: 170px; display: flex; align-items: center; justify-content: center;
+          background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
+        }
+        .train-photo-drop img { max-width: 100%; max-height: 210px; object-fit: contain; display: block; }
+        .train-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
+        .train-photo-del {
+          position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
+          border: none; background: rgba(220,38,38,0.9); color: #fff; cursor: pointer; font-size: 12px; line-height: 1;
+        }
+        .train-photo-cap { border-top: 1px solid #333; background: #fafafa; }
+        .train-photo-cap input {
+          width: 100%; border: none; background: transparent; text-align: center;
+          font-size: 12px; padding: 6px 8px; outline: none; box-sizing: border-box; font-family: inherit;
+        }
         .train-attendee-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
         .train-attendee-tbl td, .train-attendee-tbl th {
           border: 1px solid #333; padding: 8px 10px; text-align: center; height: 44px;
@@ -7092,6 +7123,12 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
             border: none !important;
             background: transparent !important;
           }
+          /* 교육 사진: 인쇄 시 테두리 유지 + 빈칸은 안내문구 제거 + 사진 표시 */
+          .train-print-area .train-photo-cell { border: 1px solid #000 !important; }
+          .train-print-area .train-photo-cap { border-top: 1px solid #000 !important; background: transparent !important; }
+          .train-print-area .train-photo-drop { background: #fff !important; min-height: 150px !important; }
+          .train-print-area .train-photo-drop img { max-height: 195px !important; }
+          .train-print-area .train-photo-hint { display: none !important; }
           .train-print-area .train-tbl .lbl,
           .train-print-area .train-attendee-tbl th {
             background: #f0f0f0 !important;
@@ -7206,6 +7243,36 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               })}
             </tbody>
           </table>
+        </div>
+
+        {/* 교육 사진 (2칸) — 드래그·드롭 또는 클릭 업로드 + 캡션 */}
+        <div className="train-photos" style={{ marginTop: 16 }}>
+          <div style={{ textAlign: "center", fontWeight: 700, fontSize: 13, marginBottom: 8 }}>&lt; 교 육 사 진 &gt;</div>
+          <div className="train-photo-grid">
+            {[0, 1].map(idx => {
+              const p = photos[idx];
+              return (
+                <div className="train-photo-cell" key={idx}>
+                  <label className="train-photo-drop"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => { e.preventDefault(); readFileToSlot(idx, e.dataTransfer.files[0]); }}>
+                    {p?.src
+                      ? <img src={p.src} alt="교육 사진" />
+                      : <span className="train-photo-hint no-print">클릭 또는 드래그하여<br />사진 추가</span>}
+                    <input type="file" accept="image/*" className="no-print" style={{ display: "none" }}
+                      onChange={e => { readFileToSlot(idx, e.target.files[0]); e.target.value = ""; }} />
+                  </label>
+                  {p?.src && (
+                    <button type="button" className="train-photo-del no-print" onClick={() => removePhoto(idx)} title="사진 삭제">✕</button>
+                  )}
+                  <div className="train-photo-cap">
+                    <input value={p?.caption || ""} placeholder="사진 설명"
+                      onChange={e => setPhotoSlot(idx, { caption: e.target.value })} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
       {/* 마지막 단계 완료 후 단계 안내로 복귀 (진입 역순) */}
