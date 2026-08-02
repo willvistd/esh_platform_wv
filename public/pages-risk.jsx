@@ -5392,10 +5392,10 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               <td style={cellLabel}>회의시간</td>
               <td style={cellInput}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", fontSize: 13 }}>
-                  <input type="time" value={form.회의시간_시작} onChange={e => upd("회의시간_시작", e.target.value)}
+                  <input type="time" step={600} value={form.회의시간_시작} onChange={e => upd("회의시간_시작", e.target.value)}
                     style={{ ...inp, padding: "5px 8px", width: 105, border: "1px solid #ddd", borderRadius: 4 }} />
                   <span>~</span>
-                  <input type="time" value={form.회의시간_종료} onChange={e => upd("회의시간_종료", e.target.value)}
+                  <input type="time" step={600} value={form.회의시간_종료} onChange={e => upd("회의시간_종료", e.target.value)}
                     style={{ ...inp, padding: "5px 8px", width: 105, border: "1px solid #ddd", borderRadius: 4 }} />
                   <span style={{ color: "#666", fontSize: 12 }}>{calcDuration()}</span>
                 </div>
@@ -7122,10 +7122,10 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               <td className="lbl">교육시간</td>
               <td>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input type="time" value={form.교육시간_시작} onChange={e => upd("교육시간_시작", e.target.value)}
+                  <input type="time" step={600} value={form.교육시간_시작} onChange={e => upd("교육시간_시작", e.target.value)}
                     style={{ width: 100, border: "1px solid #ddd", borderRadius: 4, padding: "4px 6px" }} />
                   <span>~</span>
-                  <input type="time" value={form.교육시간_종료} onChange={e => upd("교육시간_종료", e.target.value)}
+                  <input type="time" step={600} value={form.교육시간_종료} onChange={e => upd("교육시간_종료", e.target.value)}
                     style={{ width: 100, border: "1px solid #ddd", borderRadius: 4, padding: "4px 6px" }} />
                   <span style={{ color: "#666", fontSize: 12 }}>{calcDuration()}</span>
                 </div>
