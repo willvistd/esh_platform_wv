@@ -5309,8 +5309,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
   // 참석자 30명 (직종 컬럼 제거: 연번 / 성명 / 서명)
   const [attendees, setAttendees] = React.useState(() => {
     const saved = _saved?.attendees || [];
-    // 기존 데이터 보존 + 15명으로 (사진칸 확대 위해 축소)
-    return Array.from({ length: 15 }, (_, i) => ({
+    // 기존 데이터 보존 + 16명으로 (2열 8행 딱 맞음)
+    return Array.from({ length: 16 }, (_, i) => ({
       연번: i + 1,
       성명: saved[i]?.성명 || "",
       서명: saved[i]?.서명 || "",
@@ -5498,25 +5498,21 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             </thead>
             <tbody>
               {Array.from({ length: 8 }, (_, i) => {
-                const left = i, right = i + 8;   // 좌 1~8, 우 9~15 (15명, 마지막 우측 1칸 비움)
+                const left = i, right = i + 8;   // 좌 1~8, 우 9~16 (16명, 2열 8행)
                 return (
                   <tr key={i} style={{ height: 32 }}>
                     {[left, right].map(idx => (
                       <React.Fragment key={idx}>
                         <td style={{ border: "1px solid #333", padding: "10px 6px", textAlign: "center", fontWeight: 600, fontSize: 13, background: "#fafafa", color: "#444" }}>
-                          {idx < 15 ? idx + 1 : ""}
+                          {idx + 1}
                         </td>
                         <td style={{ border: "1px solid #333", padding: 0 }}>
-                          {idx < 15 && (
-                            <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)}
-                              style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-                          )}
+                          <input value={attendees[idx]?.성명 || ""} onChange={e => updAtt(idx, "성명", e.target.value)}
+                            style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
                         </td>
                         <td style={{ border: "1px solid #333", padding: 0, height: 32 }}>
-                          {idx < 15 && (
-                            <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
-                              style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-                          )}
+                          <input value={attendees[idx]?.서명 || ""} onChange={e => updAtt(idx, "서명", e.target.value)}
+                            style={{ width: "100%", border: "none", background: "transparent", textAlign: "center", padding: "10px 8px", fontSize: 13, outline: "none", fontFamily: "inherit" }} />
                         </td>
                       </React.Fragment>
                     ))}
