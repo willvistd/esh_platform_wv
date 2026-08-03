@@ -5132,10 +5132,10 @@ const RiskSiteView = ({ onNav, currentUser }) => {
           </tbody>
         </table>
 
-        {/* 2. 평가진행기간 */}
+        {/* 2. 평가진행기간 — 라벨 칸 폭을 다른 표와 동일하게(110) 맞춤 */}
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 28 }}>
           <colgroup>
-            <col style={{ width: 140 }} />
+            <col style={{ width: 110 }} />
             <col />
           </colgroup>
           <tbody>
