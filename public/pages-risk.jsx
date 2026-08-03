@@ -5383,6 +5383,7 @@ const RiskPhotoSheetMeta = ({ contentLabel, title, site, date, setTitle, setSite
 );
 
 // 스텝(회의록/전파교육) 화면에 임베드되는 사진대지 — 자체 상태 + 자동 저장, 화면 전용(.no-print)
+// 스텝(회의록/전파교육)에 임베드: 화면=편집카드, 인쇄=일지 다음 장(사진대지 1장)
 const RiskStepPhotoSheet = ({ context, evalId, defaultTitle, defaultSite, defaultDate }) => {
   const KEY = `wv_risk_mtgphotos_${context}_${evalId}`;
   const _s = riskLoad(KEY);
@@ -5398,34 +5399,35 @@ const RiskStepPhotoSheet = ({ context, evalId, defaultTitle, defaultSite, defaul
   }, [photos, title, site, date]);
   const contentLabel = context === "meeting" ? "회의내용" : "교육내용";
   return (
-    <div className="risk-form-card no-print" style={{ padding: "28px 34px", marginTop: 22, border: "1px solid var(--line)", boxShadow: "none", background: "#fff" }}>
+    <>
       <style>{PHOTO_SHEET_CSS}</style>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-        <Icon name="image" size={16} />
-        <span style={{ fontWeight: 700, fontSize: 15 }}>사진대지</span>
-        <span style={{ fontSize: 12, color: "var(--fg-3)" }}>· 일지 다음 장으로 함께 출력됩니다 (자동 저장)</span>
+      <style>{`
+        /* 스텝 화면: 편집카드만(인쇄페이지 숨김) / 전체출력 미리보기: 인쇄페이지 표시 */
+        @media screen { .sheet-print-area { display: none !important; } .print-all-wrap .sheet-print-area { display: block !important; } }
+        /* 전체출력에서는 편집카드 숨김(화면·인쇄 모두) */
+        .print-all-wrap .mtgsheet-edit { display: none !important; }
+        @media print {
+          /* 개별 출력: 일지 + 사진대지 = 2장 → absolute 겹침 방지(흐름 배치) + 새 페이지 */
+          .risk-print-area { position: static !important; }
+          .sheet-print-area { page-break-before: always !important; break-before: page !important; }
+        }
+      `}</style>
+      {/* 편집 카드 (화면) — 일지와 동일한 사각형 카드(테두리 없음) */}
+      <div className="risk-form-card mtgsheet-edit no-print" style={{ padding: "28px 34px", marginTop: 22, border: "none", boxShadow: "none", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <Icon name="image" size={16} />
+          <span style={{ fontWeight: 700, fontSize: 15 }}>사진대지</span>
+          <span style={{ fontSize: 12, color: "var(--fg-3)" }}>· 일지 다음 장으로 함께 출력됩니다 (자동 저장)</span>
+        </div>
+        <RiskPhotoSheetMeta contentLabel={contentLabel} title={title} site={site} date={date}
+          setTitle={setTitle} setSite={setSite} setDate={setDate} defaultTitle={defaultTitle} />
+        <RiskPhotoSheetEditor photos={photos} setPhotos={setPhotos} />
       </div>
-      <RiskPhotoSheetMeta contentLabel={contentLabel} title={title} site={site} date={date}
-        setTitle={setTitle} setSite={setSite} setDate={setDate} defaultTitle={defaultTitle} />
-      <RiskPhotoSheetEditor photos={photos} setPhotos={setPhotos} />
-    </div>
-  );
-};
-
-// 전체출력용 사진대지 인쇄 페이지 (읽기전용 레이아웃)
-const RiskPhotoSheetPage = ({ context, evalId }) => {
-  const KEY = `wv_risk_mtgphotos_${context}_${evalId}`;
-  const _s = riskLoad(KEY) || {};
-  const contentLabel = context === "meeting" ? "회의내용" : "교육내용";
-  const photos = _s.photos || [];
-  return (
-    <div className="content" style={{ maxWidth: 900 }}>
-      <style>{RISK_STYLE}</style>
-      <style>{PHOTO_SHEET_CSS}</style>
-      <div className="risk-form-card risk-print-area mtgsheet-print-area" style={{ padding: "40px 50px", boxShadow: "none", border: "none", background: "#fff" }}>
-        <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, marginBottom: 16, letterSpacing: 2 }}>사 진 대 지</h2>
-        <RiskPhotoSheetMeta contentLabel={contentLabel} title={_s.title || ""} site={_s.site || ""} date={_s.date || ""} readOnly />
-        {photos.length > 0 && (
+      {/* 인쇄 페이지 (사진 있을 때만) — 일지와 동일한 .risk-print-area(사각형 1.5px 테두리) */}
+      {photos.length > 0 && (
+        <div className="risk-form-card risk-print-area sheet-print-area" style={{ padding: "40px 50px", boxShadow: "none", border: "none", background: "#fff" }}>
+          <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, marginBottom: 16, letterSpacing: 2 }}>사 진 대 지</h2>
+          <RiskPhotoSheetMeta contentLabel={contentLabel} title={title} site={site} date={date} readOnly />
           <div className="mtgphoto-grid">
             {photos.map((p, i) => (
               <div key={p.id || i} className="mtgphoto-item">
@@ -5437,9 +5439,9 @@ const RiskPhotoSheetPage = ({ context, evalId }) => {
               </div>
             ))}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 };
 
@@ -7405,9 +7407,6 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
   const _siteForm = company ? (riskLoad(evalId ? `wv_risk_site_${evalId}` : `wv_risk_site_${company}`)?.form) : null;
   const _selTypes = Array.isArray(_siteForm?.관리분야선택) ? _siteForm.관리분야선택 : null;
   const tableTypes = (_selTypes && _selTypes.length > 0) ? _allTypes.filter(t => _selTypes.includes(t)) : _allTypes;
-  // 회의·교육 사진대지: 사진이 있을 때만 해당 페이지 삽입(빈 페이지 방지)
-  const meetingPhotos  = (evalId ? riskLoad(`wv_risk_mtgphotos_meeting_${evalId}`)?.photos  : null) || [];
-  const trainingPhotos = (evalId ? riskLoad(`wv_risk_mtgphotos_training_${evalId}`)?.photos : null) || [];
   // 각 STEP 컴포넌트가 onNav를 호출할 수 있으니 무시하는 더미 함수
   const dummyNav = () => {};
   // PDF 다운로드 진행률 상태 ({ progress, percent, done, error })
@@ -7605,20 +7604,14 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
       <div className="print-all-wrap">
         <div className="step-page"><RiskCoverView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskSiteView onNav={dummyNav} currentUser={currentUser} /></div>
+        {/* 회의록 = 일지 + 사진대지(사진 있을 때) 2장 — RiskMeetingView 내부에서 처리 */}
         <div className="step-page"><RiskMeetingView onNav={dummyNav} currentUser={currentUser} /></div>
-        {/* 회의 사진대지 — 사진이 있을 때만 (빈 페이지 방지) */}
-        {meetingPhotos.length > 0 && (
-          <div className="step-page"><RiskPhotoSheetPage context="meeting" evalId={evalId} /></div>
-        )}
         {(tableTypes.length ? tableTypes : [undefined]).map((t, i) => (
           <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} /></div>
         ))}
         <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} /></div>
+        {/* 전파교육 = 일지 + 사진대지(사진 있을 때) 2장 — RiskTrainingView 내부에서 처리 */}
         <div className="step-page"><RiskTrainingView onNav={dummyNav} currentUser={currentUser} /></div>
-        {/* 교육 사진대지 — 사진이 있을 때만 (빈 페이지 방지) */}
-        {trainingPhotos.length > 0 && (
-          <div className="step-page"><RiskPhotoSheetPage context="training" evalId={evalId} /></div>
-        )}
       </div>
     </div>
   );
