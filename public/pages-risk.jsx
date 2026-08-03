@@ -5407,7 +5407,13 @@ const RiskStepPhotoSheet = ({ context, evalId, defaultTitle, defaultSite, defaul
         /* 전체출력에서는 편집카드 숨김(화면·인쇄 모두) */
         .print-all-wrap .mtgsheet-edit { display: none !important; }
         @media print {
-          /* 개별 출력: 일지 + 사진대지 = 2장 → absolute 겹침 방지(흐름 배치) + 새 페이지 */
+          /* 개별 출력에서 일지+사진대지 2장을 흐름 배치하면 숨긴 사이드바 그리드 트랙·
+             상단바가 자리를 차지해 내용이 오른쪽·아래로 밀림 → 전체출력과 동일하게
+             레이아웃 그리드 해제 + 사이드바/상단바 완전 제거(display:none) */
+          .app, .layout, .app-main, .layout-main { display: block !important; grid-template-columns: 1fr !important; }
+          .sidebar, aside, nav[role="navigation"] { display: none !important; }
+          header, .topbar, .top-bar, .preview-banner { display: none !important; }
+          /* 일지 + 사진대지 = 2장: 흐름 배치(absolute 겹침 방지) + 사진대지 새 페이지 */
           .risk-print-area { position: static !important; }
           .sheet-print-area { page-break-before: always !important; break-before: page !important; }
         }
