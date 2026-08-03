@@ -5241,7 +5241,10 @@ const RiskSiteView = ({ onNav, currentUser }) => {
                   <tr key={p} style={{ minHeight: 90 }}>
                     <td style={{ border: "1px solid #333", padding: "14px 8px", textAlign: "center", verticalAlign: "middle", fontWeight: 600, fontSize: 13 }}>{i + 1}</td>
                     <td style={{ border: "1px solid #333", padding: "14px 8px", textAlign: "center", verticalAlign: "middle", fontWeight: 600, fontSize: 13 }}>{p}</td>
-                    <td style={{ border: "1px solid #333", padding: "14px", verticalAlign: "middle", lineHeight: 1.7, fontSize: 13 }}>{info.desc}</td>
+                    <td style={{ border: "1px solid #333", padding: 0, verticalAlign: "middle" }}>
+                      {/* 텍스트를 padding 있는 div로 감싸 인쇄 시에도 여백 유지 (td padding:0 규칙에 안 먹힘) */}
+                      <div style={{ padding: "10px 14px", lineHeight: 1.7, fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{info.desc}</div>
+                    </td>
                     <td style={{ border: "1px solid #333", padding: 0, verticalAlign: "middle" }}>
                       {/* 화면용 textarea */}
                       <textarea value={equipVal} onChange={e => updProcField(p, "equip", e.target.value)}
