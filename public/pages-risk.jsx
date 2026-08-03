@@ -5286,6 +5286,163 @@ const RiskSiteView = ({ onNav, currentUser }) => {
   );
 };
 
+// ══ 공용: 회의·교육 사진대지 (편집기 + 인쇄 레이아웃) ══
+// 회의록(STEP3)·전파교육(STEP6) 안에서 일지와 함께 작성, 전체출력에서 일지 다음 장으로 인쇄.
+const PHOTO_SHEET_CSS = `
+  .mtgphoto-drop { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; color: #94a3b8; cursor: pointer; transition: all .15s; background: #f8fafc; }
+  .mtgphoto-drop.drag-over { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+  .mtgphoto-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px; }
+  .mtgphoto-item { border: 1px solid #333; border-radius: 6px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+  .mtgphoto-item .img-wrap { background: #f5f5f5; display: flex; align-items: center; justify-content: center; min-height: 180px; position: relative; }
+  .mtgphoto-item img { max-width: 100%; max-height: 240px; object-fit: contain; display: block; }
+  .mtgphoto-item .caption-area { border-top: 1px solid #333; padding: 6px 10px; background: #fafafa; display: flex; align-items: center; gap: 6px; min-height: 20px; }
+  .mtgphoto-item .caption-area input { flex: 1; border: none; background: transparent; outline: none; font-size: 12px; padding: 2px 0; font-family: inherit; }
+  @media print {
+    .mtgphoto-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .mtgphoto-item img { max-height: 220px !important; }
+  }
+`;
+
+// 사진 업로드/그리드 편집 UI (controlled)
+const RiskPhotoSheetEditor = ({ photos, setPhotos }) => {
+  const fileInputRef = React.useRef(null);
+  const [dragOver, setDragOver] = React.useState(false);
+  const readFiles = (files) => {
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith("image/")) return;
+      const reader = new FileReader();
+      reader.onload = (e) => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: e.target.result, name: file.name, caption: "" }]);
+      reader.readAsDataURL(file);
+    });
+  };
+  const removePhoto = (id) => setPhotos(prev => prev.filter(p => p.id !== id));
+  const updateCaption = (id, caption) => setPhotos(prev => prev.map(p => p.id === id ? { ...p, caption } : p));
+  const movePhoto = (idx, dir) => setPhotos(prev => { const a = [...prev]; const t = idx + dir; if (t < 0 || t >= a.length) return a; [a[idx], a[t]] = [a[t], a[idx]]; return a; });
+  return (
+    <>
+      <div className={"mtgphoto-drop" + (dragOver ? " drag-over" : "")} onClick={() => fileInputRef.current?.click()}
+        onDrop={e => { e.preventDefault(); setDragOver(false); readFiles(e.dataTransfer.files); }}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}>
+        <Icon name="image" size={34} />
+        <div style={{ marginTop: 8, fontSize: 13, fontWeight: 600 }}>사진 첨부</div>
+        <div style={{ marginTop: 4, fontSize: 11 }}>클릭하여 선택하거나 드래그·드롭으로 추가</div>
+        <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={e => { readFiles(e.target.files); e.target.value = ""; }} style={{ display: "none" }} />
+      </div>
+      {photos.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "30px 20px", color: "#999", fontSize: 13, border: "1px dashed #ddd", borderRadius: 8, marginTop: 12 }}>아직 첨부된 사진이 없습니다. 위 영역에 사진을 추가해주세요.</div>
+      ) : (
+        <div className="mtgphoto-grid">
+          {photos.map((p, i) => (
+            <div key={p.id} className="mtgphoto-item">
+              <div className="img-wrap">
+                <img src={p.src} alt={p.name || ""} />
+                <button type="button" onClick={() => removePhoto(p.id)} title="삭제"
+                  style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: 99, width: 24, height: 24, cursor: "pointer", fontSize: 12 }}>✕</button>
+              </div>
+              <div className="caption-area">
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#555", minWidth: 28 }}>#{i + 1}</span>
+                <input value={p.caption} onChange={e => updateCaption(p.id, e.target.value)} placeholder="사진 설명 (예: 강사 교육 진행 모습)" />
+                <span style={{ display: "flex", gap: 2 }}>
+                  {i > 0 && <button type="button" onClick={() => movePhoto(i, -1)} title="앞으로" style={{ background: "none", border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 10 }}>↑</button>}
+                  {i < photos.length - 1 && <button type="button" onClick={() => movePhoto(i, 1)} title="뒤로" style={{ background: "none", border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 10 }}>↓</button>}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+};
+
+// 사진대지 메타 표 (제목/일자/사업장명) — 편집(controlled) 또는 인쇄(읽기전용)
+const RiskPhotoSheetMeta = ({ contentLabel, title, site, date, setTitle, setSite, setDate, defaultTitle, readOnly }) => (
+  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, marginBottom: 14 }}>
+    <tbody>
+      <tr>
+        <td style={{ border: "1px solid #333", background: "#f0f0f0", fontWeight: 600, textAlign: "center", padding: "8px 12px", width: 100 }}>{contentLabel}</td>
+        <td style={{ border: "1px solid #333", padding: "6px 10px" }}>
+          {readOnly ? <span>{title}</span>
+            : <input value={title} onChange={e => setTitle(e.target.value)} placeholder={defaultTitle} style={{ width: "100%", border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />}
+        </td>
+        <td style={{ border: "1px solid #333", background: "#f0f0f0", fontWeight: 600, textAlign: "center", padding: "8px 12px", width: 90 }}>일자</td>
+        <td style={{ border: "1px solid #333", padding: "6px 10px", width: 160 }}>
+          {readOnly ? <span>{date ? String(date).replace(/-/g, ". ") + "." : ""}</span>
+            : <KDate block value={date} onChange={e => setDate(e.target.value)} style={{ width: "100%", border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />}
+        </td>
+      </tr>
+      <tr>
+        <td style={{ border: "1px solid #333", background: "#f0f0f0", fontWeight: 600, textAlign: "center", padding: "8px 12px" }}>사업장명</td>
+        <td colSpan={3} style={{ border: "1px solid #333", padding: "6px 10px" }}>
+          {readOnly ? <span>{site}</span>
+            : <input value={site} onChange={e => setSite(e.target.value)} placeholder="사업장명" style={{ width: "100%", border: "none", background: "transparent", fontSize: 13, outline: "none", fontFamily: "inherit" }} />}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+);
+
+// 스텝(회의록/전파교육) 화면에 임베드되는 사진대지 — 자체 상태 + 자동 저장, 화면 전용(.no-print)
+const RiskStepPhotoSheet = ({ context, evalId, defaultTitle, defaultSite, defaultDate }) => {
+  const KEY = `wv_risk_mtgphotos_${context}_${evalId}`;
+  const _s = riskLoad(KEY);
+  const [photos, setPhotos] = React.useState(_s?.photos || []);
+  const [title, setTitle] = React.useState(_s?.title || defaultTitle || "");
+  const [site, setSite] = React.useState(_s?.site || defaultSite || "");
+  const [date, setDate] = React.useState(_s?.date || defaultDate || "");
+  const mounted = React.useRef(false);
+  React.useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }   // 마운트 시 저장 안 함(기존 데이터 보존)
+    const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    riskSave(KEY, { title, site, date, photos, _savedAt: at });
+  }, [photos, title, site, date]);
+  const contentLabel = context === "meeting" ? "회의내용" : "교육내용";
+  return (
+    <div className="risk-form-card no-print" style={{ padding: "28px 34px", marginTop: 22, border: "1px solid var(--line)", boxShadow: "none", background: "#fff" }}>
+      <style>{PHOTO_SHEET_CSS}</style>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <Icon name="image" size={16} />
+        <span style={{ fontWeight: 700, fontSize: 15 }}>사진대지</span>
+        <span style={{ fontSize: 12, color: "var(--fg-3)" }}>· 일지 다음 장으로 함께 출력됩니다 (자동 저장)</span>
+      </div>
+      <RiskPhotoSheetMeta contentLabel={contentLabel} title={title} site={site} date={date}
+        setTitle={setTitle} setSite={setSite} setDate={setDate} defaultTitle={defaultTitle} />
+      <RiskPhotoSheetEditor photos={photos} setPhotos={setPhotos} />
+    </div>
+  );
+};
+
+// 전체출력용 사진대지 인쇄 페이지 (읽기전용 레이아웃)
+const RiskPhotoSheetPage = ({ context, evalId }) => {
+  const KEY = `wv_risk_mtgphotos_${context}_${evalId}`;
+  const _s = riskLoad(KEY) || {};
+  const contentLabel = context === "meeting" ? "회의내용" : "교육내용";
+  const photos = _s.photos || [];
+  return (
+    <div className="content" style={{ maxWidth: 900 }}>
+      <style>{RISK_STYLE}</style>
+      <style>{PHOTO_SHEET_CSS}</style>
+      <div className="risk-form-card risk-print-area mtgsheet-print-area" style={{ padding: "40px 50px", boxShadow: "none", border: "none", background: "#fff" }}>
+        <h2 style={{ textAlign: "center", fontSize: 22, fontWeight: 700, marginBottom: 16, letterSpacing: 2 }}>사 진 대 지</h2>
+        <RiskPhotoSheetMeta contentLabel={contentLabel} title={_s.title || ""} site={_s.site || ""} date={_s.date || ""} readOnly />
+        {photos.length > 0 && (
+          <div className="mtgphoto-grid">
+            {photos.map((p, i) => (
+              <div key={p.id || i} className="mtgphoto-item">
+                <div className="img-wrap"><img src={p.src} alt="" /></div>
+                <div className="caption-area">
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#555", minWidth: 28 }}>#{i + 1}</span>
+                  <span style={{ fontSize: 12 }}>{p.caption}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── STEP 3: 위험성평가 회의록 ──
 const RiskMeetingView = ({ onNav, currentUser }) => {
   const info = RISK_STEPS[2];
@@ -5312,32 +5469,20 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
   // 참석자 30명 (직종 컬럼 제거: 연번 / 성명 / 서명)
   const [attendees, setAttendees] = React.useState(() => {
     const saved = _saved?.attendees || [];
-    // 기존 데이터 보존 + 16명으로 (2열 8행 딱 맞음)
-    return Array.from({ length: 16 }, (_, i) => ({
+    // 사진칸 제거 → 한 페이지 최대치(2열 12행=24명)로 서명란 확대
+    return Array.from({ length: 24 }, (_, i) => ({
       연번: i + 1,
       성명: saved[i]?.성명 || "",
       서명: saved[i]?.서명 || "",
     }));
   });
   const [savedAt, setSavedAt] = React.useState(_saved?._savedAt || "");
-  // 회의 사진 2칸 (드래그·드롭 또는 클릭 업로드)
-  const [photos, setPhotos] = React.useState(() => {
-    const p = _saved?.photos || [];
-    return [p[0] || null, p[1] || null];
-  });
-  const setPhotoSlot = (idx, patch) => setPhotos(ps => ps.map((p, i) => i === idx ? { ...(p || {}), ...patch } : p));
-  const readFileToSlot = (idx, file) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = e => setPhotoSlot(idx, { src: e.target.result });
-    reader.readAsDataURL(file);
-  };
-  const removePhoto = (idx) => setPhotos(ps => ps.map((p, i) => i === idx ? null : p));
+  // 사진은 별도 사진대지(RiskStepPhotoSheet)에서 자체 저장 → 일지 저장 대상 아님
   const upd = (k, v) => setForm(s => ({ ...s, [k]: v }));
   const updAtt = (i, k, v) => setAttendees(a => a.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
   const handleSave = () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { form, attendees, photos, _savedAt: at });
+    riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
     setSavedAt(at);
   };
   // 회의내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게
@@ -5370,27 +5515,6 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
   return (
     <div className="content" style={{ maxWidth: 900 }}>
       <style>{RISK_STYLE}</style>
-      <style>{`
-        /* width를 살짝 줄여(6px) 2번째 칸 오른쪽 테두리가 인쇄영역 경계에서 잘리지 않게 함 */
-        .mtg-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: calc(100% - 6px); margin: 0 auto; }
-        .mtg-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
-        .mtg-photo-drop {
-          flex: 1; min-height: 190px; display: flex; align-items: center; justify-content: center;
-          background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
-        }
-        .mtg-photo-drop img { max-width: 100%; max-height: 230px; object-fit: contain; display: block; }
-        .mtg-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
-        .mtg-photo-del {
-          position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
-          border: none; background: rgba(220,38,38,0.9); color: #fff; cursor: pointer; font-size: 12px; line-height: 1;
-        }
-        @media print {
-          .risk-print-area .mtg-photo-cell { border: 1px solid #000 !important; }
-          .risk-print-area .mtg-photo-drop { background: #fff !important; min-height: 190px !important; }
-          .risk-print-area .mtg-photo-drop img { max-height: 225px !important; }
-          .risk-print-area .mtg-photo-hint { display: none !important; }
-        }
-      `}</style>
       <RiskSubHeader onNav={onNav} stepInfo={info} />
       <RiskStepPanel
         stepNum={info.step} stepLabel={info.label.replace(/\n/g, " ")} stepColor={info.color}
@@ -5501,8 +5625,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 8 }, (_, i) => {
-                const left = i, right = i + 8;   // 좌 1~8, 우 9~16 (16명, 2열 8행)
+              {Array.from({ length: 12 }, (_, i) => {
+                const left = i, right = i + 12;   // 좌 1~12 / 우 13~24 (24명, 2열 12행)
                 return (
                   <tr key={i} style={{ height: 32 }}>
                     {[left, right].map(idx => (
@@ -5526,33 +5650,13 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             </tbody>
           </table>
         </div>
-
-        {/* 3. 회의 사진 (2칸) — 드래그·드롭 또는 클릭 업로드 */}
-        <div style={{ marginTop: 10 }}>
-          <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, marginBottom: 6 }}>&lt; 회 의 사 진 &gt;</div>
-          <div className="mtg-photo-grid">
-            {[0, 1].map(idx => {
-              const p = photos[idx];
-              return (
-                <div className="mtg-photo-cell" key={idx}>
-                  <label className="mtg-photo-drop"
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); readFileToSlot(idx, e.dataTransfer.files[0]); }}>
-                    {p?.src
-                      ? <img src={p.src} alt="회의 사진" />
-                      : <span className="mtg-photo-hint no-print">클릭 또는 드래그하여<br />사진 추가</span>}
-                    <input type="file" accept="image/*" className="no-print" style={{ display: "none" }}
-                      onChange={e => { readFileToSlot(idx, e.target.files[0]); e.target.value = ""; }} />
-                  </label>
-                  {p?.src && (
-                    <button type="button" className="mtg-photo-del no-print" onClick={() => removePhoto(idx)} title="사진 삭제">✕</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
+
+      {/* 사진대지 — 일지와 한 화면에서 작성, 전체출력 시 일지 다음 장으로 출력 */}
+      {evalId && (
+        <RiskStepPhotoSheet context="meeting" evalId={evalId}
+          defaultTitle="위험성평가 회의" defaultSite={form.회의장소 || ""} defaultDate={form.회의일자 || ""} />
+      )}
 
       {/* 모든 액션이 상단 RiskStepPanel로 통합됨 */}
     </div>
@@ -6998,8 +7102,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
   });
   const [attendees, setAttendees] = React.useState(() => {
     const saved = _saved?.attendees || [];
-    // 기존 데이터 보존 + 16명으로 (사진칸이 커서 2열 8행으로 축소)
-    return Array.from({ length: 16 }, (_, i) => ({
+    // 사진칸 제거 → 한 페이지 최대치(2열 12행=24명)로 서명란 확대
+    return Array.from({ length: 24 }, (_, i) => ({
       연번: i + 1,
       직종: saved[i]?.직종 || "",
       성명: saved[i]?.성명 || "",
@@ -7007,24 +7111,12 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
     }));
   });
   const [savedAt, setSavedAt] = React.useState(_saved?._savedAt || "");
-  // 교육 사진 2칸 (드래그·드롭 또는 클릭 업로드 + 캡션)
-  const [photos, setPhotos] = React.useState(() => {
-    const p = _saved?.photos || [];
-    return [p[0] || null, p[1] || null];
-  });
-  const setPhotoSlot = (idx, patch) => setPhotos(ps => ps.map((p, i) => i === idx ? { ...(p || {}), ...patch } : p));
-  const readFileToSlot = (idx, file) => {
-    if (!file || !file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = e => setPhotoSlot(idx, { src: e.target.result });
-    reader.readAsDataURL(file);
-  };
-  const removePhoto = (idx) => setPhotos(ps => ps.map((p, i) => i === idx ? null : p));
+  // 사진은 별도 사진대지(RiskStepPhotoSheet)에서 자체 저장 → 일지 저장 대상 아님
   const upd = (k, v) => setForm(s => ({ ...s, [k]: v }));
   const updAtt = (i, k, v) => setAttendees(a => a.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
   const handleSave = () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { form, attendees, photos, _savedAt: at });
+    riskSave(SAVE_KEY, { form, attendees, _savedAt: at });
     setSavedAt(at);
   };
   // 교육내용 textarea: 내용 높이에 딱 맞추고, 입력하면 자동으로 늘어나게 (회의록과 동일)
@@ -7113,19 +7205,6 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           width: 100%; border: none; background: transparent; font-size: 12.5px;
           resize: vertical; min-height: 140px; outline: none; font-family: inherit; line-height: 1.7;
         }
-        /* 교육 사진 2칸 (width -6px: 오른쪽 테두리 인쇄 잘림 방지) */
-        .train-photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: calc(100% - 6px); margin: 0 auto; }
-        .train-photo-cell { position: relative; border: 1px solid #333; display: flex; flex-direction: column; background: #fff; }
-        .train-photo-drop {
-          flex: 1; min-height: 250px; display: flex; align-items: center; justify-content: center;
-          background: #f8fafc; cursor: pointer; overflow: hidden; padding: 4px;
-        }
-        .train-photo-drop img { max-width: 100%; max-height: 280px; object-fit: contain; display: block; }
-        .train-photo-hint { color: #94a3b8; font-size: 12px; text-align: center; line-height: 1.5; }
-        .train-photo-del {
-          position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 4px;
-          border: none; background: rgba(220,38,38,0.9); color: #fff; cursor: pointer; font-size: 12px; line-height: 1;
-        }
         .train-attendee-tbl { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
         .train-attendee-tbl td, .train-attendee-tbl th {
           border: 1px solid #333; padding: 8px 10px; text-align: center; height: 44px;
@@ -7181,11 +7260,6 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
             border: none !important;
             background: transparent !important;
           }
-          /* 교육 사진: 인쇄 시 테두리 유지 + 빈칸은 안내문구 제거 + 사진 표시 */
-          .train-print-area .train-photo-cell { border: 1px solid #000 !important; }
-          .train-print-area .train-photo-drop { background: #fff !important; min-height: 240px !important; }
-          .train-print-area .train-photo-drop img { max-height: 275px !important; }
-          .train-print-area .train-photo-hint { display: none !important; }
           .train-print-area .train-tbl .lbl,
           .train-print-area .train-attendee-tbl th {
             background: #f0f0f0 !important;
@@ -7279,8 +7353,8 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 8 }, (_, i) => {
-                const leftIdx = i, rightIdx = i + 8;   // 좌 1~8 / 우 9~16 (16명, 2열 8행)
+              {Array.from({ length: 12 }, (_, i) => {
+                const leftIdx = i, rightIdx = i + 12;   // 좌 1~12 / 우 13~24 (24명, 2열 12행)
                 return (
                   <tr key={i}>
                     {[leftIdx, rightIdx].map(idx => (
@@ -7301,33 +7375,13 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
             </tbody>
           </table>
         </div>
-
-        {/* 교육 사진 (2칸) — 드래그·드롭 또는 클릭 업로드 + 캡션 */}
-        <div className="train-photos" style={{ marginTop: 16 }}>
-          <div style={{ textAlign: "center", fontWeight: 700, fontSize: 13, marginBottom: 8 }}>&lt; 교 육 사 진 &gt;</div>
-          <div className="train-photo-grid">
-            {[0, 1].map(idx => {
-              const p = photos[idx];
-              return (
-                <div className="train-photo-cell" key={idx}>
-                  <label className="train-photo-drop"
-                    onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); readFileToSlot(idx, e.dataTransfer.files[0]); }}>
-                    {p?.src
-                      ? <img src={p.src} alt="교육 사진" />
-                      : <span className="train-photo-hint no-print">클릭 또는 드래그하여<br />사진 추가</span>}
-                    <input type="file" accept="image/*" className="no-print" style={{ display: "none" }}
-                      onChange={e => { readFileToSlot(idx, e.target.files[0]); e.target.value = ""; }} />
-                  </label>
-                  {p?.src && (
-                    <button type="button" className="train-photo-del no-print" onClick={() => removePhoto(idx)} title="사진 삭제">✕</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       </div>
+
+      {/* 사진대지 — 일지와 한 화면에서 작성, 전체출력 시 일지 다음 장으로 출력 */}
+      {evalId && (
+        <RiskStepPhotoSheet context="training" evalId={evalId}
+          defaultTitle="위험성평가 전파 교육" defaultSite={form.사업장명 || ""} defaultDate={form.교육일자 || ""} />
+      )}
       {/* 마지막 단계 완료 후 단계 안내로 복귀 (진입 역순) */}
       <div className="no-print" style={{ marginTop: 18, display: "flex", justifyContent: "flex-end" }}>
         <button className="btn btn-secondary" onClick={() => onNav({ name: "risk-overview" })}>
@@ -7351,6 +7405,9 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
   const _siteForm = company ? (riskLoad(evalId ? `wv_risk_site_${evalId}` : `wv_risk_site_${company}`)?.form) : null;
   const _selTypes = Array.isArray(_siteForm?.관리분야선택) ? _siteForm.관리분야선택 : null;
   const tableTypes = (_selTypes && _selTypes.length > 0) ? _allTypes.filter(t => _selTypes.includes(t)) : _allTypes;
+  // 회의·교육 사진대지: 사진이 있을 때만 해당 페이지 삽입(빈 페이지 방지)
+  const meetingPhotos  = (evalId ? riskLoad(`wv_risk_mtgphotos_meeting_${evalId}`)?.photos  : null) || [];
+  const trainingPhotos = (evalId ? riskLoad(`wv_risk_mtgphotos_training_${evalId}`)?.photos : null) || [];
   // 각 STEP 컴포넌트가 onNav를 호출할 수 있으니 무시하는 더미 함수
   const dummyNav = () => {};
   // PDF 다운로드 진행률 상태 ({ progress, percent, done, error })
@@ -7549,11 +7606,19 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
         <div className="step-page"><RiskCoverView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskSiteView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskMeetingView onNav={dummyNav} currentUser={currentUser} /></div>
+        {/* 회의 사진대지 — 사진이 있을 때만 (빈 페이지 방지) */}
+        {meetingPhotos.length > 0 && (
+          <div className="step-page"><RiskPhotoSheetPage context="meeting" evalId={evalId} /></div>
+        )}
         {(tableTypes.length ? tableTypes : [undefined]).map((t, i) => (
           <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} /></div>
         ))}
         <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} /></div>
         <div className="step-page"><RiskTrainingView onNav={dummyNav} currentUser={currentUser} /></div>
+        {/* 교육 사진대지 — 사진이 있을 때만 (빈 페이지 방지) */}
+        {trainingPhotos.length > 0 && (
+          <div className="step-page"><RiskPhotoSheetPage context="training" evalId={evalId} /></div>
+        )}
       </div>
     </div>
   );
@@ -7787,11 +7852,13 @@ const RiskAttendeesView = ({ onNav }) => {
 // 회의·전파교육 사진을 별도로 첨부·인쇄하는 페이지 (드래그·드롭 + 캡션 + A4 인쇄)
 const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
   const ctx = getEvalContext();
-  const SAVE_KEY = ctx?.evalId ? `wv_risk_mtgphotos_${ctx.evalId}` : "wv_risk_mtgphotos_default";
-  const _saved = riskLoad(SAVE_KEY);
   // 진입 컨텍스트: "meeting" (회의록에서 진입) | "training" (전파교육에서 진입) | null
   const photoContext = typeof window !== "undefined" ? localStorage.getItem("wv_risk_photo_context") : null;
   const isMeetingCtx = photoContext === "meeting";
+  // 저장 키를 컨텍스트별로 → STEP 화면의 사진대지와 동일 데이터 공유
+  const sheetContext = photoContext === "training" ? "training" : "meeting";
+  const SAVE_KEY = ctx?.evalId ? `wv_risk_mtgphotos_${sheetContext}_${ctx.evalId}` : `wv_risk_mtgphotos_${sheetContext}_default`;
+  const _saved = riskLoad(SAVE_KEY);
   // 컨텍스트별 기본 라벨/값
   const contentLabel = isMeetingCtx ? "회의내용" : "교육내용";
   const defaultTitle = isMeetingCtx ? "위험성평가 회의" : "위험성평가 전파 교육";
