@@ -621,7 +621,10 @@ function App() {
       const cached = JSON.parse(localStorage.getItem(CAT_CACHE_KEY) || "null");
       if (Array.isArray(cached) && cached.length > 0) return cached;
     } catch (e) {}
-    return window.WV_DATA.categories;
+    // 캐시가 없으면 옛날 씨앗(window.WV_DATA.categories)을 그리지 않고 빈 목록으로 시작.
+    // DB 응답이 오면 그때 실제 목록을 표시 → 옛 목록이 잠깐 떴다 사라지는 깜빡임 제거.
+    // (DB가 끝까지 실패하는 경우에만 아래 useEffect에서 씨앗을 안전망으로 사용)
+    return [];
   });
   const [catRefreshKey, setCatRefreshKey] = React.useState(0);
   const [livePosts, setLivePosts] = React.useState(window.WV_DATA.posts || []);

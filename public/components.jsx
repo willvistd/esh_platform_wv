@@ -53,11 +53,9 @@ const LogoMark = ({ size = 22 }) => {
 // ─── Sidebar
 const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCategories }) => {
   const myUser = currentUser || D.users.find((u) => u.role === role);
-  const [categories, setCategories] = React.useState(propCategories || D.categories);
-
-  React.useEffect(() => {
-    if (propCategories && propCategories.length > 0) setCategories(propCategories);
-  }, [propCategories]);
+  // 카테고리는 App(라이브 목록)에서 내려주는 prop을 그대로 사용.
+  // (예전엔 내부 state가 D.categories 씨앗을 먼저 그린 뒤 갱신해 옛 목록이 깜빡였음)
+  const categories = propCategories || [];
 
   const allowedMenus = new Set(
     (currentUser?.menuOverrides && currentUser.menuOverrides.length > 0)
