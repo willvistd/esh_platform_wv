@@ -613,7 +613,16 @@ function App() {
   const prevRouteNameRef = React.useRef(null);   // 직전 화면 추적 (위험성평가 허브 진입 판별용)
   const [composing, setComposing] = React.useState(null);
   // search state: TopBar 내부에서 query state 관리 (글로벌 state 불필요)
-  const [liveCategories, setLiveCategories] = React.useState(window.WV_DATA.categories);
+  // 카테고리 캐시: 직전에 DB에서 받은 목록을 localStorage에 저장해두고,
+  // 다음 접속 때 하드코딩 씨앗(옛날 목록) 대신 이걸 먼저 보여줘 초기 깜빡임 제거.
+  const CAT_CACHE_KEY = "wv_live_categories";
+  const [liveCategories, setLiveCategories] = React.useState(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CAT_CACHE_KEY) || "null");
+      if (Array.isArray(cached) && cached.length > 0) return cached;
+    } catch (e) {}
+    return window.WV_DATA.categories;
+  });
   const [catRefreshKey, setCatRefreshKey] = React.useState(0);
   const [livePosts, setLivePosts] = React.useState(window.WV_DATA.posts || []);
 
@@ -680,6 +689,8 @@ function App() {
             };
           });
           setLiveCategories(merged);
+          // 다음 접속 초기 렌더에 쓰도록 진짜 목록을 캐시에 저장 (실패/mock fallback 시엔 저장 안 함)
+          try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(merged)); } catch (e) {}
         } else if (attempt < 3) {
           setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
         } else {

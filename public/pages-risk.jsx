@@ -3740,9 +3740,9 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
           .risk-print-area-table colgroup col:nth-child(11) { width: 4.5% !important; } /* 후가능성 */
           .risk-print-area-table colgroup col:nth-child(12) { width: 4.5% !important; } /* 후중대성 */
           .risk-print-area-table colgroup col:nth-child(13) { width: 4%   !important; } /* 후위험성 */
-          .risk-print-area-table colgroup col:nth-child(14) { width: 4.5% !important; } /* 개선예정일 */
-          .risk-print-area-table colgroup col:nth-child(15) { width: 4.5% !important; } /* 완료일 */
-          .risk-print-area-table colgroup col:nth-child(16) { width: 5.5% !important; } /* 담당자 */
+          .risk-print-area-table colgroup col:nth-child(14) { width: 5%   !important; } /* 개선예정일 */
+          .risk-print-area-table colgroup col:nth-child(15) { width: 5%   !important; } /* 완료일 */
+          .risk-print-area-table colgroup col:nth-child(16) { width: 4.5% !important; } /* 담당자 */
           .risk-print-area-table colgroup col:nth-child(17) { width: 0    !important; display: none !important; } /* 삭제 */
           /* 셀 내부 텍스트 줄바꿈 (세로 가운데만, 가로는 기본 좌측) */
           .risk-print-area-table td, .risk-print-area-table th {
@@ -3876,6 +3876,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             text-align: center !important;
             font-size: ${printFontSize}pt !important;
             color: #000 !important;
+            white-space: nowrap !important;   /* YY-MM-DD가 하이픈에서 줄바꿈되어 2줄 되던 것 방지 */
           }
           /* 삭제 컬럼·관련 셀 인쇄 제외 */
           .risk-print-area-table th.no-print,
