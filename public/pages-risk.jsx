@@ -3346,8 +3346,8 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             <tr style={{ height: 48 }}>
               <td style={cellLabel}>회의일자</td>
               <td style={cellInput}>
-                <div className="meeting-date-cell" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <KDate value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto" }} />
+                <div className="meeting-date-cell" style={{ display: "flex", alignItems: "center", gap: 8, paddingLeft: 12 }}>
+                  <KDate value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto", padding: "2px 0" }} />
                   {form.회의일자 && <span style={{ color: "#333" }}>{weekdayKo(form.회의일자)}</span>}
                 </div>
               </td>
