@@ -3324,6 +3324,14 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
       />
 
       <div className="risk-form-card risk-print-area" style={{ padding: "40px 50px", boxShadow: "none", border: "none", background: "#fff" }}>
+        <style>{`
+          @media print {
+            /* 회의일자: 날짜/요일이 span이라 RISK_STYLE의 input(11pt) 규칙에서 빠져 혼자 작게 나옴
+               → 다른 입력칸과 동일하게 11pt로 통일 (가운데 정렬은 인라인 justifyContent로 처리) */
+            .risk-print-area .meeting-date-cell,
+            .risk-print-area .meeting-date-cell span { font-size: 11pt !important; }
+          }
+        `}</style>
         <h2 style={{ textAlign: "center", fontSize: 26, fontWeight: 800, marginBottom: 18 }}>위험성평가 회의록</h2>
 
         {/* 1. 기본 정보 표 */}
@@ -3338,9 +3346,9 @@ const RiskMeetingView = ({ onNav, currentUser }) => {
             <tr style={{ height: 48 }}>
               <td style={cellLabel}>회의일자</td>
               <td style={cellInput}>
-                <div style={{ display: "flex", alignItems: "center" }}>
-                  <KDate value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto" }} />
-                  {form.회의일자 && <span style={{ fontSize: 13, color: "#333", paddingRight: 12 }}>{weekdayKo(form.회의일자)}</span>}
+                <div className="meeting-date-cell" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}>
+                  <KDate value={form.회의일자} onChange={e => upd("회의일자", e.target.value)} style={{ ...inp, width: "auto", textAlign: "center" }} />
+                  {form.회의일자 && <span style={{ color: "#333" }}>{weekdayKo(form.회의일자)}</span>}
                 </div>
               </td>
               <td style={cellLabel}>회의시간</td>
@@ -3779,11 +3787,20 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             font-size: ${printFontSize}pt !important;   /* 위험성 숫자·(점수)·tx-mirror 등 모든 텍스트 통일 */
             line-height: 1.3 !important;
           }
-          /* 원인(3)·위험발생환경(4)·현재안전보건조치(6)·위험성감소대책(10): 왼쪽 정렬 */
+          /* 세부작업(1)·원인(3)·위험발생환경(4)·현재안전보건조치(6)·위험성감소대책(10):
+             한 줄이면 가운데, 여러 줄로 넘치면 왼쪽 정렬.
+             (display:table + width:auto + margin:auto → 내용이 짧으면 셀 폭보다 좁게 shrink되어
+              가운데 배치, 내용이 길어 줄바꿈되면 셀 폭을 꽉 채워 왼쪽 정렬처럼 보이는 CSS 기법) */
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(1) .tx-mirror,
           .risk-print-area-table:not(.cover-page) tbody td:nth-child(3) .tx-mirror,
           .risk-print-area-table:not(.cover-page) tbody td:nth-child(4) .tx-mirror,
           .risk-print-area-table:not(.cover-page) tbody td:nth-child(6) .tx-mirror,
           .risk-print-area-table:not(.cover-page) tbody td:nth-child(10) .tx-mirror {
+            display: table !important;
+            width: auto !important;
+            max-width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
             text-align: left !important;
           }
           /* 본문 안의 select·input·textarea도 동일하게 조절 */
