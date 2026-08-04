@@ -3523,11 +3523,11 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
   // 관리자가 직접 조절하는 인쇄 폰트 크기 (모든 관리분야 위험성평가표 공통 적용)
   const PRINT_FONT_KEY = "wv_risk_print_font_size";
   const [printFontSize, setPrintFontSize] = React.useState(() => {
-    const saved = parseFloat(localStorage.getItem(PRINT_FONT_KEY) || "7");
-    return isNaN(saved) ? 7 : Math.max(4, Math.min(12, saved));
+    const saved = parseFloat(localStorage.getItem(PRINT_FONT_KEY) || "6");
+    return isNaN(saved) ? 6 : Math.max(4, Math.min(12, saved));
   });
   const updatePrintFontSize = (size) => {
-    const v = Math.max(4, Math.min(12, parseFloat(size) || 7));
+    const v = Math.max(4, Math.min(12, parseFloat(size) || 6));
     setPrintFontSize(v);
     localStorage.setItem(PRINT_FONT_KEY, String(v));
   };
@@ -3708,9 +3708,9 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             overflow: visible !important;
             overflow-x: visible !important;
           }
-          .risk-print-area-table { font-size: 5pt !important; }
+          .risk-print-area-table { font-size: ${printFontSize}pt !important; }
           .risk-print-area-table table {
-            font-size: 5pt !important;
+            font-size: ${printFontSize}pt !important;
             table-layout: fixed !important;
             width: 100% !important;
             min-width: 0 !important;     /* 인라인 minWidth: 1700 무효화 */
@@ -3721,20 +3721,20 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
           /* 컬럼 비율(%) 강제 — A4 가로 폭에 맞춰 17개 컬럼 분배 (합계 100%) */
           .risk-print-area-table colgroup col:nth-child(1)  { width: 7%   !important; } /* 세부작업 */
           .risk-print-area-table colgroup col:nth-child(2)  { width: 8%   !important; } /* 위험분류 */
-          .risk-print-area-table colgroup col:nth-child(3)  { width: 8%   !important; } /* 원인 */
-          .risk-print-area-table colgroup col:nth-child(4)  { width: 13%  !important; } /* 위험발생환경 */
+          .risk-print-area-table colgroup col:nth-child(3)  { width: 7.5% !important; } /* 원인 */
+          .risk-print-area-table colgroup col:nth-child(4)  { width: 11.5% !important; } /* 위험발생환경 */
           .risk-print-area-table colgroup col:nth-child(5)  { width: 6%   !important; } /* 예상재해 */
           .risk-print-area-table colgroup col:nth-child(6)  { width: 8%   !important; } /* 현재안전조치 */
           .risk-print-area-table colgroup col:nth-child(7)  { width: 4.5% !important; } /* 가능성 */
           .risk-print-area-table colgroup col:nth-child(8)  { width: 4.5% !important; } /* 중대성 */
           .risk-print-area-table colgroup col:nth-child(9)  { width: 4%   !important; } /* 위험성 */
-          .risk-print-area-table colgroup col:nth-child(10) { width: 13%  !important; } /* 감소대책 */
+          .risk-print-area-table colgroup col:nth-child(10) { width: 11.5% !important; } /* 감소대책 */
           .risk-print-area-table colgroup col:nth-child(11) { width: 4.5% !important; } /* 후가능성 */
           .risk-print-area-table colgroup col:nth-child(12) { width: 4.5% !important; } /* 후중대성 */
           .risk-print-area-table colgroup col:nth-child(13) { width: 4%   !important; } /* 후위험성 */
-          .risk-print-area-table colgroup col:nth-child(14) { width: 4%   !important; } /* 개선예정일 */
-          .risk-print-area-table colgroup col:nth-child(15) { width: 4%   !important; } /* 완료일 */
-          .risk-print-area-table colgroup col:nth-child(16) { width: 3%   !important; } /* 담당자 */
+          .risk-print-area-table colgroup col:nth-child(14) { width: 4.5% !important; } /* 개선예정일 */
+          .risk-print-area-table colgroup col:nth-child(15) { width: 4.5% !important; } /* 완료일 */
+          .risk-print-area-table colgroup col:nth-child(16) { width: 5.5% !important; } /* 담당자 */
           .risk-print-area-table colgroup col:nth-child(17) { width: 0    !important; display: none !important; } /* 삭제 */
           /* 셀 내부 텍스트 줄바꿈 (세로 가운데만, 가로는 기본 좌측) */
           .risk-print-area-table td, .risk-print-area-table th {
@@ -3758,13 +3758,12 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                 (specificity 0,2,1)을 이기려면 같이 (0,2,2)로 맞춰야 함 */
           .risk-print-area-table:not(.cover-page) thead th,
           .risk-print-area-table:not(.cover-page) thead td {
-            font-size: 8pt !important;    /* 헤더 행 (세부작업내용 / 위험분류 / ... / 담당자) 고정 */
+            font-size: ${printFontSize}pt !important;    /* 헤더 행도 본문과 동일 크기로 통일 */
             font-weight: 700 !important;
             line-height: 1.2 !important;
           }
-          /* 담당자 헤더만 별도 — 칸이 3%로 너무 좁아 "자"가 줄바꿈됨 → 작게 + nowrap */
+          /* 담당자 헤더: 칸이 좁아 줄바꿈되지 않도록 nowrap + 자간 축소 (크기는 통일) */
           .risk-print-area-table:not(.cover-page) thead th.th-assignee {
-            font-size: 6pt !important;
             white-space: nowrap !important;
             letter-spacing: -0.2pt !important;
           }
@@ -3773,9 +3772,19 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
              ".risk-print-area-table:not(.cover-page) input/textarea/select { font-size: 11pt !important; }"
              (specificity 0,2,1)을 이겨야 빨간박스(세부작업/위험분류/원인/환경/재해/조치 등 콜1~6,10,16)도 조절됨 */
           .risk-print-area-table:not(.cover-page) tbody td,
-          .risk-print-area-table:not(.cover-page) tbody th {
-            font-size: ${printFontSize}pt !important;
+          .risk-print-area-table:not(.cover-page) tbody th,
+          .risk-print-area-table:not(.cover-page) tbody div,
+          .risk-print-area-table:not(.cover-page) tbody span,
+          .risk-print-area-table:not(.cover-page) tbody b {
+            font-size: ${printFontSize}pt !important;   /* 위험성 숫자·(점수)·tx-mirror 등 모든 텍스트 통일 */
             line-height: 1.3 !important;
+          }
+          /* 원인(3)·위험발생환경(4)·현재안전보건조치(6)·위험성감소대책(10): 왼쪽 정렬 */
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(3) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(4) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(6) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(10) .tx-mirror {
+            text-align: left !important;
           }
           /* 본문 안의 select·input·textarea도 동일하게 조절 */
           .risk-print-area-table:not(.cover-page) tbody select,
@@ -3820,7 +3829,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
           }
           .risk-print-area-table tbody td:nth-child(9) b,
           .risk-print-area-table tbody td:nth-child(13) b {
-            font-size: ${printFontSize + 0.5}pt !important;
+            font-size: ${printFontSize}pt !important;
           }
           .risk-print-area-table tbody td:nth-child(9) br,
           .risk-print-area-table tbody td:nth-child(13) br {
@@ -3834,7 +3843,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             text-align: center !important;   /* textarea만 가운데 정렬 (드롭다운/입력은 제외) */
           }
           .risk-print-area-table tbody input[type="date"] {
-            font-size: ${Math.max(printFontSize - 2, 4)}pt !important;
+            font-size: ${printFontSize}pt !important;
           }
           /* 날짜 셀(개선예정일/완료일): YY-MM-DD 오버레이용
              ⚠️ Chrome은 input[type=date]의 값을 내부 pseudo-element(::-webkit-datetime-edit-*)로
@@ -3848,7 +3857,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
             display: block !important;
             width: 100% !important;
             text-align: center !important;
-            font-size: ${Math.max(printFontSize - 1, 4)}pt !important;
+            font-size: ${printFontSize}pt !important;
             color: #000 !important;
           }
           /* 삭제 컬럼·관련 셀 인쇄 제외 */
@@ -4531,7 +4540,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                         )}
                       </div>
                     </TD>
-                    <TD center><input value={row.담당자} onChange={e => updRow(i, "담당자", e.target.value)} style={inIn} /></TD>
+                    <TD center><input value={row.담당자} onChange={e => updRow(i, "담당자", e.target.value)} style={{ ...inIn, textAlign: "center" }} /></TD>
                     <TD center w="28" className="no-print">
                       <button onClick={() => delRow(i)} title="행 삭제"
                         style={{ background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", color: "#dc2626", fontSize: 13, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>✕</button>
