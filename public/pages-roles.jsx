@@ -181,7 +181,17 @@ const RoleMenuModal = ({ role, menuIds, onClose, onSave }) => {
   React.useEffect(() => {
     if (window.WV_API?.getCategories) {
       window.WV_API.getCategories()
-        .then(list => setLiveCategories(Array.isArray(list) ? list : []))
+        .then(list => {
+          const cats = Array.isArray(list) ? list : [];
+          setLiveCategories(cats);
+          // 라이브 카테고리는 기본으로 '접근 허용'(체크) 처리.
+          // (하드코딩 기본 목록에 없던 카테고리가 ID 불일치로 조용히 해제돼 보이던 문제 방지)
+          setSelected(prev => {
+            const next = new Set(prev);
+            cats.forEach(c => next.add("cat:" + c.id));
+            return next;
+          });
+        })
         .catch(() => setLiveCategories([]));
     }
   }, []);
