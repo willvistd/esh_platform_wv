@@ -1727,8 +1727,19 @@ const ManageUsersView = ({ currentUser }) => {
                       <div className="meta">{u.position || ""}</div>
                     </div>
                   </div>
-                  <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
                     <span className="chip"><Icon name="user" size={11} /> 사내직원</span>
+                    {(() => {
+                      // 팀 공용계정(manager/staff) vs 개인계정 구분 배지
+                      const isTeam = u.role === "manager" || u.role === "staff";
+                      const siteCount = String(u.siteIds || "").split(",").map(s => s.trim()).filter(Boolean).length;
+                      if (isTeam) return (
+                        <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
+                          👥 팀{siteCount === 0 ? " · 사업장 미지정" : ` · ${siteCount}곳`}
+                        </span>
+                      );
+                      return <span className="chip">👤 개인</span>;
+                    })()}
                   </div>
                   <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{u.email}</div>
