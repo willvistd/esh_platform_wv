@@ -34,7 +34,6 @@ window.WV_DATA = (() => {
   const roles = [
     { id: "admin",        name: "관리자",      desc: "전체 권한",                              kind: "system",   siteAdmin: true,  color: "#1e5fcf", builtin: true },
     { id: "safety",       name: "안전관리자",   desc: "업로드 · 수정 · 승인",                    kind: "internal", siteAdmin: true,  color: "#1f8a5b", builtin: true },
-    { id: "manager",      name: "팀장(구)",     desc: "팀 공용으로 통합됨 — 신규 선택 불가(기존 계정은 팀 공용과 동일 권한)", kind: "internal", siteAdmin: false, color: "#d97757", builtin: true, hidden: true },
     { id: "staff",        name: "팀 공용",      desc: "팀 공용계정 · 모든 업무·카테고리 접근(관리자 설정 제외)", kind: "internal", siteAdmin: false, color: "#7280a5", builtin: true },
     { id: "site_manager", name: "현장대리인",   desc: "단위 사업장 직원 · 본인 사업장 이행 제출",  kind: "site",     siteAdmin: false, color: "#8b5cf6", builtin: true },
   ];

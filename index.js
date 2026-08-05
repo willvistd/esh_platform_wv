@@ -344,6 +344,10 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "requestedAt" TEXT;`);
   // 담당 사업장 ID 목록 (CSV) — site_manager/site_staff는 자기 사업장, 본사 staff는 담당 사업장
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "siteIds" TEXT;`);
+  // ── 역할 통합 마이그레이션: 팀장(manager) → 팀 공용(staff) ──
+  // 팀장·일반직원 권한이 동일해져 '팀 공용'(staff) 하나로 통합. 기존 팀장 계정을 팀 공용으로 이관.
+  // (idempotent — 콜드스타트마다 실행돼도 안전)
+  await pool.query(`UPDATE users SET role='staff' WHERE role='manager';`);
   // 이행사항 제출에 fileUrl 컬럼 (기존 테이블에도 보장)
   await pool.query(`ALTER TABLE compliance_submissions ADD COLUMN IF NOT EXISTS "fileUrl" TEXT;`);
   // 교육종류 숨김 플래그 (회사에서 미사용 교육은 숨김 처리)
