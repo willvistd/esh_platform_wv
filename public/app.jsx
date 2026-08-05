@@ -919,7 +919,16 @@ function App() {
         ) : route.name === "manage-roles" ? (
           <ManageRolesView />
         ) : route.name === "manage-sites" ? (
-          <ManageSitesView onNav={onNav} currentUser={currentUser} role={role} />
+          <ManageSitesView onNav={onNav} currentUser={currentUser} role={role}
+            onUserRefresh={async () => {
+              // 팀 계정이 사업장 추가로 siteIds가 바뀌었을 때, 현재 로그인 사용자를 서버 기준으로 갱신
+              try {
+                const res = await fetch("/api/users");
+                const data = await res.json();
+                const fresh = (data.users || []).find(u => String(u.id) === String(currentUser.id));
+                if (fresh) { setCurrentUserData(fresh); localStorage.setItem("wv_user", JSON.stringify(fresh)); }
+              } catch (e) {}
+            }} />
         ) : route.name === "education-log" ? (
           <EducationLogView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "education-log-new" ? (

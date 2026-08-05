@@ -33,7 +33,7 @@ function canDeleteSite(role) {
   return role === "admin" || role === "safety";
 }
 
-const ManageSitesView = ({ onNav, currentUser, role }) => {
+const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [sites, setSites] = React.useState([]);
   const [hqs, setHQs] = React.useState([]);
   const [users, setUsers] = React.useState([]); // 담당자 선택용
@@ -509,7 +509,10 @@ const ManageSitesView = ({ onNav, currentUser, role }) => {
           allowedHQIds={(role === "admin" || role === "safety") ? null : userHQs}
           onSave={async (data) => {
             await window.WV_API.addSite(data);
-            // 사용자 siteIds도 백엔드에서 함께 갱신되므로 전체 reload
+            // 팀 계정(manager/staff)이면 방금 추가한 사업장이 내 담당(siteIds)에 자동 연결됨
+            // → 현재 로그인 사용자를 갱신해야 새 사업장이 바로 보임(사업장 관리·위험성평가 등 전 화면)
+            await onUserRefresh?.();
+            // 사용자 siteIds가 갱신됐으므로 전체 reload
             await reloadAll();
             setAdding(false);
             setAddingForHQ(null);

@@ -1356,6 +1356,23 @@ app.post('/api/sites', async (req, res) => {
     if (Array.isArray(assigneeIds)) {
       await syncSiteAssignees(site.id, assigneeIds);
     }
+    // 팀 공용계정(manager/staff)이 사업장을 직접 추가하면 그 계정의 담당 사업장(siteIds)에 자동 연결.
+    // ⚠️ 이미 siteIds가 지정된(=팀 단위로 스코프된) 계정에만 적용.
+    //    siteIds가 비어있는 계정은 "본부 전체" 접근이므로 append하면 오히려 1개로 축소돼 회귀 → 제외.
+    try {
+      const uid = req.session && req.session.uid;
+      const urole = req.session && req.session.role;
+      if (uid && (urole === 'manager' || urole === 'staff')) {
+        const ur = await pool.query('SELECT "siteIds" FROM users WHERE id=$1', [uid]);
+        const cur = String((ur.rows[0] && ur.rows[0].siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (cur.length > 0 && !cur.includes(String(site.id))) {
+          cur.push(String(site.id));
+          await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [cur.join(','), uid]);
+        }
+      }
+    } catch (e) {
+      console.error('사업장 자동 연결(siteIds) 실패:', e);
+    }
     res.json({ site });
   } catch (e) {
     console.error('POST /api/sites 오류:', e);
