@@ -2370,6 +2370,16 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
   const [sites, setSites] = React.useState([]);
   const update = (k, v) => setForm(s => ({ ...s, [k]: v }));
 
+  // 계정 유형: "individual"(개인) / "team"(팀 공용계정)
+  const [mode, setMode] = React.useState("individual");
+  const teamRoleIds = ["manager", "staff"];
+  const teamRoles = roles.filter(r => teamRoleIds.includes(r.id));
+  const chooseMode = (m) => {
+    setMode(m);
+    // 팀 모드로 바꾸면 팀 계정 역할(팀장/팀원)로 맞춤
+    if (m === "team" && !teamRoleIds.includes(form.role)) update("role", "staff");
+  };
+
   React.useEffect(() => {
     // 본인 권한 안에서만 본부/사업장 표시
     if (window.WV_API?.getHQs) {
@@ -2437,9 +2447,33 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
   return (
     <>
       {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
+
+      {/* 계정 유형 선택: 개인 / 팀 공용 */}
       <div className="field">
-        <label className="field-label">이름 *</label>
-        <input className="field-input" placeholder="홍길동" value={form.name} onChange={e => update("name", e.target.value)} />
+        <label className="field-label">계정 유형</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          {[["individual", "👤 개인 계정"], ["team", "👥 팀 공용계정"]].map(([m, label]) => (
+            <button key={m} type="button" onClick={() => chooseMode(m)}
+              style={{
+                flex: 1, padding: "9px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                border: mode === m ? "1.5px solid var(--primary)" : "1px solid var(--line)",
+                background: mode === m ? "var(--primary-soft)" : "var(--bg-elev)",
+                color: mode === m ? "var(--primary)" : "var(--fg-2)",
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {mode === "team" && (
+        <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--fg-2)", background: "var(--bg-sunk)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+          여러 명이 공유하는 <b>팀 공용계정</b>입니다. 아래에서 <b>담당 사업장</b>을 등록하면 팀원 전체가 그 사업장으로 활동합니다. 같은 계정으로 <b>동시 접속</b>도 가능합니다.
+        </div>
+      )}
+
+      <div className="field">
+        <label className="field-label">{mode === "team" ? "팀 이름 *" : "이름 *"}</label>
+        <input className="field-input" placeholder={mode === "team" ? "예: CRM운영1팀" : "홍길동"} value={form.name} onChange={e => update("name", e.target.value)} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
@@ -2453,9 +2487,9 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
-          <label className="field-label">권한</label>
+          <label className="field-label">{mode === "team" ? "역할 (팀장/팀원)" : "권한"}</label>
           <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}>
-            {roles.map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
+            {(mode === "team" && teamRoles.length ? teamRoles : roles).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
           </select>
         </div>
         <div className="field">
@@ -2478,7 +2512,7 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       {form.hqId && (
         <div className="field">
           <label className="field-label">
-            담당 사업장
+            {mode === "team" ? "팀 관리 사업장" : "담당 사업장"}
             <span style={{ fontSize: 11, fontWeight: 400, color: "var(--fg-3)", marginLeft: 6 }}>
               ({selectedSiteIds.length}개 선택됨)
             </span>
