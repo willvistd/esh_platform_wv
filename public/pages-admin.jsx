@@ -2383,11 +2383,11 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
 
   // 계정 유형: "individual"(개인) / "team"(팀 공용계정)
   const [mode, setMode] = React.useState("individual");
-  const teamRoleIds = ["manager", "staff"];
+  const teamRoleIds = ["staff"];   // 팀 공용 = staff 단일 역할 (팀장/manager는 은퇴)
   const teamRoles = roles.filter(r => teamRoleIds.includes(r.id));
   const chooseMode = (m) => {
     setMode(m);
-    // 팀 모드로 바꾸면 팀 계정 역할(팀장/팀원)로 맞춤
+    // 팀 모드로 바꾸면 팀 공용 역할로 맞춤
     if (m === "team" && !teamRoleIds.includes(form.role)) update("role", "staff");
   };
 
@@ -2498,9 +2498,9 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
-          <label className="field-label">{mode === "team" ? "역할 (팀장/팀원)" : "권한"}</label>
+          <label className="field-label">{mode === "team" ? "역할 (팀 공용)" : "권한"}</label>
           <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}>
-            {(mode === "team" && teamRoles.length ? teamRoles : roles).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
+            {(mode === "team" && teamRoles.length ? teamRoles : roles.filter(r => !r.hidden)).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
           </select>
         </div>
         <div className="field">

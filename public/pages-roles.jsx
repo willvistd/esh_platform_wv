@@ -122,7 +122,7 @@ const ManageRolesView = () => {
       {confirmDel && (
         <ConfirmModal
           title="역할 삭제"
-          message={`「${confirmDel.name}」 역할을 삭제합니다. 이 역할이 부여된 ${userCount(confirmDel.id)}명의 계정은 일반직원으로 자동 변경됩니다.`}
+          message={`「${confirmDel.name}」 역할을 삭제합니다. 이 역할이 부여된 ${userCount(confirmDel.id)}명의 계정은 팀 공용으로 자동 변경됩니다.`}
           confirmLabel="삭제"
           dangerous
           onClose={() => setConfirmDel(null)}

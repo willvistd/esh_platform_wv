@@ -814,8 +814,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
                       <span style={{ fontSize: 10, color: "var(--fg-3)", marginLeft: "auto" }}>
                         {u.role === "admin" ? "관리자" :
                          u.role === "safety" ? "안전관리자" :
-                         u.role === "manager" ? "팀장" :
-                         u.role === "staff" ? "일반직원" :
+                         u.role === "manager" ? "팀 공용(구 팀장)" :
+                         u.role === "staff" ? "팀 공용" :
                          u.role === "site_manager" ? "현장대리인" : u.role}
                       </span>
                     </label>

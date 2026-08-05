@@ -34,8 +34,8 @@ window.WV_DATA = (() => {
   const roles = [
     { id: "admin",        name: "관리자",      desc: "전체 권한",                              kind: "system",   siteAdmin: true,  color: "#1e5fcf", builtin: true },
     { id: "safety",       name: "안전관리자",   desc: "업로드 · 수정 · 승인",                    kind: "internal", siteAdmin: true,  color: "#1f8a5b", builtin: true },
-    { id: "manager",      name: "팀장",        desc: "부서 자료 업로드 · 이행 제출",             kind: "internal", siteAdmin: false, color: "#d97757", builtin: true },
-    { id: "staff",        name: "일반직원",     desc: "열람 · 다운로드 · 이행 제출",              kind: "internal", siteAdmin: false, color: "#7280a5", builtin: true },
+    { id: "manager",      name: "팀장(구)",     desc: "팀 공용으로 통합됨 — 신규 선택 불가(기존 계정은 팀 공용과 동일 권한)", kind: "internal", siteAdmin: false, color: "#d97757", builtin: true, hidden: true },
+    { id: "staff",        name: "팀 공용",      desc: "팀 공용계정 · 모든 업무·카테고리 접근(관리자 설정 제외)", kind: "internal", siteAdmin: false, color: "#7280a5", builtin: true },
     { id: "site_manager", name: "현장대리인",   desc: "단위 사업장 직원 · 본인 사업장 이행 제출",  kind: "site",     siteAdmin: false, color: "#8b5cf6", builtin: true },
   ];
 
@@ -65,10 +65,11 @@ window.WV_DATA = (() => {
   const allMenus = menuCatalog.map(m => m.id);
   const adminMenus = allMenus;
   const safetyMenus = allMenus.filter(m => m !== "manage-categories" && m !== "manage-roles");
-  const managerMenus = allMenus.filter(m => !["manage-categories", "manage-roles"].includes(m));
-  // 일반직원(staff): 본인 담당 사업장 정보 확인·수정 가능해야 하므로 manage-sites 포함.
-  // 카테고리/권한 관리 같은 시스템 설정만 제외.
-  const staffMenus = allMenus.filter(m => !["manage-categories", "manage-roles"].includes(m));
+  // 팀 공용(구 팀장·일반직원 통합): 모든 카테고리 + 사업장 관리 + 운영 기능 전부 접근.
+  // 관리자 전용 설정(계정 관리·권한 관리·카테고리 관리·가입 승인 관리)만 제외.
+  const teamMenus = allMenus.filter(m => !["manage-categories", "manage-roles", "manage-users", "manage-approvals"].includes(m));
+  const managerMenus = teamMenus;
+  const staffMenus = teamMenus;
   // 현장대리인: 카테고리는 모두 노출 (자료실 접근 막을 이유 없음).
   // 단 관리자 전용 시스템 메뉴(계정/역할/카테고리/가입승인)는 제외.
   const siteManagerMenus = allMenus.filter(m =>
@@ -90,8 +91,9 @@ window.WV_DATA = (() => {
     // 글쓰기(upload)는 관리자·안전관리자·안전보건관리책임자만 — 그 외는 열람·제출만
     admin:         { upload: true,  manageCategory: true,  manageUser: true,  manageRole: true,  approveSignup: true,  approve: true,  submit: true,  comment: true },
     safety:        { upload: true,  manageCategory: false, manageUser: false, manageRole: false, approveSignup: true,  approve: true,  submit: true,  comment: true },
-    manager:       { upload: false, manageCategory: false, manageUser: false, manageRole: false, approveSignup: true,  approve: false, submit: true,  comment: true },
-    staff:         { upload: false, manageCategory: false, manageUser: false, manageRole: false, approveSignup: true,  approve: false, submit: true,  comment: true },
+    // 팀 공용(팀장·일반직원 통합): 게시판 글쓰기 포함 모든 운영 접근. 관리자 설정(계정/권한/카테고리/가입승인)만 제외.
+    manager:       { upload: true,  manageCategory: false, manageUser: false, manageRole: false, approveSignup: false, approve: false, submit: true,  comment: true },
+    staff:         { upload: true,  manageCategory: false, manageUser: false, manageRole: false, approveSignup: false, approve: false, submit: true,  comment: true },
     // 현장대리인: 본인 사업장 이행 제출만. 글쓰기 X.
     site_manager:  { upload: false, manageCategory: false, manageUser: false, manageRole: false, approveSignup: false, approve: false, submit: true,  comment: true },
     site_staff:    { upload: false, manageCategory: false, manageUser: false, manageRole: false, approveSignup: false, approve: false, submit: true,  comment: true },
