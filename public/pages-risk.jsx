@@ -1987,7 +1987,7 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
     selectedType && e.type === selectedType.id && e.company === selectedCompany);
 
   return (
-    <div className="content">
+    <div className="content" style={{ maxWidth: 1300 }}>
       <style>{RISK_STYLE}</style>
       <div className="content-hd">
         <div>
