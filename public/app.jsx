@@ -913,7 +913,11 @@ function App() {
         ) : route.name === "submissions" ? (
           <SubmissionsView onNav={onNav} role={role} currentUser={currentUser} />
         ) : route.name === "manage-categories" ? (
-          <ManageCategoriesView onNav={onNav} onCategoryUpdate={setLiveCategories} />
+          <ManageCategoriesView onNav={onNav} onCategoryUpdate={(cats) => {
+            setLiveCategories(cats);
+            // 캐시도 갱신 → 새로고침 시 옛 카테고리(옛 유형)가 잠깐 뜨는 것 방지
+            try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(cats)); } catch (e) {}
+          }} />
         ) : route.name === "manage-users" ? (
           <ManageUsersView currentUser={currentUser} />
         ) : route.name === "manage-approvals" ? (

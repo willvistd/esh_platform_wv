@@ -1271,6 +1271,8 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
       setCats(prev => prev.map(c => c.id === editing.id ? updated : c));
       const idx = D.categories.findIndex(c => c.id === editing.id);
       if (idx > -1) D.categories[idx] = updated;
+      // ⚠️ 이게 빠져서 유형(자료실↔게시판) 변경이 화면에 반영 안 되던 버그 → 추가·삭제처럼 갱신 전파
+      if (onCategoryUpdate) onCategoryUpdate([...D.categories]);
       reset(); setAdding(false);
     } catch(e) { alert("수정 실패. 다시 시도해주세요."); }
     setSaving(false);
@@ -1392,8 +1394,6 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
                   {[
                     { id: "board",      name: "게시판형",   desc: "글·첨부파일 게시 (공지·서류)" },
                     { id: "library",    name: "자료실형",   desc: "썸네일 카드 + 다운로드 (표지·포스터)" },
-                    { id: "form",       name: "양식생성형", desc: "전용 입력 양식 (교육·평가)" },
-                    { id: "board-form", name: "게시판+양식", desc: "게시판 + 양식 혼합 (MSDS)" },
                   ].map(t => (
                     <div key={t.id} className={"type-card" + (form.type === t.id ? " active" : "")}
                       onClick={() => setForm(s => ({ ...s, type: t.id }))}>
