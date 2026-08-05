@@ -16,7 +16,12 @@ const ManageRolesView = () => {
     "external-partner": "외부파트너",
   };
 
-  const userCount = (rid) => D.users.filter(u => u.role === rid).length;
+  // 역할별 인원수: 실제 DB 계정 기준으로 계산 (예전엔 더미 D.users로 세어 실제와 무관했음)
+  const [realUsers, setRealUsers] = React.useState([]);
+  React.useEffect(() => {
+    fetch("/api/users").then(r => r.json()).then(d => setRealUsers(d.users || [])).catch(() => {});
+  }, []);
+  const userCount = (rid) => realUsers.filter(u => u.role === rid).length;
 
   const onSaveMenus = (roleId, menus) => {
     setRoleMenus(rm => ({ ...rm, [roleId]: menus }));

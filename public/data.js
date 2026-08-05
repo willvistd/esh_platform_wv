@@ -99,17 +99,9 @@ window.WV_DATA = (() => {
     "ext-partner": { upload: true,  manageCategory: false, manageUser: false, manageRole: false, approveSignup: false, approve: false, submit: true,  comment: true },
   };
 
-  const users = [
-    { id: 1, name: "이화택", dept: "대표이사실",      role: "admin",   userType: "internal", status: "active", email: "hwa@willnvision.co.kr", phone: "010-1234-5678", joinedAt: "2006-09-15", lastLoginAt: "2026-05-16", pwChangedAt: "2026-03-12" },
-    { id: 2, name: "김혜현", dept: "안전보건팀",      role: "safety",  userType: "internal", status: "active", email: "jhpark@willnvision.co.kr", phone: "010-2233-4455", joinedAt: "2019-03-02", lastLoginAt: "2026-05-17", pwChangedAt: "2026-04-02" },
-    { id: 3, name: "정수민", dept: "안전보건팀",      role: "safety",  userType: "internal", status: "active", email: "smjung@willnvision.co.kr", phone: "010-3344-5566", joinedAt: "2021-07-11", lastLoginAt: "2026-05-16", pwChangedAt: "2026-02-18" },
-    { id: 4, name: "김도현", dept: "고객센터 1팀",    role: "manager", userType: "internal", status: "active", email: "dhkim@willnvision.co.kr", phone: "010-4455-6677", joinedAt: "2017-11-20", lastLoginAt: "2026-05-15", pwChangedAt: "2026-01-30" },
-    { id: 5, name: "최유나", dept: "물류운영팀",      role: "manager", userType: "internal", status: "active", email: "yuna.choi@willnvision.co.kr", phone: "010-5566-7788", joinedAt: "2020-05-04", lastLoginAt: "2026-05-17", pwChangedAt: "2026-03-22" },
-    { id: 6, name: "윤서연", dept: "FM 시설관리팀",   role: "manager", userType: "internal", status: "active", email: "sy.yoon@willnvision.co.kr", phone: "010-6677-8899", joinedAt: "2022-08-30", lastLoginAt: "2026-05-14", pwChangedAt: "2026-04-11" },
-    { id: 7, name: "강민호", dept: "HR 아웃소싱팀",   role: "staff",   userType: "internal", status: "dormant", email: "mh.kang@willnvision.co.kr", phone: "010-7788-9900", joinedAt: "2023-02-14", lastLoginAt: "2025-12-02", pwChangedAt: "2025-12-02" },
-    { id: 8, name: "한지원", dept: "고객센터 3팀",    role: "staff",   userType: "internal", status: "active", email: "jw.han@willnvision.co.kr", phone: "010-8899-0011", joinedAt: "2024-01-08", lastLoginAt: "2026-05-17", pwChangedAt: "2026-05-10" },
-    { id: 9, name: "장세진", dept: "경비운영팀",      role: "staff",   userType: "internal", status: "active", email: "sj.jang@willnvision.co.kr", phone: "010-9900-1122", joinedAt: "2024-06-19", lastLoginAt: "2026-05-13", pwChangedAt: "2026-03-08" },
-  ];
+  // 실제 계정은 DB(users 테이블)에서 API로 불러옵니다. 여기는 더 이상 가짜 시드 명단을 두지 않음.
+  // (배열 자체는 유지 — 일부 화면이 WV_DATA.users.find(...) fallback으로 참조하므로 빈 배열이어야 안전)
+  const users = [];
 
   const posts = [];
 

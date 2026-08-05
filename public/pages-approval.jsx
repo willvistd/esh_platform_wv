@@ -3,7 +3,11 @@
 // ── 결재 작성 ──
 const ApprovalCompose = ({ onNav, currentUser, categories }) => {
   const D = window.WV_DATA;
-  const users = D.users || [];
+  // 결재자 선택 목록은 실제 DB 계정에서 로드 (예전엔 더미 D.users를 사용했음)
+  const [users, setUsers] = React.useState([]);
+  React.useEffect(() => {
+    fetch("/api/users").then(r => r.json()).then(d => setUsers(d.users || [])).catch(() => {});
+  }, []);
   const approvalCats = (categories || D.categories).filter(c => c.approval);
 
   const [form, setForm] = React.useState({
