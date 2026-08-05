@@ -44,8 +44,10 @@ const api = {
     const data = await res.json();
     return data.users || [];
   },
-  async getPosts() {
-    const res = await fetch(ENDPOINTS.posts);
+  async getPosts(categoryId) {
+    // categoryId 지정 시 해당 카테고리만(썸네일 포함) — 전체 로드 시 base64 썸네일 제외되어 가벼움
+    const url = categoryId ? `${ENDPOINTS.posts}?categoryId=${encodeURIComponent(categoryId)}` : ENDPOINTS.posts;
+    const res = await fetch(url);
     const data = await res.json();
     return data.posts || [];
   },

@@ -29,7 +29,8 @@ const CategoryView = ({ catId, view, onNav, onCompose, role, currentUser, catego
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    window.WV_API.getPosts().then(data => {
+    // 이 카테고리 게시글만 스코프로 로드 (예전엔 모든 카테고리 게시글+base64 썸네일을 통째로 불러와 느렸음)
+    window.WV_API.getPosts(catId).then(data => {
       setAllPosts(data);
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -1072,7 +1073,8 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
 
   const reload = React.useCallback(() => {
     setLoading(true);
-    window.WV_API.getPosts().then(data => {
+    // 이 자료실 카테고리 것만 스코프로 로드(썸네일 포함) — 다른 카테고리 base64 썸네일까지 받던 문제 해결
+    window.WV_API.getPosts(cat.id).then(data => {
       setItems(data.filter(p => p.categoryId === cat.id && p.status !== "deleted"));
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -1182,7 +1184,7 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                   alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative",
                 }}>
                   {thumb
-                    ? <img src={thumb} alt={it.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ? <img src={thumb} alt={it.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : (fileUrl && /\.pdf(\?|$)/i.test(fileUrl))
                       ? <PdfThumb url={fileUrl} />
                       : <div style={{ textAlign: "center", color: "var(--fg-3)" }}>

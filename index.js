@@ -745,7 +745,18 @@ app.post('/api/login', async (req, res) => {
 
 // ── Posts ──
 app.get('/api/posts', async (req, res) => {
-  const result = await pool.query('SELECT * FROM posts ORDER BY id DESC');
+  const { categoryId } = req.query;
+  let result;
+  if (categoryId) {
+    // 특정 카테고리만 — 썸네일(thumbUrl) 포함 전체 (자료실 그리드용). 그 카테고리 것만이라 가벼움.
+    result = await pool.query('SELECT * FROM posts WHERE "categoryId"=$1 ORDER BY id DESC', [categoryId]);
+  } else {
+    // 전체 목록 — base64로 저장되는 무거운 thumbUrl은 제외(카운트·대시보드·검색용).
+    // ⚠️ 이전엔 SELECT * 로 모든 카테고리의 base64 썸네일까지 통째로 실어보내 로딩이 매우 느렸음.
+    result = await pool.query(`SELECT id, title, content, "categoryId", "authorId", "authorName",
+      "createdAt", status, priority, "dueAt", pinned, "mustRead", "hasSubmission",
+      "submissionTarget", attachments, "subCategory" FROM posts ORDER BY id DESC`);
+  }
   res.json({ posts: result.rows });
 });
 
