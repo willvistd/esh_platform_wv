@@ -391,21 +391,16 @@ async function initDB() {
     console.log('[DB] 본부(HQ) 시드 6건 입력 완료');
   }
 
-  // 추가 본부 자동 보장 — 이미 존재하면 무시, 없으면 INSERT
-  const HQ_AUTO_ADD = [
-    { name: '공항사업본부', code: 'AIR', ownerDept: '공항사업본부', sortOrder: 2, description: 'FM사업부문 소속' },
-  ];
-  for (const h of HQ_AUTO_ADD) {
-    const exist = await pool.query('SELECT id FROM hq WHERE name=$1', [h.name]);
-    if (exist.rowCount === 0) {
-      await pool.query(
-        `INSERT INTO hq (name, code, description, "ownerDept", "sortOrder", status, "createdAt")
-         VALUES ($1,$2,$3,$4,$5,'active', NOW()::TEXT)`,
-        [h.name, h.code, h.description || '', h.ownerDept, h.sortOrder]
-      );
-      console.log(`[DB] 본부 신규 추가: ${h.name}`);
-    }
-  }
+  // ⚠️ (제거됨) 예전엔 여기서 '공항사업본부'를 자동 재삽입해, 사용자가 지워도 서버가 뜰 때마다
+  //    다시 생기고(진짜 본부는 '윌앤비전 공항사업본부'라 존재 체크가 계속 실패), 서버리스 동시
+  //    콜드스타트 시 unique 제약이 없어 중복까지 쌓이던 버그가 있었음 → 자동 추가 로직 삭제.
+  // 과거에 잘못 생성된 '공항사업본부'(plain) 유령 중복 정리:
+  //   사업장이 하나도 연결되지 않은 것만 삭제(사업장 붙은 본부는 보존 → 고아 방지). idempotent.
+  await pool.query(`
+    DELETE FROM hq
+    WHERE name = '공항사업본부'
+      AND id NOT IN (SELECT "hqId" FROM sites WHERE "hqId" IS NOT NULL)
+  `);
 
   const existing = await pool.query('SELECT COUNT(*) FROM users');
   if (parseInt(existing.rows[0].count) === 0 && DEMO_MODE) {
