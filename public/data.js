@@ -173,3 +173,20 @@ window.WV_SUB = {
     };
   },
 };
+
+// ── 문서 작성자(실명) — 공용계정 소프트 감사 ──
+// 팀 공용계정은 로그인 이름이 팀명이라 "누가 작성했는지"가 안 남음.
+// → 계정별로 '현재 작성자(실명)'를 localStorage에 저장하고, 문서 저장 시 이 이름을 사용.
+//   미지정 시 계정 이름으로 fallback(개인계정은 기존과 동일하게 동작).
+window.WV_ACTOR = {
+  _key: (user) => "wv_actor_name_" + (user && user.id != null ? user.id : "anon"),
+  getStored(user) { try { return localStorage.getItem(this._key(user)) || ""; } catch (e) { return ""; } },
+  get(user) { return this.getStored(user) || (user && user.name) || ""; },
+  set(user, name) {
+    try {
+      const v = String(name || "").trim();
+      if (v) localStorage.setItem(this._key(user), v);
+      else localStorage.removeItem(this._key(user));
+    } catch (e) {}
+  },
+};

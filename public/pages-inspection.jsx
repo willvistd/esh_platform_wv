@@ -524,7 +524,7 @@ function FieldInspectionView({ onNav, currentUser }) {
   const [meta, setMeta] = React.useState({
     점검일자: today,
     점검장소: '',
-    점검자: currentUser?.name || '',
+    점검자: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name || '',
     점검구분: '상반기 현장점검',
     점검목적: '작업장 내 위험요인 사전 발굴 및 개선 지원',
   });
@@ -609,7 +609,7 @@ function FieldInspectionView({ onNav, currentUser }) {
   const handleNew = () => {
     if (!window.confirm('현재 작성 내용이 초기화됩니다. 계속하시겠습니까?')) return;
     const c = blankCard();
-    setMeta({ 점검일자:today, 점검장소:'', 점검자: currentUser?.name||'',
+    setMeta({ 점검일자:today, 점검장소:'', 점검자: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name||'',
       점검구분:'상반기 현장점검', 점검목적:'작업장 내 위험요인 사전 발굴 및 개선 지원' });
     setCards([c]);
     setOpenId(c.id);

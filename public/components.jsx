@@ -274,6 +274,8 @@ const KDate = ({ value, onChange, className = "", style = {}, block = false, ...
 // 검색: searchableItems prop으로 받은 모든 항목에서 keyword 매칭, 드롭다운으로 결과 표시
 const TopBar = ({ role, currentUser, searchableItems, onNav, onCompose, onLogout, onUpdateProfile }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
+  // 문서에 기록될 '현재 작성자(실명)' — 공용계정 소프트 감사용
+  const [actorName, setActorName] = React.useState(() => (window.WV_ACTOR ? window.WV_ACTOR.getStored(currentUser) : "") || "");
   const can = D.can[role];
   const roleInfo = D.roles.find((r) => r.id === role);
   const [query, setQuery] = React.useState("");
@@ -412,6 +414,16 @@ const TopBar = ({ role, currentUser, searchableItems, onNav, onCompose, onLogout
 
       <div style={{ flex: 1 }} />
 
+      {/* 현재 작성자(실명) — 문서에 기록될 이름. 공용계정에서 실제 작성자를 남기기 위함 */}
+      <button
+        className="tb-user-pill"
+        onClick={() => setProfileOpen(true)}
+        title="문서에 기록될 작성자(실명) — 클릭하여 변경"
+        style={{ cursor: "pointer", background: "transparent", border: "1px solid var(--line)" }}
+      >
+        <span style={{ fontSize: 12 }}>✍ <span style={{ color: "var(--fg-3)" }}>작성자</span> <b>{actorName || currentUser?.name}</b></span>
+      </button>
+
       {/* Current logged-in user badge — clickable: 내 정보 화면 진입 */}
       <button
         className="tb-user-pill"
@@ -430,6 +442,7 @@ const TopBar = ({ role, currentUser, searchableItems, onNav, onCompose, onLogout
         <MyProfileModal
           currentUser={currentUser}
           roleInfo={roleInfo}
+          onActorSaved={setActorName}
           onClose={() => setProfileOpen(false)}
           onUpdate={async (data) => {
             try {
@@ -497,11 +510,18 @@ const KOSHORTDATE = (s) => {
 };
 
 // ─── 내 정보 모달 (본인 셀프 수정: 연락처, 부서만 가능)
-const MyProfileModal = ({ currentUser, roleInfo, onClose, onUpdate }) => {
+const MyProfileModal = ({ currentUser, roleInfo, onClose, onUpdate, onActorSaved }) => {
   const [form, setForm] = React.useState({
     phone: currentUser?.phone || "",
     dept: currentUser?.dept || "",
   });
+  // 현재 작성자(실명) — localStorage에 즉시 저장(서버 저장 아님)
+  const [actor, setActor] = React.useState(() => (window.WV_ACTOR ? window.WV_ACTOR.getStored(currentUser) : "") || "");
+  const saveActor = (v) => {
+    setActor(v);
+    window.WV_ACTOR?.set(currentUser, v);
+    onActorSaved?.(v);
+  };
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
   const [success, setSuccess] = React.useState("");
@@ -544,6 +564,16 @@ const MyProfileModal = ({ currentUser, roleInfo, onClose, onUpdate }) => {
                 <span>·</span>
                 <span style={{ color: roleInfo?.color, fontWeight: 600 }}>{roleInfo?.name}</span>
               </div>
+            </div>
+          </div>
+
+          {/* 현재 작성자(실명) — 문서에 기록될 이름 (공용계정 소프트 감사) */}
+          <div className="field">
+            <label className="field-label">✍ 현재 작성자 (실명)</label>
+            <input className="field-input" value={actor} onChange={e => saveActor(e.target.value)}
+              placeholder={currentUser.name} />
+            <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, lineHeight: 1.5 }}>
+              공용계정을 여러 명이 함께 쓸 때, 지금 작성하는 분 성함을 적어두면 위험성평가·점검·결재·게시글 등 <b>문서에 이 이름이 작성자로 기록</b>됩니다. (미입력 시 계정 이름 “{currentUser.name}”으로 기록)
             </div>
           </div>
 

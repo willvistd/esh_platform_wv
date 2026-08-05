@@ -46,7 +46,7 @@ const ApprovalCompose = ({ onNav, currentUser, categories }) => {
           content: form.content,
           categoryId: form.categoryId,
           authorId: currentUser?.id || "",
-          authorName: currentUser?.name || "",
+          authorName: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name || "",
           authorDept: currentUser?.dept || "",
           preservePeriod: form.preservePeriod,
           approvalLines: lines,

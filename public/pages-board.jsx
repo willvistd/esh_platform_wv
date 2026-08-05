@@ -840,7 +840,7 @@ const Compose = ({ catId, editPost, onCancel, onSubmit, role }) => {
         result = await window.WV_API.addPost({
           ...buildPayload(),
           authorId: user.id || "",
-          authorName: user.name || "",
+          authorName: (window.WV_ACTOR?.get(user)) || user.name || "",
         });
         if (result && result.post) {
           onSubmit(form.categoryId);
@@ -1276,7 +1276,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
     try {
       const payload = {
         title: title.trim(), content: desc.trim(), categoryId: cat.id,
-        authorId: String(currentUser?.id || ""), authorName: currentUser?.name || "",
+        authorId: String(currentUser?.id || ""), authorName: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name || "",
         attachments: JSON.stringify(files), thumbUrl, subCategory: subCategory.trim(),
       };
       if (editItem) await window.WV_API.updatePost(editItem.id, payload);
