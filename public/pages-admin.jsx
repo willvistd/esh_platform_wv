@@ -193,7 +193,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
   };
 
   return (
-    <div className="content">
+    <div className="content" style={{ maxWidth: 1400 }}>
       <div className="content-hd">
         <div>
           <h1 className="content-title">{can.approve ? "이행사항 제출 현황" : "이행사항 제출"}</h1>
@@ -1612,7 +1612,7 @@ const ManageUsersView = ({ currentUser }) => {
   );
 
   return (
-    <div className="content">
+    <div className="content" style={{ maxWidth: 1400 }}>
       <div className="content-hd">
         <div>
           <h1 className="content-title">계정 목록 관리</h1>

@@ -39,7 +39,7 @@ const ManageRolesView = () => {
   };
 
   return (
-    <div className="content">
+    <div className="content" style={{ maxWidth: 1300 }}>
       <div className="content-hd">
         <div>
           <h1 className="content-title">권한 역할 관리</h1>
