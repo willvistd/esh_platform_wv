@@ -1709,7 +1709,6 @@ const ManageUsersView = ({ currentUser }) => {
           <div className="card" style={{padding: 0, overflow: "hidden"}}>
             <div className="acct-hd">
               <div>임직원</div>
-              <div>유형</div>
               <div>부서 / 소속</div>
               <div>아이디</div>
               <div>최근 접속</div>
@@ -1735,20 +1734,6 @@ const ManageUsersView = ({ currentUser }) => {
                       <div style={{fontWeight: 500, fontSize: 13.5}}>{u.name || "(이름 없음)"}</div>
                       <div className="meta">{u.position || ""}</div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-                    <span className="chip"><Icon name="user" size={11} /> 사내직원</span>
-                    {(() => {
-                      // 팀 공용계정(manager/staff) vs 개인계정 구분 배지
-                      const isTeam = u.role === "manager" || u.role === "staff";
-                      const siteCount = String(u.siteIds || "").split(",").map(s => s.trim()).filter(Boolean).length;
-                      if (isTeam) return (
-                        <span className="chip" style={{ background: "var(--primary-soft)", color: "var(--primary)", border: "1px solid var(--primary)" }}>
-                          👥 팀{siteCount === 0 ? " · 사업장 미지정" : ` · ${siteCount}곳`}
-                        </span>
-                      );
-                      return <span className="chip">👤 개인</span>;
-                    })()}
                   </div>
                   <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{u.email}</div>
@@ -2036,16 +2021,16 @@ const ManageUsersView = ({ currentUser }) => {
 
         .acct-hd, .acct-row {
           display: grid;
-          grid-template-columns: 160px 110px 1fr 200px 110px 150px 90px 110px 40px;
+          grid-template-columns: 160px 1fr 200px 110px 150px 90px 110px 40px;
           gap: 12px; align-items: center;
           padding: 12px 18px;
           font-size: 13px;
         }
         @media (max-width: 1400px) {
-          .acct-hd, .acct-row { grid-template-columns: 160px 100px 1fr 110px 90px 40px; }
+          .acct-hd, .acct-row { grid-template-columns: 160px 1fr 110px 90px 40px; }
+          .acct-row > div:nth-child(3), .acct-hd > div:nth-child(3),
           .acct-row > div:nth-child(4), .acct-hd > div:nth-child(4),
-          .acct-row > div:nth-child(5), .acct-hd > div:nth-child(5),
-          .acct-row > div:nth-child(6), .acct-hd > div:nth-child(6) { display: none; }
+          .acct-row > div:nth-child(5), .acct-hd > div:nth-child(5) { display: none; }
         }
         .acct-hd {
           background: var(--bg-sunk); color: var(--fg-4);
