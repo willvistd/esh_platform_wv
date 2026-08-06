@@ -152,6 +152,15 @@ window.WV_SUB = {
   // 항목 → { label, nav, act } (사이드바 렌더용)
   //   cats: 현재(라이브) 카테고리 목록 — 다른 카테고리 게시판 링크의 이름을 항상 최신으로 보이게 함
   resolve: (item, c, cats) => {
+    if (item.kind === "link") {
+      // 외부 URL 링크 — 새 탭으로 열림
+      return {
+        label: item.label || item.url || "링크",
+        url: item.url || "",
+        external: true,
+        act: () => false,
+      };
+    }
     if (item.kind === "tool") {
       const t = window.WV_SUB.toolByKey(item.toolKey);
       if (!t) return null;

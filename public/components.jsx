@@ -220,8 +220,12 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
             <div
               key={s.label}
               className={"sb-flyout-link" + (s.act(route) ? " active" : "")}
-              onClick={() => { onNav(s.nav); setFlyout(null); }}>
-              {s.label}
+              onClick={() => {
+                if (s.external && s.url) window.open(s.url, "_blank", "noopener,noreferrer");
+                else onNav(s.nav);
+                setFlyout(null);
+              }}>
+              {s.label}{s.external && " ↗"}
             </div>
           ))}
         </div>,

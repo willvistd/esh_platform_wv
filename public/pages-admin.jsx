@@ -1080,13 +1080,15 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
     if (kind === "tool") {
       const t = TOOLS.find((x) => x.key === ref); if (!t) return;
       item = { uid: window.WV_SUB.newUid(), kind: "tool", toolKey: t.key, label: t.defaultLabel, enabled: true };
+    } else if (kind === "link") {
+      item = { uid: window.WV_SUB.newUid(), kind: "link", label: "새 링크", url: "", enabled: true };
     } else {
       const cName = ref ? (cats.find((x) => x.id === ref)?.name || "게시판") + " 게시판" : "게시판 보기";
       item = { uid: window.WV_SUB.newUid(), kind: "board", targetCat: ref || undefined, label: cName, enabled: true };
     }
     onChange([...list, item]);
   };
-  const phOf = (it) => (it.kind === "tool" ? (TOOLS.find((x) => x.key === it.toolKey)?.defaultLabel || "") : "게시판 보기");
+  const phOf = (it) => (it.kind === "tool" ? (TOOLS.find((x) => x.key === it.toolKey)?.defaultLabel || "") : it.kind === "link" ? "링크 이름" : "게시판 보기");
   return (
     <div style={{ padding: "10px 18px 14px 58px", background: "var(--bg-sunk)", borderBottom: "1px solid var(--line-2)" }}>
       <div style={{ fontSize: 11, color: "var(--fg-4)", marginBottom: 8 }}>하위메뉴 (사이드바 날개) — 이름·순서·표시·추가</div>
@@ -1115,9 +1117,13 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
               onDragStart={(e) => { setDragI(i); e.dataTransfer.effectAllowed = "move"; }}
               onDragEnd={() => { setDragI(null); setOverI(null); }}
               style={{ cursor: "grab", color: "var(--fg-3)", fontFamily: "monospace", fontSize: 14, fontWeight: 700, userSelect: "none", padding: "0 2px", flexShrink: 0 }}>⋮⋮</span>
-            <span style={{ fontSize: 10, color: "var(--fg-4)", width: 34, textAlign: "center", flexShrink: 0 }}>{it.kind === "tool" ? "기능" : "게시판"}</span>
+            <span style={{ fontSize: 10, color: "var(--fg-4)", width: 34, textAlign: "center", flexShrink: 0 }}>{it.kind === "tool" ? "기능" : it.kind === "link" ? "링크" : "게시판"}</span>
             <input value={it.label || ""} onChange={(e) => upd(i, { label: e.target.value })} placeholder={phOf(it)}
               style={{ flex: 1, fontFamily: "inherit", fontSize: 13, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
+            {it.kind === "link" && (
+              <input value={it.url || ""} onChange={(e) => upd(i, { url: e.target.value })} placeholder="https://..."
+                style={{ flex: 1.4, fontFamily: "inherit", fontSize: 12, padding: "7px 10px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)", outline: "none" }} />
+            )}
             <label style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--fg-2)", cursor: "pointer", whiteSpace: "nowrap" }}>
               <input type="checkbox" checked={enabled} onChange={(e) => upd(i, { enabled: e.target.checked })} /> 표시
             </label>
@@ -1135,6 +1141,9 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
           </optgroup>
           <optgroup label="기능 페이지">
             {TOOLS.map((t) => <option key={t.key} value={"tool:" + t.key}>{t.defaultLabel}</option>)}
+          </optgroup>
+          <optgroup label="외부 링크">
+            <option value="link:">외부 링크 (URL)</option>
           </optgroup>
         </select>
         <button className="btn btn-secondary btn-sm" onClick={add}><Icon name="plus" size={12} /> 항목 추가</button>
