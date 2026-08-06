@@ -1655,7 +1655,7 @@ const ManageUsersView = ({ currentUser }) => {
           <Icon name="users" size={14} /> 계정 목록
         </button>
         <button className={tab === "pending" ? "active" : ""} onClick={() => setTab("pending")}>
-          <Icon name="user-plus" size={14} /> 🔔 가입 대기
+          <Icon name="user-plus" size={14} /> 가입 대기
           {users.filter(u => u.status === "pending").length > 0 && (
             <span style={{
               marginLeft: 6, padding: "1px 7px", borderRadius: 999,
