@@ -418,15 +418,6 @@ const TopBar = ({ role, currentUser, searchableItems, onNav, onCompose, onLogout
 
       <div style={{ flex: 1 }} />
 
-      {/* 현재 작성자(실명) — 문서에 기록될 이름. 공용계정에서 실제 작성자를 남기기 위함 */}
-      <button
-        className="tb-user-pill"
-        onClick={() => setProfileOpen(true)}
-        title="문서에 기록될 작성자(실명) — 클릭하여 변경"
-        style={{ cursor: "pointer", background: "transparent", border: "1px solid var(--line)" }}
-      >
-        <span style={{ fontSize: 12 }}>✍ <span style={{ color: "var(--fg-3)" }}>작성자</span> <b>{actorName || currentUser?.name}</b></span>
-      </button>
 
       {/* Current logged-in user badge — clickable: 내 정보 화면 진입 */}
       <button
