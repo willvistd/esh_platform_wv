@@ -2425,6 +2425,17 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
     update("siteIds", Array.from(set).join(","));
   };
 
+  // 현장대리인(현장계정): 사업장 = 계정과 1:1. 사업장을 고르면 이름·본부가 자동 설정됨.
+  const isSiteRole = form.role === "site_manager" || form.role === "site_staff";
+  const selectSiteAccount = (s) => {
+    setForm(f => ({
+      ...f,
+      siteIds: String(s.id),
+      hqId: s.hqId || f.hqId || "",
+      name: s.사업장명 || s.name || "",   // 이름 = 사업장명 자동
+    }));
+  };
+
   // 본부 1개만 접근 가능하면 자동 선택 (UX)
   React.useEffect(() => {
     if (hqs.length === 1 && !form.hqId) update("hqId", hqs[0].id);
@@ -2434,6 +2445,7 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
     if (!form.name.trim()) { setError("이름을 입력해주세요."); return; }
     if (!form.email.trim()) { setError("아이디를 입력해주세요."); return; }
     if (!form.password.trim()) { setError("초기 비밀번호를 입력해주세요."); return; }
+    if (isSiteRole && selectedSiteIds.length === 0) { setError("담당 사업장을 선택해주세요."); return; }
     setSaving(true); setError("");
     try {
       const result = await window.WV_API.addUser({
@@ -2482,8 +2494,16 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       )}
 
       <div className="field">
-        <label className="field-label">{mode === "team" ? "팀 이름 *" : "이름 *"}</label>
-        <input className="field-input" placeholder={mode === "team" ? "예: CRM운영1팀" : "홍길동"} value={form.name} onChange={e => update("name", e.target.value)} />
+        <label className="field-label">
+          {isSiteRole ? "이름 (사업장명 자동)" : (mode === "team" ? "팀 이름 *" : "이름 *")}
+        </label>
+        {isSiteRole ? (
+          <input className="field-input" readOnly value={form.name}
+            placeholder="아래에서 사업장을 선택하면 자동 입력됩니다"
+            style={{ background: "var(--bg-sunk)", color: "var(--fg-2)", cursor: "not-allowed" }} />
+        ) : (
+          <input className="field-input" placeholder={mode === "team" ? "예: CRM운영1팀" : "홍길동"} value={form.name} onChange={e => update("name", e.target.value)} />
+        )}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
@@ -2509,17 +2529,54 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
         </div>
       </div>
 
-      {/* 소속 본부 */}
-      <div className="field">
-        <label className="field-label">소속 본부</label>
-        <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
-          <option value="">— 본부 선택 —</option>
-          {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-      </div>
+      {/* 소속 본부 — 현장대리인은 사업장 선택 시 자동 설정되므로 숨김 */}
+      {!isSiteRole && (
+        <div className="field">
+          <label className="field-label">소속 본부</label>
+          <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
+            <option value="">— 본부 선택 —</option>
+            {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+        </div>
+      )}
 
-      {/* 담당 사업장 — 본부 선택 후 표시 */}
-      {form.hqId && (
+      {/* 현장대리인: 사업장 목록을 바로 보여주고 단일 선택 (이름 자동) */}
+      {isSiteRole && (
+        <div className="field">
+          <label className="field-label">
+            담당 사업장 *
+            <span style={{ fontSize: 11, fontWeight: 400, color: "var(--fg-3)", marginLeft: 6 }}>
+              선택하면 계정 이름이 사업장명으로 자동 설정됩니다
+            </span>
+          </label>
+          {sites.length === 0 ? (
+            <div style={{ padding: 14, textAlign: "center", color: "var(--fg-3)", fontSize: 12, background: "var(--bg-sunk)", borderRadius: 8 }}>
+              등록 가능한 사업장이 없습니다. 먼저 사업장 관리에서 사업장을 등록하세요.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 10, background: "var(--bg-sunk)", borderRadius: 8, maxHeight: 220, overflowY: "auto" }}>
+              {sites.map(s => {
+                const selected = selectedSiteIds.length === 1 && selectedSiteIds[0] === String(s.id);
+                const hq = hqs.find(h => String(h.id) === String(s.hqId));
+                return (
+                  <button key={s.id} type="button" onClick={() => selectSiteAccount(s)}
+                    style={{
+                      padding: "5px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+                      border: selected ? "1.5px solid var(--primary)" : "1px solid var(--line)",
+                      background: selected ? "var(--primary-soft)" : "var(--bg-elev)",
+                      color: selected ? "var(--primary)" : "var(--fg-2)", cursor: "pointer",
+                    }}>
+                    {selected && "✓ "}{hq ? `[${hq.code || hq.name}] ` : ""}{s.사업장명 || s.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 담당 사업장 — (개인/팀) 본부 선택 후 다중 선택 */}
+      {!isSiteRole && form.hqId && (
         <div className="field">
           <label className="field-label">
             {mode === "team" ? "팀 관리 사업장" : "담당 사업장"}
