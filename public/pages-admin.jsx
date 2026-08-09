@@ -1571,6 +1571,13 @@ const ManageUsersView = ({ currentUser }) => {
           userSiteIds.some(sid => String(u.siteIds || "").split(",").map(s => s.trim()).includes(sid))
         );
       }
+      // 정렬 기준: 권한(관리자→안전관리자→팀 공용→현장대리인) → 이름 가나다순
+      const roleOrder = D.roles.reduce((m, r, i) => { m[r.id] = i; return m; }, {});
+      filtered = [...filtered].sort((a, b) => {
+        const ra = roleOrder[a.role] ?? 99, rb = roleOrder[b.role] ?? 99;
+        if (ra !== rb) return ra - rb;
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      });
       setUsers(filtered);
       setLoading(false);
     }).catch(() => setLoading(false));

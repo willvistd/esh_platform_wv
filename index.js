@@ -516,7 +516,7 @@ async function initDB() {
 
 // ── Users ──
 app.get('/api/users', async (req, res) => {
-  const result = await pool.query('SELECT * FROM users');
+  const result = await pool.query('SELECT * FROM users ORDER BY id');
   // 비밀번호는 절대 내보내지 않음 (해시라도 노출 금지)
   const users = result.rows.map(({ password, ...rest }) => rest);
   res.json({ users });
