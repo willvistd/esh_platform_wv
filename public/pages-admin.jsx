@@ -2536,18 +2536,17 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
         </div>
       </div>
 
-      {/* 소속 본부 — 현장대리인은 사업장 선택 시 자동 설정되므로 숨김 */}
-      {!isSiteRole && (
-        <div className="field">
-          <label className="field-label">소속 본부</label>
-          <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
-            <option value="">— 본부 선택 —</option>
-            {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-          </select>
-        </div>
-      )}
+      {/* 소속 본부 */}
+      <div className="field">
+        <label className="field-label">소속 본부{isSiteRole ? " *" : ""}</label>
+        <select className="field-select" value={form.hqId || ""}
+          onChange={e => setForm(f => ({ ...f, hqId: e.target.value, ...(isSiteRole ? { siteIds: "", name: "" } : {}) }))}>
+          <option value="">— 본부 선택 —</option>
+          {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+      </div>
 
-      {/* 현장대리인: 사업장 목록을 바로 보여주고 단일 선택 (이름 자동) */}
+      {/* 현장대리인: 본부 선택 후 그 본부의 사업장을 단일 선택 (이름 자동) */}
       {isSiteRole && (
         <div className="field">
           <label className="field-label">
@@ -2556,15 +2555,18 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
               선택하면 계정 이름이 사업장명으로 자동 설정됩니다
             </span>
           </label>
-          {sites.length === 0 ? (
+          {!form.hqId ? (
             <div style={{ padding: 14, textAlign: "center", color: "var(--fg-3)", fontSize: 12, background: "var(--bg-sunk)", borderRadius: 8 }}>
-              등록 가능한 사업장이 없습니다. 먼저 사업장 관리에서 사업장을 등록하세요.
+              ⬆ 먼저 소속 본부를 선택해주세요
+            </div>
+          ) : sitesInHQ.length === 0 ? (
+            <div style={{ padding: 14, textAlign: "center", color: "var(--fg-3)", fontSize: 12, background: "var(--bg-sunk)", borderRadius: 8 }}>
+              이 본부에 등록 가능한 사업장이 없습니다. 먼저 사업장 관리에서 사업장을 등록하세요.
             </div>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, padding: 10, background: "var(--bg-sunk)", borderRadius: 8, maxHeight: 220, overflowY: "auto" }}>
-              {sites.map(s => {
+              {sitesInHQ.map(s => {
                 const selected = selectedSiteIds.length === 1 && selectedSiteIds[0] === String(s.id);
-                const hq = hqs.find(h => String(h.id) === String(s.hqId));
                 return (
                   <button key={s.id} type="button" onClick={() => selectSiteAccount(s)}
                     style={{
@@ -2573,7 +2575,7 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
                       background: selected ? "var(--primary-soft)" : "var(--bg-elev)",
                       color: selected ? "var(--primary)" : "var(--fg-2)", cursor: "pointer",
                     }}>
-                    {selected && "✓ "}{hq ? `[${hq.code || hq.name}] ` : ""}{s.사업장명 || s.name}
+                    {selected && "✓ "}{s.사업장명 || s.name}
                   </button>
                 );
               })}
