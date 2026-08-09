@@ -344,6 +344,9 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "requestedAt" TEXT;`);
+  // 최근 로그인 시각 / 비밀번호 마지막 변경 시각 (계정 목록 관리에서 표시)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "lastLoginAt" TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "pwChangedAt" TEXT;`);
   // 담당 사업장 ID 목록 (CSV) — site_manager/site_staff는 자기 사업장, 본사 staff는 담당 사업장
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "siteIds" TEXT;`);
   // ── 역할 통합 마이그레이션: 팀장(manager) → 팀 공용(staff) ──
@@ -532,10 +535,11 @@ app.post('/api/users', async (req, res) => {
     if (dup.rowCount > 0) {
       return res.status(409).json({ error: `이미 사용 중인 아이디입니다 (사용자: ${dup.rows[0].name}).` });
     }
+    const nowIso = new Date().toISOString();
     const result = await pool.query(
-      `INSERT INTO users (name, email, password, dept, role, status, "hqId", "siteIds", phone, position)
-       VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,$9) RETURNING *`,
-      [name, email, hashPw(password), dept, role, hqId||null, siteIds||'', phone||'', position||'']
+      `INSERT INTO users (name, email, password, dept, role, status, "hqId", "siteIds", phone, position, "joinedAt", "pwChangedAt")
+       VALUES ($1,$2,$3,$4,$5,'active',$6,$7,$8,$9,$10,$11) RETURNING *`,
+      [name, email, hashPw(password), dept, role, hqId||null, siteIds||'', phone||'', position||'', nowIso, nowIso]
     );
     const { password: _pw, ...safeUser } = result.rows[0];
     res.json({ user: safeUser });
@@ -564,10 +568,10 @@ app.put('/api/users/:id', async (req, res) => {
     if (password && String(password).trim()) {
       const result = await pool.query(
         `UPDATE users SET name=$1, email=$2, password=$3, dept=$4, role=$5, status=$6,
-                          phone=$7, position=$8, "hqId"=$9, "siteIds"=$10
-         WHERE id=$11 RETURNING *`,
+                          phone=$7, position=$8, "hqId"=$9, "siteIds"=$10, "pwChangedAt"=$11
+         WHERE id=$12 RETURNING *`,
         [name||'', email||'', hashPw(password), dept||'', role||'staff', status||'active',
-         phone||'', position||'', hqId||null, siteIds||'', req.params.id]
+         phone||'', position||'', hqId||null, siteIds||'', new Date().toISOString(), req.params.id]
       );
       const { password: _p, ...safe } = result.rows[0];
       res.json({ user: safe });
@@ -607,7 +611,7 @@ app.post('/api/users/:id/reset-password', async (req, res) => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
     let newPw = '';
     for (let i = 0; i < 8; i++) newPw += chars[Math.floor(Math.random() * chars.length)];
-    const result = await pool.query('UPDATE users SET password=$1 WHERE id=$2 RETURNING id, name, email', [hashPw(newPw), req.params.id]);
+    const result = await pool.query('UPDATE users SET password=$1, "pwChangedAt"=$2 WHERE id=$3 RETURNING id, name, email', [hashPw(newPw), new Date().toISOString(), req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: '해당 사용자가 없습니다.' });
     res.json({ success: true, user: result.rows[0], newPassword: newPw });
   } catch (e) {
@@ -628,13 +632,14 @@ app.post('/api/register', async (req, res) => {
     if (dup.rowCount > 0) {
       return res.status(409).json({ error: '이미 사용 중인 아이디입니다.' });
     }
+    const nowIso = new Date().toISOString();
     const result = await pool.query(
-      `INSERT INTO users (name, email, password, dept, role, status, phone, "hqId", "siteIds", position, "joinedAt", "requestedAt")
-       VALUES ($1,$2,$3,$4,$5,'pending',$6,$7,$8,$9,$10,$11) RETURNING id, name, email, dept, status`,
+      `INSERT INTO users (name, email, password, dept, role, status, phone, "hqId", "siteIds", position, "joinedAt", "requestedAt", "pwChangedAt")
+       VALUES ($1,$2,$3,$4,$5,'pending',$6,$7,$8,$9,$10,$11,$12) RETURNING id, name, email, dept, status`,
       [
         name, email, hashPw(password), dept||'', role||'staff',
         phone||'', hqId||null, siteIds||'', position||'',
-        new Date().toISOString(), new Date().toISOString()
+        nowIso, nowIso, nowIso
       ]
     );
     res.json({ success: true, user: result.rows[0], message: '가입 신청이 완료되었습니다. 관리자 승인 후 로그인할 수 있습니다.' });
@@ -761,6 +766,10 @@ app.post('/api/login', async (req, res) => {
     if (!isHashed(u.password)) {
       try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
     }
+    // 최근 접속 시각 기록
+    const nowIso = new Date().toISOString();
+    try { await pool.query('UPDATE users SET "lastLoginAt"=$1 WHERE id=$2', [nowIso, u.id]); } catch (e) {}
+    u.lastLoginAt = nowIso;
     // 세션 쿠키 발급 (httpOnly — JS로 탈취 불가, 이후 모든 API 요청에 자동 첨부)
     res.cookie('wv_sess', signSession(u), {
       httpOnly: true,

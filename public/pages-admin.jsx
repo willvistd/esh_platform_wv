@@ -10,6 +10,11 @@ const COMPLIANCE_ITEMS = [
   { key: "supervisor-log",        label: "관리감독자 업무일지",  sub: "",      cycle: "주간",          color: "#ef4444", icon: "doc" },
 ];
 
+// 날짜 표시 유틸 (ISO → 한국식 표기, 로컬시간 기준)
+const _pad2 = (n) => String(n).padStart(2, "0");
+const fmtDate = (v) => { if (!v) return "—"; const d = new Date(v); if (isNaN(d.getTime())) return v; return `${d.getFullYear()}-${_pad2(d.getMonth() + 1)}-${_pad2(d.getDate())}`; };
+const fmtDateTime = (v) => { if (!v) return "—"; const d = new Date(v); if (isNaN(d.getTime())) return v; return `${d.getFullYear()}-${_pad2(d.getMonth() + 1)}-${_pad2(d.getDate())} ${_pad2(d.getHours())}:${_pad2(d.getMinutes())}`; };
+
 // 이행 기간 유틸 — 현재 분기 자동 계산 + 최근 분기 선택 목록
 const quarterNow = () => { const d = new Date(); return `${d.getFullYear()}년 ${Math.ceil((d.getMonth() + 1) / 3)}분기`; };
 const periodOptions = () => {
@@ -1737,7 +1742,7 @@ const ManageUsersView = ({ currentUser }) => {
                   </div>
                   <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{u.email}</div>
-                  <div className="meta">{u.lastLoginAt || "—"}</div>
+                  <div className="meta">{fmtDateTime(u.lastLoginAt)}</div>
                   <div><span className="meta">—</span></div>
                   <div>
                     {u.status === "active"   && <span className="chip chip-success"><span className="chip-dot" /> 활성</span>}
@@ -2290,9 +2295,9 @@ const AccountDetailModal = ({ user, onClose, onSetStatus, onExtend, onEditPerm, 
           <div className="detail-grid">
             <DetailRow label="아이디" mono>{user.email || "—"}</DetailRow>
             <DetailRow label="연락처">{user.phone || "—"}</DetailRow>
-            <DetailRow label="가입일">{user.joinedAt || "—"}</DetailRow>
-            <DetailRow label="최근 접속">{user.lastLoginAt || "—"}</DetailRow>
-            <DetailRow label="비밀번호 마지막 변경">{user.pwChangedAt || "—"}</DetailRow>
+            <DetailRow label="가입일">{fmtDate(user.joinedAt)}</DetailRow>
+            <DetailRow label="최근 접속">{fmtDateTime(user.lastLoginAt)}</DetailRow>
+            <DetailRow label="비밀번호 마지막 변경">{fmtDate(user.pwChangedAt)}</DetailRow>
             <DetailRow label="권한">{role?.name || "—"} {role?.desc && <span className="meta">— {role.desc}</span>}</DetailRow>
           </div>
 
