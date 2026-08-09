@@ -1629,7 +1629,7 @@ const ManageUsersView = ({ currentUser }) => {
         </div>
         <div style={{display: "flex", gap: 8}}>
           <button className="btn btn-secondary"><Icon name="download" size={14} /> 계정 목록 내보내기</button>
-          <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="user-plus" size={14} /> 사용자 초대</button>
+          <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="user-plus" size={14} /> 계정 추가</button>
         </div>
       </div>
 
