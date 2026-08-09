@@ -336,6 +336,8 @@ async function initDB() {
   // 기존 sites 테이블에 hq_id 컬럼 추가 (다른 본부에 묶기 위한 외래키)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS address TEXT;`);
+  // 사업장 계약 종료일(계정 사용 가능 기한) — 비우면 무기한. 만료 시 해당 사업장 현장계정 로그인 차단.
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "expiresAt" TEXT;`);
 
   // 기존 users 테이블에 셀프서비스/가입승인 컬럼 추가
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;`);
@@ -723,6 +725,36 @@ app.post('/api/login', async (req, res) => {
     if (u.status === 'pending')  return res.json({ success: false, message: '관리자 승인 대기 중인 계정입니다. 승인 후 로그인할 수 있습니다.' });
     if (u.status === 'inactive') return res.json({ success: false, message: '비활성화된 계정입니다.' });
     if (u.status === 'dormant')  return res.json({ success: false, message: '휴면 계정입니다. 관리자에게 문의하세요.' });
+    // ── 사업장 계약 만료 차단 ──
+    // 현장계정(site_manager/site_staff)이 담당하는 사업장의 계약 종료일이 모두 지났으면 로그인 거부.
+    // (다른 회사가 사업장을 인수했는데 이전 계정으로 계속 접근하는 것을 방지)
+    // 본사 관리자·안전관리자·팀 공용계정은 사업장 기한과 무관하게 로그인 가능(연장 등록을 위해).
+    if (u.role === 'site_manager' || u.role === 'site_staff') {
+      try {
+        const siteIds = String(u.siteIds || '').split(',').map(s => s.trim()).filter(Boolean);
+        if (siteIds.length > 0) {
+          const sr = await pool.query(
+            `SELECT id, "expiresAt" FROM sites WHERE id = ANY($1::int[])`,
+            [siteIds.map(Number)]
+          );
+          const rows = sr.rows || [];
+          // 만료 판정: expiresAt이 있고, 그 날짜(당일 끝)를 지났으면 만료.
+          const now = Date.now();
+          const isExpired = (v) => {
+            if (!v) return false; // 기한 없음 = 무기한
+            const t = Date.parse(v.length <= 10 ? (v + 'T23:59:59') : v);
+            return !isNaN(t) && t < now;
+          };
+          // 담당 사업장이 하나라도 유효(만료 아님)하면 로그인 허용. 전부 만료면 차단.
+          const hasValid = rows.some(s => !isExpired(s.expiresAt));
+          if (rows.length > 0 && !hasValid) {
+            return res.json({ success: false, message: '담당 사업장의 계약 기간이 만료되어 로그인할 수 없습니다. 본사 관리자에게 문의하세요.' });
+          }
+        }
+      } catch (e) {
+        console.error('사업장 만료 확인 실패:', e);
+      }
+    }
     // 평문이었으면 이번 로그인 기회에 해시로 승격 (지연 마이그레이션)
     if (!isHashed(u.password)) {
       try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
@@ -1355,11 +1387,11 @@ async function syncSiteAssignees(siteId, assigneeIds) {
 
 app.post('/api/sites', async (req, res) => {
   try {
-    const { name, region, client, manager, phone, status, hqId, address, assigneeIds } = req.body;
+    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt } = req.body;
     const result = await pool.query(
-      `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'']
+      `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', expiresAt||null]
     );
     const site = result.rows[0];
     // 담당자 동기화 (배열로 들어왔을 때만)
@@ -1392,11 +1424,19 @@ app.post('/api/sites', async (req, res) => {
 
 app.put('/api/sites/:id', async (req, res) => {
   try {
-    const { name, region, client, manager, phone, status, hqId, address, assigneeIds } = req.body;
+    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt } = req.body;
+    // 계약 종료일(expiresAt)은 본사 관리자·안전관리자·팀 공용계정만 변경 가능.
+    // 현장대리인(site_manager/site_staff)이 자기 사업장 정보를 수정할 때는 기존 종료일을 그대로 유지.
+    let finalExpiresAt = expiresAt || null;
+    const urole = req.session && req.session.role;
+    if (urole === 'site_manager' || urole === 'site_staff') {
+      const cur = await pool.query('SELECT "expiresAt" FROM sites WHERE id=$1', [req.params.id]);
+      finalExpiresAt = (cur.rows[0] && cur.rows[0].expiresAt) || null;
+    }
     const result = await pool.query(
-      `UPDATE sites SET name=$1, region=$2, client=$3, manager=$4, phone=$5, status=$6, "hqId"=$7, address=$8
-       WHERE id=$9 RETURNING *`,
-      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', req.params.id]
+      `UPDATE sites SET name=$1, region=$2, client=$3, manager=$4, phone=$5, status=$6, "hqId"=$7, address=$8, "expiresAt"=$9
+       WHERE id=$10 RETURNING *`,
+      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', finalExpiresAt, req.params.id]
     );
     if (Array.isArray(assigneeIds)) {
       await syncSiteAssignees(req.params.id, assigneeIds);

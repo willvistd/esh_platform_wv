@@ -219,6 +219,7 @@ const api = {
       주소: s["주소"] || s.address || "",
       전화번호: s["전화번호"] || s.phone || "",
       상태: s["상태"] || s.status || "active",
+      expiresAt: s.expiresAt || s["expiresAt"] || "",
     }));
   },
   async addSite(site) {
@@ -234,6 +235,8 @@ const api = {
         status: site.상태 || site.status || "active",
         hqId: site.hqId || site["hqId"] || null,
         address: site.주소 || site.address || "",
+        expiresAt: site.expiresAt || "",
+        assigneeIds: site.assigneeIds,
       })
     });
     return await res.json();
@@ -405,6 +408,8 @@ const api = {
         status: data.상태 || data.status || "active",
         hqId: data.hqId || data["hqId"] || null,
         address: data.주소 || data.address || "",
+        expiresAt: data.expiresAt || "",
+        assigneeIds: data.assigneeIds,
       })
     });
     return await res.json();

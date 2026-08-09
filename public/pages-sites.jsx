@@ -6,6 +6,33 @@ const REGIONS = ["서울", "경기", "인천", "충남", "충북", "강원", "�
 const HQ_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#84cc16", "#ec4899"];
 const colorForHQ = (idx) => HQ_COLORS[idx % HQ_COLORS.length];
 
+// 사업장 계약 만료 상태 계산
+// 반환: null(무기한) | { state:"expired"|"soon"|"ok", days, dateStr }
+function getExpiryStatus(site) {
+  const raw = site && (site.expiresAt || site["expiresAt"]);
+  if (!raw) return null;
+  const dateStr = String(raw).slice(0, 10);
+  const t = Date.parse(dateStr + "T23:59:59");
+  if (isNaN(t)) return null;
+  const days = Math.ceil((t - Date.now()) / 86400000);
+  const state = days < 0 ? "expired" : (days <= 30 ? "soon" : "ok");
+  return { state, days, dateStr };
+}
+// 만료 상태 배지 (그리드/표 공용)
+function ExpiryBadge({ site }) {
+  const st = getExpiryStatus(site);
+  if (!st) return null;
+  if (st.state === "expired") {
+    return <span className="chip chip-rejected" style={{ fontSize: 10 }}><span className="chip-dot" /> 계약만료</span>;
+  }
+  if (st.state === "soon") {
+    return <span className="chip" style={{ fontSize: 10, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>
+      <span className="chip-dot" style={{ background: "#f97316" }} /> 만료 {st.days}일전
+    </span>;
+  }
+  return null;
+}
+
 // 권한별 사업장 관리 권한 결정
 // admin / safety → 본부 추가/모든 본부 사업장 추가·수정·삭제
 // manager / staff → 본인 본부 안 사업장 추가·수정 (본부/삭제 불가)
@@ -259,6 +286,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                             }}>{hq.code || "HQ"}</span>
                           )}
                           <span style={{ fontWeight: 700, fontSize: 14, flex: 1 }}>{s.사업장명 || s.name}</span>
+                          <ExpiryBadge site={s} />
                           {s.상태 === "active"
                             ? <span className="chip chip-success" style={{ fontSize: 10 }}><span className="chip-dot" /> 운영중</span>
                             : <span className="chip chip-rejected" style={{ fontSize: 10 }}><span className="chip-dot" /> 종료</span>}
@@ -361,7 +389,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                         <tbody>
                           {groupSites.map((site) => (
                             <tr key={site.id} style={{ borderBottom: "1px solid var(--line-2)" }}>
-                              <td style={{ padding: "12px 14px", fontWeight: 500 }}>{site["사업장명"]}</td>
+                              <td style={{ padding: "12px 14px", fontWeight: 500 }}>
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                                  {site["사업장명"]}<ExpiryBadge site={site} />
+                                </span>
+                              </td>
                               <td style={{ padding: "12px 14px" }}>
                                 <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || "-"}</span>
                               </td>
@@ -461,7 +493,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                         </span>
                       ) : <span className="meta" style={{ color: "var(--fg-4)" }}>미지정</span>}
                     </td>
-                    <td style={{ padding: "12px 14px", fontWeight: 500 }}>{site["사업장명"]}</td>
+                    <td style={{ padding: "12px 14px", fontWeight: 500 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        {site["사업장명"]}<ExpiryBadge site={site} />
+                      </span>
+                    </td>
                     <td style={{ padding: "12px 14px" }}>
                       <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || "-"}</span>
                     </td>
@@ -507,6 +543,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           users={users}
           defaultHQId={addingForHQ}
           allowedHQIds={(role === "admin" || role === "safety") ? null : userHQs}
+          canEditExpiry={!isSiteAgent(role)}
           onSave={async (data) => {
             await window.WV_API.addSite(data);
             // 팀 계정(manager/staff)이면 방금 추가한 사업장이 내 담당(siteIds)에 자동 연결됨
@@ -529,6 +566,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           hqs={hqs}
           users={users}
           allowedHQIds={(role === "admin" || role === "safety") ? null : userHQs}
+          canEditExpiry={!isSiteAgent(role)}
           onSave={async (data) => {
             await window.WV_API.updateSite(editing.id, data);
             await reloadAll();
@@ -642,7 +680,7 @@ const HQFormModal = ({ title, initialData, onSave, onClose }) => {
 };
 
 // ─── 사업장 등록/수정 폼 (본부 선택 포함)
-const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, allowedHQIds, onSave, onClose }) => {
+const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, allowedHQIds, canEditExpiry = true, onSave, onClose }) => {
   const [form, setForm] = React.useState({
     사업장명: initialData?.["사업장명"] || "",
     hqId: initialData?.hqId || defaultHQId || "",
@@ -652,6 +690,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
     주소: initialData?.["주소"] || "",
     전화번호: initialData?.["전화번호"] || "",
     상태: initialData?.["상태"] || "active",
+    expiresAt: (initialData?.expiresAt || "").slice(0, 10),
   });
 
   // 담당자(다중) — 수정 모드면 기존에 이 site id를 siteIds로 가진 user들로 초기화
@@ -840,6 +879,43 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
             <label className="field-label">주소</label>
             <input className="field-input" value={form.주소}
               onChange={e => update("주소", e.target.value)} placeholder="사업장 주소 입력" />
+          </div>
+          <div className="field">
+            <label className="field-label">
+              계정 사용 가능 기한 (계약 종료일)
+              <span style={{ fontSize: 11, color: "var(--fg-3)" }}> · 비워두면 무기한</span>
+            </label>
+            <input className="field-input" type="date" value={form.expiresAt}
+              disabled={!canEditExpiry}
+              onChange={e => update("expiresAt", e.target.value)}
+              style={!canEditExpiry ? { background: "var(--bg-sunk)", color: "var(--fg-3)", cursor: "not-allowed" } : undefined} />
+            {!canEditExpiry && (
+              <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
+                🔒 계약 기간은 본사 관리자 또는 팀 공용계정만 변경할 수 있습니다.
+              </div>
+            )}
+            {(() => {
+              if (!form.expiresAt) return null;
+              const t = Date.parse(form.expiresAt + "T23:59:59");
+              if (isNaN(t)) return null;
+              const days = Math.ceil((t - Date.now()) / 86400000);
+              if (days < 0) {
+                return <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 6, fontWeight: 700 }}>
+                  ⛔ 이미 만료됨 — 이 사업장의 현장 계정은 로그인이 차단됩니다.
+                </div>;
+              }
+              if (days <= 30) {
+                return <div style={{ fontSize: 12, color: "#c2410c", marginTop: 6, fontWeight: 600 }}>
+                  ⚠️ 만료 {days}일 전 — 계약 연장 시 종료일을 갱신하세요.
+                </div>;
+              }
+              return <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 6 }}>
+                만료까지 {days}일 남음
+              </div>;
+            })()}
+            <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
+              💡 계약이 끝나면 이 사업장의 현장 계정은 로그인할 수 없습니다. 연장되면 새 종료일로 갱신하세요.
+            </div>
           </div>
           <div className="field">
             <label className="field-label">상태</label>
