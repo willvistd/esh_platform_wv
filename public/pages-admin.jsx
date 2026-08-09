@@ -2495,7 +2495,7 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       </div>
       {mode === "team" && (
         <div style={{ fontSize: 12, lineHeight: 1.6, color: "var(--fg-2)", background: "var(--bg-sunk)", borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
-          여러 명이 공유하는 <b>팀 공용계정</b>입니다. 아래에서 <b>담당 사업장</b>을 등록하면 팀원 전체가 그 사업장으로 활동합니다. 같은 계정으로 <b>동시 접속</b>도 가능합니다.
+          여러 명이 공유하는 <b>팀 공용계정</b>입니다. 사업장은 <b>사업장 관리</b>에서 추가하면 이 계정에 자동으로 연결됩니다. 같은 계정으로 <b>동시 접속</b>도 가능합니다.
         </div>
       )}
 
@@ -2582,8 +2582,8 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
         </div>
       )}
 
-      {/* 담당 사업장 — (개인/팀) 본부 선택 후 다중 선택 */}
-      {!isSiteRole && form.hqId && (
+      {/* 담당 사업장 — 개인 계정만 본부 선택 후 다중 선택 (팀 공용은 사업장 관리에서 자동 연결) */}
+      {!isSiteRole && mode !== "team" && form.hqId && (
         <div className="field">
           <label className="field-label">
             {mode === "team" ? "팀 관리 사업장" : "담당 사업장"}
