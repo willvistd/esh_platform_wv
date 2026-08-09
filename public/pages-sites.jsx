@@ -7,14 +7,18 @@ const HQ_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6
 const colorForHQ = (idx) => HQ_COLORS[idx % HQ_COLORS.length];
 
 // 사업장 계약 만료 상태 계산
+// 첫화면의 '오늘 날짜'(D.today = 로컬/한국시간 자정 기준, 일 단위)와 동일한 기준으로 판정.
 // 반환: null(무기한) | { state:"expired"|"soon"|"ok", days, dateStr }
+//   days = 종료일까지 남은 일수(0 = 오늘 만료, 음수 = 이미 만료)
 function getExpiryStatus(site) {
   const raw = site && (site.expiresAt || site["expiresAt"]);
   if (!raw) return null;
   const dateStr = String(raw).slice(0, 10);
-  const t = Date.parse(dateStr + "T23:59:59");
-  if (isNaN(t)) return null;
-  const days = Math.ceil((t - Date.now()) / 86400000);
+  const end = new Date(dateStr + "T00:00:00");   // 로컬(한국시간) 자정
+  if (isNaN(end.getTime())) return null;
+  const today = (window.WV_DATA && window.WV_DATA.today) ? new Date(window.WV_DATA.today) : new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((end - today) / 86400000);
   const state = days < 0 ? "expired" : (days <= 30 ? "soon" : "ok");
   return { state, days, dateStr };
 }
@@ -27,7 +31,7 @@ function ExpiryBadge({ site }) {
   }
   if (st.state === "soon") {
     return <span className="chip" style={{ fontSize: 10, background: "#fff7ed", color: "#c2410c", border: "1px solid #fed7aa" }}>
-      <span className="chip-dot" style={{ background: "#f97316" }} /> 만료 {st.days}일전
+      <span className="chip-dot" style={{ background: "#f97316" }} /> {st.days === 0 ? "오늘 만료" : `만료 ${st.days}일전`}
     </span>;
   }
   return null;
@@ -895,22 +899,20 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               </div>
             )}
             {(() => {
-              if (!form.expiresAt) return null;
-              const t = Date.parse(form.expiresAt + "T23:59:59");
-              if (isNaN(t)) return null;
-              const days = Math.ceil((t - Date.now()) / 86400000);
-              if (days < 0) {
+              const st = getExpiryStatus({ expiresAt: form.expiresAt });
+              if (!st) return null;
+              if (st.state === "expired") {
                 return <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 6, fontWeight: 700 }}>
                   ⛔ 이미 만료됨 — 이 사업장의 현장 계정은 로그인이 차단됩니다.
                 </div>;
               }
-              if (days <= 30) {
+              if (st.state === "soon") {
                 return <div style={{ fontSize: 12, color: "#c2410c", marginTop: 6, fontWeight: 600 }}>
-                  ⚠️ 만료 {days}일 전 — 계약 연장 시 종료일을 갱신하세요.
+                  {st.days === 0 ? "⚠️ 오늘 만료 — 오늘까지 사용 가능합니다." : `⚠️ 만료 ${st.days}일 전 — 계약 연장 시 종료일을 갱신하세요.`}
                 </div>;
               }
               return <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 6 }}>
-                만료까지 {days}일 남음
+                만료까지 {st.days}일 남음
               </div>;
             })()}
             <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>

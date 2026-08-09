@@ -738,12 +738,14 @@ app.post('/api/login', async (req, res) => {
             [siteIds.map(Number)]
           );
           const rows = sr.rows || [];
-          // 만료 판정: expiresAt이 있고, 그 날짜(당일 끝)를 지났으면 만료.
-          const now = Date.now();
+          // 만료 판정: 첫화면에 표시되는 "오늘 날짜"와 동일한 기준(한국시간·일 단위).
+          // 서버가 UTC로 돌아도 한국시간(UTC+9) 기준 오늘 날짜 문자열(YYYY-MM-DD)로 비교.
+          // → 계약 종료일 '당일'까지는 사용 가능, 그 다음 날(한국시간)부터 차단.
+          const todayKST = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
           const isExpired = (v) => {
             if (!v) return false; // 기한 없음 = 무기한
-            const t = Date.parse(v.length <= 10 ? (v + 'T23:59:59') : v);
-            return !isNaN(t) && t < now;
+            const d = String(v).slice(0, 10);
+            return d < todayKST; // 종료일이 오늘(한국)보다 이전이면 만료
           };
           // 담당 사업장이 하나라도 유효(만료 아님)하면 로그인 허용. 전부 만료면 차단.
           const hasValid = rows.some(s => !isExpired(s.expiresAt));
