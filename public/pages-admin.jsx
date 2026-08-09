@@ -2370,7 +2370,7 @@ const AccountDetailModal = ({ user, onClose, onSetStatus, onExtend, onEditPerm, 
 const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
   const [form, setForm] = React.useState({
     name: "", email: "", password: "",
-    dept: depts[0] || "", role: "staff",
+    dept: "", role: "safety",
     hqId: "", siteIds: "", phone: "", position: "",
     status: "active"
   });
@@ -2380,14 +2380,20 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
   const [sites, setSites] = React.useState([]);
   const update = (k, v) => setForm(s => ({ ...s, [k]: v }));
 
-  // 계정 유형: "individual"(개인) / "team"(팀 공용계정)
+  // 계정 유형: "individual"(개인=관리자/안전관리자) / "team"(팀 공용계정) / "site"(현장대리인)
   const [mode, setMode] = React.useState("individual");
-  const teamRoleIds = ["staff"];   // 팀 공용 = staff 단일 역할 (팀장/manager는 은퇴)
+  const individualRoleIds = ["admin", "safety"];   // 개인 계정 = 관리자·안전관리자
+  const teamRoleIds = ["staff"];                    // 팀 공용 = staff 단일 역할
+  const siteRoleIds = ["site_manager"];             // 현장대리인
+  const individualRoles = roles.filter(r => individualRoleIds.includes(r.id));
   const teamRoles = roles.filter(r => teamRoleIds.includes(r.id));
+  const siteRoles = roles.filter(r => siteRoleIds.includes(r.id));
   const chooseMode = (m) => {
     setMode(m);
-    // 팀 모드로 바꾸면 팀 공용 역할로 맞춤
+    // 유형에 맞는 기본 역할로 자동 정렬
     if (m === "team" && !teamRoleIds.includes(form.role)) update("role", "staff");
+    else if (m === "site" && !siteRoleIds.includes(form.role)) update("role", "site_manager");
+    else if (m === "individual" && !individualRoleIds.includes(form.role)) update("role", "safety");
   };
 
   React.useEffect(() => {
@@ -2473,11 +2479,11 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       {/* 계정 유형 선택: 개인 / 팀 공용 */}
       <div className="field">
         <label className="field-label">계정 유형</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {[["individual", "👤 개인 계정"], ["team", "👥 팀 공용계정"]].map(([m, label]) => (
+        <div style={{ display: "flex", gap: 6 }}>
+          {[["individual", "👤 개인"], ["team", "👥 팀 공용"], ["site", "🦺 현장대리인"]].map(([m, label]) => (
             <button key={m} type="button" onClick={() => chooseMode(m)}
               style={{
-                flex: 1, padding: "9px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer",
+                flex: 1, padding: "9px 6px", borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: "pointer",
                 border: mode === m ? "1.5px solid var(--primary)" : "1px solid var(--line)",
                 background: mode === m ? "var(--primary-soft)" : "var(--bg-elev)",
                 color: mode === m ? "var(--primary)" : "var(--fg-2)",
@@ -2517,9 +2523,10 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
-          <label className="field-label">{mode === "team" ? "역할 (팀 공용)" : "권한"}</label>
-          <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}>
-            {(mode === "team" && teamRoles.length ? teamRoles : roles.filter(r => !r.hidden)).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
+          <label className="field-label">{mode === "team" ? "역할 (팀 공용)" : mode === "site" ? "권한 (현장대리인)" : "권한"}</label>
+          <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}
+            disabled={mode === "site"}>
+            {(mode === "team" ? teamRoles : mode === "site" ? siteRoles : individualRoles).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
           </select>
         </div>
         <div className="field">
