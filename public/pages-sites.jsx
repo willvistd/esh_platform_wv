@@ -745,18 +745,22 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
     setAssigneeIds(prev => (prev.length === 1 && prev[0] === uid) ? [] : [uid]);
   };
 
-  // 선택된 사용자들의 이름 → form.담당자 자동 동기화
+  // 선택된 사용자들의 이름 → form.담당자 자동 제안
+  // ⚠️ 팀 공용계정(staff)·팀장(manager)의 계정명은 '본부명'과 같아 담당자로 쓰면 중복됨 → 자동값에서 제외.
+  //    담당자는 '실제 담당자 실명'을 쓰는 칸이므로 개인 계정(관리자·안전관리자)만 자동 제안에 사용.
   const selectedUsers = users.filter(u => assigneeIds.includes(u.id));
-  const autoManagerLabel = selectedUsers.map(u => u.name).join(", ");
+  const autoManagerLabel = selectedUsers
+    .filter(u => u.role !== "staff" && u.role !== "manager")
+    .map(u => u.name).join(", ");
 
   const handleSave = async () => {
     if (!form.사업장명) { setError("사업장명을 입력해주세요."); return; }
     if (!form.hqId) { setError("소속 본부를 선택해주세요."); return; }
     setSaving(true);
     try {
-      // 담당자 텍스트는 선택된 사용자들 이름으로 자동 채움
-      // (수동 입력값이 있다면 유지, 없으면 자동값 사용)
-      const finalManager = autoManagerLabel || form.담당자 || "";
+      // 담당자 표기: 직접 입력한 실명이 최우선. 없을 때만 개인 계정 자동값 사용.
+      // (팀 공용계정명은 위에서 자동값에 안 들어가므로 본부명 중복이 사라짐)
+      const finalManager = (form.담당자 || "").trim() || autoManagerLabel;
       await onSave({
         ...form,
         담당자: finalManager,
@@ -873,11 +877,11 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
           {/* 담당자 표시 텍스트 (자동/수동) */}
           <div className="field">
-            <label className="field-label">담당자 표기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(목록에 보이는 이름. 비워두면 선택한 직원 이름으로 자동)</span></label>
+            <label className="field-label">담당자 (실명) <span style={{ fontSize: 11, color: "var(--fg-3)" }}>실제 담당자 이름을 입력하세요. (팀 공용계정명은 담당자로 쓰지 않습니다)</span></label>
             <input className="field-input"
               value={form.담당자}
               onChange={e => update("담당자", e.target.value)}
-              placeholder={autoManagerLabel || "예: 홍길동 / 미지정"} />
+              placeholder={autoManagerLabel || "예: 이준형"} />
           </div>
           <div className="field">
             <label className="field-label">주소</label>
