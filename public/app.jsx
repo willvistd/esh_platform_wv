@@ -634,6 +634,8 @@ function App() {
     return [];
   });
   const [catRefreshKey, setCatRefreshKey] = React.useState(0);
+  // DB에서 받은 '진짜' 목록일 때만 캐시에 저장하기 위한 플래그 (mock 안전망은 저장 금지)
+  const catAuthoritativeRef = React.useRef(false);
   const [livePosts, setLivePosts] = React.useState(window.WV_DATA.posts || []);
 
   // 구글 시트에서 posts 불러오기
@@ -660,12 +662,27 @@ function App() {
 
   // livePosts가 바뀔 때마다 카테고리별 count 계산
   React.useEffect(() => {
+    // ⚠️ posts가 아직 안 온 초기 상태(빈 배열)에서 개수를 0으로 덮으면
+    //   캐시에 담아둔 개수가 지워져 다시 깜빡임. → 게시글이 실제로 로드된 뒤에만 개수 갱신.
+    if (!livePosts || livePosts.length === 0) return;
     const countMap = {};
     livePosts.forEach(p => {
       if (p.categoryId) countMap[p.categoryId] = (countMap[p.categoryId] || 0) + 1;
     });
     setLiveCategories(cats => cats.map(c => ({ ...c, count: countMap[c.id] || 0 })));
   }, [livePosts]);
+
+  // liveCategories가 확정될 때마다(개수 포함) 캐시에 저장 → 다음 접속 첫 화면이 지난번과 '완전히 동일'.
+  //   개수까지 캐시에 담겨 서버 병합 때 0으로 리셋되지 않으므로 깜빡임이 사라짐.
+  //   단, DB에서 온 진짜 목록일 때만 저장(mock 안전망은 저장 안 함).
+  React.useEffect(() => {
+    if (!catAuthoritativeRef.current) return;
+    try {
+      if (Array.isArray(liveCategories) && liveCategories.length > 0) {
+        localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(liveCategories));
+      }
+    } catch (e) {}
+  }, [liveCategories]);
 
   const view = t.view;
 
@@ -685,26 +702,31 @@ function App() {
           const mockMap = Object.fromEntries(
             (window.WV_DATA.categories || []).map(c => [c.id, c])
           );
-          const merged = data.map(c => {
-            const mock = mockMap[c.id] || {};
-            return {
-              id: c.id,
-              name: c.name || mock.name || "",
-              desc: c.desc || mock.desc || "",
-              type: c.type || mock.type || "board",
-              icon: c.icon || mock.icon || "doc",
-              approval: c.approval ?? mock.approval ?? false,
-              rowNumber: c.rowNumber,
-              count: 0,
-            };
+          // ⚠️ 병합 시 count를 0으로 리셋하면 "캐시(개수 있음) → 0 → 다시 개수" 로 깜빡임.
+          //   직전 목록(캐시 포함)의 개수를 그대로 유지해 리셋 깜빡임 제거.
+          setLiveCategories(prev => {
+            const prevCount = Object.fromEntries((prev || []).map(c => [c.id, c.count || 0]));
+            return data.map(c => {
+              const mock = mockMap[c.id] || {};
+              return {
+                id: c.id,
+                name: c.name || mock.name || "",
+                desc: c.desc || mock.desc || "",
+                type: c.type || mock.type || "board",
+                icon: c.icon || mock.icon || "doc",
+                approval: c.approval ?? mock.approval ?? false,
+                rowNumber: c.rowNumber,
+                count: prevCount[c.id] || 0,
+              };
+            });
           });
-          setLiveCategories(merged);
-          // 다음 접속 초기 렌더에 쓰도록 진짜 목록을 캐시에 저장 (실패/mock fallback 시엔 저장 안 함)
-          try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(merged)); } catch (e) {}
+          // 이 목록은 DB에서 온 '진짜' 목록 → 캐시 저장 허용 (아래 effect가 개수까지 포함해 저장)
+          catAuthoritativeRef.current = true;
         } else if (attempt < 3) {
           setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
         } else {
-          // 끝까지 빈응답이면 mock fallback (초기 셋업용 안전망)
+          // 끝까지 빈응답이면 mock fallback (초기 셋업용 안전망) — 이건 캐시에 저장하지 않음
+          catAuthoritativeRef.current = false;
           setLiveCategories(window.WV_DATA.categories || []);
         }
       }).catch(() => {
