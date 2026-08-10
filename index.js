@@ -407,6 +407,28 @@ async function initDB() {
       AND id NOT IN (SELECT "hqId" FROM sites WHERE "hqId" IS NOT NULL)
   `);
 
+  // ── 사업장 담당자 정리(1회) ──
+  // 예전엔 담당자 칸에 본부명/팀 공용계정명이 그대로 박혀 목록에서 본부명과 중복 표시됐음.
+  // 본부명 또는 팀 공용계정(staff/manager) 이름과 '완전히 동일'한 담당자 텍스트만 비움.
+  // (실제 사람 이름이 섞인 행은 보존) — app_settings 마커로 1회만 실행.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_manager_cleanup_v1'");
+    if (done.rowCount === 0) {
+      const up = await pool.query(`
+        UPDATE sites SET manager = ''
+        WHERE manager IS NOT NULL AND TRIM(manager) <> ''
+          AND (
+            TRIM(manager) IN (SELECT name FROM hq)
+            OR TRIM(manager) IN (SELECT name FROM users WHERE role IN ('staff','manager'))
+          )
+      `);
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_manager_cleanup_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      if (up.rowCount > 0) console.log(`[DB] 사업장 담당자 정리: ${up.rowCount}건 비움`);
+    }
+  } catch (e) {
+    console.error('사업장 담당자 정리 실패:', e);
+  }
+
   const existing = await pool.query('SELECT COUNT(*) FROM users');
   if (parseInt(existing.rows[0].count) === 0 && DEMO_MODE) {
     // ── 데모 전용 가짜 계정 (실제 개인정보 없음) ──
