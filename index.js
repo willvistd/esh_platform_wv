@@ -408,22 +408,35 @@ async function initDB() {
   `);
 
   // ── 사업장 담당자 정리(1회) ──
-  // 예전엔 담당자 칸에 본부명/팀 공용계정명이 그대로 박혀 목록에서 본부명과 중복 표시됐음.
-  // 본부명 또는 팀 공용계정(staff/manager) 이름과 '완전히 동일'한 담당자 텍스트만 비움.
-  // (실제 사람 이름이 섞인 행은 보존) — app_settings 마커로 1회만 실행.
+  // 예전엔 담당자 칸에 본부명·팀 공용계정명·사업장명(현장계정명)이 그대로 박혀 목록에서 중복 표시됐음.
+  // 담당자 텍스트를 콤마로 분리해, 아래에 해당하는 토큰만 제거하고 '실제 사람 이름'만 남김:
+  //   · 본부명(hq.name)  · 팀/현장 계정명(staff·manager·site_manager·site_staff user.name)  · 그 사업장 자기 이름(sites.name)
+  // 개인 계정(관리자·안전관리자)·자유입력 실명은 보존. app_settings 마커로 1회만 실행.
   try {
-    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_manager_cleanup_v1'");
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_manager_cleanup_v2'");
     if (done.rowCount === 0) {
-      const up = await pool.query(`
-        UPDATE sites SET manager = ''
-        WHERE manager IS NOT NULL AND TRIM(manager) <> ''
-          AND (
-            TRIM(manager) IN (SELECT name FROM hq)
-            OR TRIM(manager) IN (SELECT name FROM users WHERE role IN ('staff','manager'))
-          )
-      `);
-      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_manager_cleanup_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
-      if (up.rowCount > 0) console.log(`[DB] 사업장 담당자 정리: ${up.rowCount}건 비움`);
+      const norm = (v) => String(v || '').trim();
+      const hqNames = (await pool.query('SELECT name FROM hq')).rows.map(r => norm(r.name)).filter(Boolean);
+      const acctNames = (await pool.query(
+        "SELECT name FROM users WHERE role IN ('staff','manager','site_manager','site_staff')"
+      )).rows.map(r => norm(r.name)).filter(Boolean);
+      const baseRemove = new Set([...hqNames, ...acctNames]);
+      const siteRows = (await pool.query('SELECT id, name, manager FROM sites')).rows;
+      let changed = 0;
+      for (const s of siteRows) {
+        const cur = norm(s.manager);
+        if (!cur) continue;
+        const remove = new Set(baseRemove);
+        if (norm(s.name)) remove.add(norm(s.name));   // 이 사업장 자기 이름(현장계정명)도 제거
+        const kept = cur.split(',').map(t => t.trim()).filter(Boolean).filter(t => !remove.has(t));
+        const cleaned = kept.join(', ');
+        if (cleaned !== cur) {
+          await pool.query('UPDATE sites SET manager=$1 WHERE id=$2', [cleaned, s.id]);
+          changed++;
+        }
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_manager_cleanup_v2', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      if (changed > 0) console.log(`[DB] 사업장 담당자 정리 v2: ${changed}건`);
     }
   } catch (e) {
     console.error('사업장 담당자 정리 실패:', e);
