@@ -1747,7 +1747,7 @@ const ManageUsersView = ({ currentUser }) => {
                       <div className="meta">{u.position || ""}</div>
                     </div>
                   </div>
-                  <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept}</div>
+                  <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept || <span style={{ color: "var(--fg-4)" }}>—</span>}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{u.email}</div>
                   <div className="meta">{fmtDateTime(u.lastLoginAt)}</div>
                   <div><span className="meta">—</span></div>
@@ -2033,13 +2033,13 @@ const ManageUsersView = ({ currentUser }) => {
 
         .acct-hd, .acct-row {
           display: grid;
-          grid-template-columns: 160px 1fr 200px 110px 150px 90px 110px 40px;
+          grid-template-columns: 160px 1fr 200px 110px 150px 90px 110px 150px;
           gap: 12px; align-items: center;
           padding: 12px 18px;
           font-size: 13px;
         }
         @media (max-width: 1400px) {
-          .acct-hd, .acct-row { grid-template-columns: 160px 1fr 110px 90px 40px; }
+          .acct-hd, .acct-row { grid-template-columns: 160px 1fr 110px 110px 150px; }
           .acct-row > div:nth-child(3), .acct-hd > div:nth-child(3),
           .acct-row > div:nth-child(4), .acct-hd > div:nth-child(4),
           .acct-row > div:nth-child(5), .acct-hd > div:nth-child(5) { display: none; }
