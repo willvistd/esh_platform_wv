@@ -548,6 +548,36 @@ async function initDB() {
     console.log(`[DB] education_types 시드 완료: ${eduTypeSeed.length}건`);
   }
 
+  // ── base64 썸네일 → 스토리지 URL 이관(1회) ──
+  // 예전엔 미리보기 이미지를 base64로 posts.thumbUrl에 통째로 저장해 DB가 무겁고 느렸음.
+  // base64 썸네일을 스토리지(uploads 버킷)로 옮기고 URL로 교체. app_settings 마커로 1회만.
+  try {
+    if (supabase) {
+      const done = await pool.query("SELECT value FROM app_settings WHERE key='thumb_base64_migrate_v1'");
+      if (done.rowCount === 0) {
+        const rows = (await pool.query(`SELECT id, "thumbUrl" FROM posts WHERE "thumbUrl" LIKE 'data:image/%'`)).rows;
+        let moved = 0;
+        for (const r of rows) {
+          try {
+            const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.*)$/s.exec(r.thumbUrl);
+            if (!m) continue;
+            const mime = m[1];
+            const buf = Buffer.from(m[2], 'base64');
+            const ext = (mime.split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+            const filename = `thumb-${r.id}-${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
+            const up = await supabase.storage.from('uploads').upload(filename, buf, { contentType: mime, upsert: false });
+            if (up.error) continue;
+            const { data } = supabase.storage.from('uploads').getPublicUrl(filename);
+            await pool.query('UPDATE posts SET "thumbUrl"=$1 WHERE id=$2', [data.publicUrl, r.id]);
+            moved++;
+          } catch (e) { /* 개별 실패는 건너뜀 */ }
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('thumb_base64_migrate_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        if (moved > 0) console.log(`[DB] base64 썸네일 이관: ${moved}건`);
+      }
+    }
+  } catch (e) { console.error('base64 썸네일 이관 실패:', e); }
+
   console.log('DB 초기화 완료!');
 }
 

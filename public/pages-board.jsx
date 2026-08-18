@@ -1241,6 +1241,30 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
   );
 };
 
+// 이미지 파일을 미리보기용으로 축소 (긴 변 maxW px, JPEG 압축) → 작은 File 반환. 실패/부적합 시 원본 그대로.
+async function resizeImageFile(file, maxW = 800, quality = 0.82) {
+  try {
+    if (!file || !/\.(png|jpe?g|webp)$/i.test(file.name || "")) return file; // gif(애니메이션) 등은 원본 유지
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file);
+    });
+    const img = await new Promise((res, rej) => {
+      const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = dataUrl;
+    });
+    const longSide = Math.max(img.width, img.height);
+    const scale = Math.min(1, maxW / longSide);
+    if (scale >= 1 && file.size < 300 * 1024) return file; // 이미 충분히 작으면 그대로
+    const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+    const blob = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
+    if (!blob || blob.size >= file.size) return file; // 오히려 커지면 원본 사용
+    const base = (file.name || "thumb").replace(/\.[^.]+$/, "");
+    return new File([blob], base + ".jpg", { type: "image/jpeg" });
+  } catch (e) { return file; }
+}
+
 // 자료실 업로드/수정 모달
 const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClose, onSaved }) => {
   const [title, setTitle] = React.useState(editItem?.title || "");
@@ -1263,7 +1287,8 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
     if (!/\.(png|jpe?g|gif|webp)$/i.test(file.name)) { setError("썸네일은 이미지 파일만 가능합니다."); return; }
     setThumbUploading(true); setError("");
     try {
-      const fd = new FormData(); fd.append("file", file);
+      const small = await resizeImageFile(file, 800, 0.82);   // 미리보기용 자동 축소
+      const fd = new FormData(); fd.append("file", small);
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const d = await res.json();
       if (!res.ok) throw new Error("업로드 실패");
