@@ -1170,8 +1170,8 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   const [adding, setAdding] = React.useState(false);
   const [editing, setEditing] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
-  const [form, setForm] = React.useState({ name: "", desc: "", type: "board", icon: "doc", approval: false });
-  const reset = () => { setForm({ name: "", desc: "", type: "board", icon: "doc", approval: false }); setEditing(null); };
+  const [form, setForm] = React.useState({ name: "", desc: "", type: "board", icon: "doc", approval: false, url: "" });
+  const reset = () => { setForm({ name: "", desc: "", type: "board", icon: "doc", approval: false, url: "" }); setEditing(null); };
 
   // ── 하위메뉴(사이드바 날개) 인라인 관리 — { 카테고리id: [항목...] } ──
   const [subCfg, setSubCfg] = React.useState({});
@@ -1255,6 +1255,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
         type: form.type,
         icon: form.icon || "doc",
         approval: form.approval || false,
+        url: form.type === "link" ? (form.url || "") : "",
       };
       const result = await window.WV_API.addCategory(newCat);
       const savedCat = result?.category ? { ...newCat, ...result.category } : newCat;
@@ -1280,7 +1281,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
     if (!form.name || !editing) return;
     setSaving(true);
     try {
-      const updated = { ...editing, name: form.name, desc: form.desc, type: form.type, icon: form.icon, approval: form.approval || false };
+      const updated = { ...editing, name: form.name, desc: form.desc, type: form.type, icon: form.icon, approval: form.approval || false, url: form.type === "link" ? (form.url || "") : "" };
       await window.WV_API.updateCategory(editing.id, updated);
       setCats(prev => prev.map(c => c.id === editing.id ? updated : c));
       const idx = D.categories.findIndex(c => c.id === editing.id);
@@ -1293,7 +1294,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   };
 
   const startEdit = (cat) => {
-    setForm({ name: cat.name, desc: cat.desc || "", type: cat.type || "board", icon: cat.icon || "doc", approval: cat.approval || false });
+    setForm({ name: cat.name, desc: cat.desc || "", type: cat.type || "board", icon: cat.icon || "doc", approval: cat.approval || false, url: cat.url || "" });
     setEditing(cat);
     setAdding(true);
   };
@@ -1408,6 +1409,7 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
                   {[
                     { id: "board",      name: "게시판형",   desc: "글·첨부파일 게시 (공지·서류)" },
                     { id: "library",    name: "자료실형",   desc: "썸네일 카드 + 다운로드 (표지·포스터)" },
+                    { id: "link",       name: "외부 링크",  desc: "클릭 시 외부 사이트로 바로 이동" },
                   ].map(t => (
                     <div key={t.id} className={"type-card" + (form.type === t.id ? " active" : "")}
                       onClick={() => setForm(s => ({ ...s, type: t.id }))}>
@@ -1417,6 +1419,17 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
                   ))}
                 </div>
               </div>
+              {form.type === "link" && (
+                <div className="field">
+                  <label className="field-label">외부 링크 URL *</label>
+                  <input className="field-input" type="url" value={form.url || ""}
+                    onChange={e => setForm(s => ({ ...s, url: e.target.value }))}
+                    placeholder="https://portal.kosha.or.kr/..." />
+                  <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>
+                    💡 이 카테고리를 사이드바에서 클릭하면 새 탭으로 이 주소가 열립니다.
+                  </div>
+                </div>
+              )}
               <div className="field">
                 <label className="field-label">아이콘</label>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

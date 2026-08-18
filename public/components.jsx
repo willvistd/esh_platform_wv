@@ -136,6 +136,18 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           <div className="sb-section-label">카테고리</div>
           {categories.map((c) => {
             if (!allow("cat:" + c.id)) return null;
+            // 외부 링크 카테고리 — 클릭 시 새 탭으로 바로 이동 (게시판/날개 없음)
+            if (c.type === "link" && c.url) {
+              return (
+                <div key={c.id}>
+                  <NavLink icon={CAT_ICON[c.id] || "external-link"}
+                    onClick={() => window.open(c.url, "_blank", "noopener,noreferrer")}>
+                    {c.name}
+                    <Icon name="external-link" size={12} className="sb-cat-caret" />
+                  </NavLink>
+                </div>
+              );
+            }
             const subs = getSubs(c);
             const hasActiveSub = subs && subs.some((s) => s.act(route));
             return (

@@ -359,6 +359,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE education_types ADD COLUMN IF NOT EXISTS hidden BOOLEAN DEFAULT false;`);
   // 카테고리 정렬 순서 (드래그앤드롭으로 변경)
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER;`);
+  // 외부 링크 카테고리용 URL (type='link'일 때 클릭 시 새 탭으로 이동)
+  await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS url TEXT;`);
   // 자료실(library) 카테고리용 — 썸네일 이미지 URL + 하위 분류
   await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS "thumbUrl" TEXT;`);
   await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS "subCategory" TEXT;`);
@@ -866,20 +868,20 @@ app.delete('/api/posts/:id', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
   // sortOrder NULL은 맨 뒤, 같으면 id 알파벳순
   const result = await pool.query(
-    'SELECT id, name, description AS desc, type, icon, "groupName", approval, "sortOrder" FROM categories ORDER BY "sortOrder" NULLS LAST, id'
+    'SELECT id, name, description AS desc, type, icon, "groupName", approval, "sortOrder", url FROM categories ORDER BY "sortOrder" NULLS LAST, id'
   );
   res.json({ categories: result.rows });
 });
 
 app.post('/api/categories', async (req, res) => {
   try {
-    const { id, name, description, desc, type, icon, groupName, approval } = req.body;
+    const { id, name, description, desc, type, icon, groupName, approval, url } = req.body;
     // 새 카테고리는 가장 큰 sortOrder + 10 (목록 맨 뒤에)
     const maxRow = await pool.query(`SELECT COALESCE(MAX("sortOrder"), 0) AS m FROM categories`);
     const nextSort = (maxRow.rows[0].m || 0) + 10;
     const result = await pool.query(
-      'INSERT INTO categories (id, name, description, type, icon, "groupName", approval, "sortOrder") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id, name, description AS desc, type, icon, "groupName", approval, "sortOrder"',
-      [id, name, description||desc||'', type||'board', icon||'file', groupName||'', approval||false, nextSort]
+      'INSERT INTO categories (id, name, description, type, icon, "groupName", approval, "sortOrder", url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, name, description AS desc, type, icon, "groupName", approval, "sortOrder", url',
+      [id, name, description||desc||'', type||'board', icon||'file', groupName||'', approval||false, nextSort, url||null]
     );
     res.json({ category: result.rows[0] });
   } catch (e) {
@@ -891,10 +893,10 @@ app.post('/api/categories', async (req, res) => {
 app.put('/api/categories/:id', async (req, res) => {
   try {
     // sortOrder는 reorder 엔드포인트 전용 — 일반 수정은 건드리지 않음
-    const { name, description, desc, type, icon, groupName, approval } = req.body;
+    const { name, description, desc, type, icon, groupName, approval, url } = req.body;
     const result = await pool.query(
-      'UPDATE categories SET name=$1, description=$2, type=$3, icon=$4, "groupName"=$5, approval=$6 WHERE id=$7 RETURNING id, name, description AS desc, type, icon, "groupName", approval, "sortOrder"',
-      [name, description||desc||'', type||'board', icon||'doc', groupName||'', approval||false, req.params.id]
+      'UPDATE categories SET name=$1, description=$2, type=$3, icon=$4, "groupName"=$5, approval=$6, url=$7 WHERE id=$8 RETURNING id, name, description AS desc, type, icon, "groupName", approval, "sortOrder", url',
+      [name, description||desc||'', type||'board', icon||'doc', groupName||'', approval||false, url||null, req.params.id]
     );
     res.json({ category: result.rows[0] });
   } catch (e) {

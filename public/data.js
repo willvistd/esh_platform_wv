@@ -29,6 +29,7 @@ window.WV_DATA = (() => {
     form: "양식생성형",
     "board-form": "게시판 + 양식",
     library: "자료실형",
+    link: "외부 링크",
   };
 
   const roles = [

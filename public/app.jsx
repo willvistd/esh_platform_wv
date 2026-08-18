@@ -715,6 +715,7 @@ function App() {
                 type: c.type || mock.type || "board",
                 icon: c.icon || mock.icon || "doc",
                 approval: c.approval ?? mock.approval ?? false,
+                url: c.url || "",
                 rowNumber: c.rowNumber,
                 count: prevCount[c.id] || 0,
               };
