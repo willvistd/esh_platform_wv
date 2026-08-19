@@ -162,8 +162,8 @@ const SafetySignsView = ({ onNav }) => {
           <span className="nm">{info.space || " "}</span>
         </div>
         <div className="pmgr">
-          {(info.jName || info.jTel) && <div className="mrow"><span className="mtag j">정</span><span className="mname">{info.jName}</span>{info.jTel && <span className="mtel">{info.jTel}</span>}</div>}
-          {(info.bName || info.bTel) && <div className="mrow"><span className="mtag b">부</span><span className="mname">{info.bName}</span>{info.bTel && <span className="mtel">{info.bTel}</span>}</div>}
+          <div className="mrow"><span className="mtag j">정</span><span className="mname">{info.jName}</span>{info.jTel && <span className="mtel">{info.jTel}</span>}</div>
+          <div className="mrow"><span className="mtag b">부</span><span className="mname">{info.bName}</span>{info.bTel && <span className="mtel">{info.bTel}</span>}</div>
         </div>
       </div>
     );
