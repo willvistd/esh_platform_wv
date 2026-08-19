@@ -8,6 +8,8 @@ const SafetySignsView = ({ onNav }) => {
   const [per, setPer] = React.useState(2);
   const [info, setInfo] = React.useState({ space: "", jName: "", jTel: "", bName: "", bTel: "", show: true });
   const [presetMsg, setPresetMsg] = React.useState("");
+  // 로고 모드: 안전표지 대신 회사 로고를 크게 넣는 표지(예: 휴게실)
+  const [logoMode, setLogoMode] = React.useState(false);
 
   const { NAME2ID, catIdx, sById, signOrder } = React.useMemo(() => {
     const NAME2ID = {}, catIdx = {}, sById = {}, signOrder = {};
@@ -42,6 +44,7 @@ const SafetySignsView = ({ onNav }) => {
   };
 
   const addSign = (id) => {
+    if (logoMode) setLogoMode(false);   // 표지를 고르면 로고 모드 해제
     const newItems = sortArr(enforcePairs([...items, id]));
     const needed = newItems.length;
     const curCap = (PRESETS[per]?.c ?? 2) * (PRESETS[per]?.r ?? 1);
@@ -87,10 +90,20 @@ const SafetySignsView = ({ onNav }) => {
     { name: "기계식주차장",signs:["출입금지","금연","끼임주의","떨어짐주의","안전모 착용","안전화 착용"] },
     { name: "집하장",     signs: ["출입금지","미끄럼주의","허리조심","안전모 착용","안전화 착용","안전장갑 착용"] },
     { name: "자재창고",   signs: ["출입금지","화기금지","낙하물 경고","무너짐주의","안전모 착용","안전화 착용"] },
+    { name: "휴게실",     logo: true, signs: [] },
   ];
 
   const applyPreset = (pre) => {
+    // 로고 프리셋(휴게실 등): 표지 대신 회사 로고를 크게 표시
+    if (pre.logo) {
+      setLogoMode(true);
+      setInfo(v => ({ ...v, space: pre.name }));
+      setItems([]);
+      setPresetMsg("");
+      return;
+    }
     const ids = pre.signs.map(n => NAME2ID[n]).filter(Boolean);
+    setLogoMode(false);
     setInfo(v => ({ ...v, space: pre.name }));
     setPer([1, 2, 4, 6, 9].find(k => k >= ids.length) || 9);
     setItems(sortArr(ids));
@@ -125,7 +138,14 @@ const SafetySignsView = ({ onNav }) => {
     );
   })();
 
-  const sheetEl = Array.from({ length: pages }, (_, p) => (
+  const sheetEl = logoMode ? (
+    <div key="logo" className="page">
+      {headerEl}
+      <div className="plogo">
+        <img src="assets/logo-will-vision2.png" alt="윌앤비전 회사 로고" />
+      </div>
+    </div>
+  ) : Array.from({ length: pages }, (_, p) => (
     <div key={p} className="page">
       {headerEl}
       <div className="pgrid" style={{ gridTemplateColumns: `repeat(${preset.c}, 1fr)`, gridTemplateRows: `repeat(${preset.r}, 1fr)` }}>
@@ -202,6 +222,8 @@ const SafetySignsView = ({ onNav }) => {
         .ss-tool #ss-sheet{display:flex;flex-direction:column;align-items:center;gap:18px}
         .ss-tool .page{width:min(100%,1400px);aspect-ratio:420/297;background:#fff;padding:2.69%;box-shadow:0 6px 22px rgba(20,30,45,.16);border-radius:3px;display:flex;flex-direction:column;gap:2.4%;container-type:size}
         .ss-tool .pgrid{flex:1 1 auto;min-height:0;display:grid;gap:1.5%}
+        .ss-tool .plogo{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:2%}
+        .ss-tool .plogo img{max-width:82%;max-height:82%;object-fit:contain;display:block}
         .ss-tool .cell{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;min-height:0;border-radius:3px}
         .ss-tool .cell img{max-width:100%;max-height:100%;object-fit:contain;display:block}
         .ss-tool .cell.empty{border:1.4px dashed #C4CBD3;background:#FAFBFC}
@@ -328,7 +350,7 @@ const SafetySignsView = ({ onNav }) => {
 
           {/* 시트 */}
           <div id="ss-sheet">
-            {items.length === 0 && <div className="emptyhint">왼쪽에서 표지를 눌러 추가하세요.</div>}
+            {items.length === 0 && !logoMode && <div className="emptyhint">왼쪽에서 표지를 눌러 추가하세요.</div>}
             {sheetEl}
           </div>
         </div>
