@@ -120,7 +120,8 @@ const SafetySignsView = ({ onNav }) => {
     { name: "기계식주차장",signs:["출입금지","금연","끼임주의","떨어짐주의","안전모 착용","안전화 착용"] },
     { name: "집하장",     signs: ["출입금지","미끄럼주의","허리조심","안전모 착용","안전화 착용","안전장갑 착용"] },
     { name: "자재창고",   signs: ["출입금지","화기금지","낙하물 경고","무너짐주의","안전모 착용","안전화 착용"] },
-    { name: "휴게실",     logo: true, signs: [] },
+    { name: "남자 휴게실", logo: true, signs: [] },
+    { name: "여자 휴게실", logo: true, signs: [] },
   ];
 
   const applyPreset = (pre) => {
@@ -252,8 +253,8 @@ const SafetySignsView = ({ onNav }) => {
         .ss-tool #ss-sheet{display:flex;flex-direction:column;align-items:center;gap:18px}
         .ss-tool .page{width:min(100%,1400px);aspect-ratio:420/297;background:#fff;padding:2.69%;box-shadow:0 6px 22px rgba(20,30,45,.16);border-radius:3px;display:flex;flex-direction:column;gap:2.4%;container-type:size}
         .ss-tool .pgrid{flex:1 1 auto;min-height:0;display:grid;gap:1.5%}
-        .ss-tool .plogo{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:0.5%}
-        .ss-tool .plogo img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;display:block}
+        .ss-tool .plogo{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:1%}
+        .ss-tool .plogo img{max-width:80%;max-height:80%;object-fit:contain;display:block}
         .ss-tool .cell{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;min-height:0;border-radius:3px}
         .ss-tool .cell img{max-width:100%;max-height:100%;object-fit:contain;display:block}
         .ss-tool .cell.empty{border:1.4px dashed #C4CBD3;background:#FAFBFC}
