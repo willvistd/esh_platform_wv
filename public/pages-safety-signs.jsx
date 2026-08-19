@@ -253,8 +253,8 @@ const SafetySignsView = ({ onNav }) => {
         .ss-tool #ss-sheet{display:flex;flex-direction:column;align-items:center;gap:18px}
         .ss-tool .page{width:min(100%,1400px);aspect-ratio:420/297;background:#fff;padding:2.69%;box-shadow:0 6px 22px rgba(20,30,45,.16);border-radius:3px;display:flex;flex-direction:column;gap:2.4%;container-type:size}
         .ss-tool .pgrid{flex:1 1 auto;min-height:0;display:grid;gap:1.5%}
-        .ss-tool .plogo{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:0.8%}
-        .ss-tool .plogo img{max-width:90%;max-height:90%;object-fit:contain;display:block}
+        .ss-tool .plogo{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center;padding:4%}
+        .ss-tool .plogo img{width:100%;height:100%;object-fit:contain;display:block}
         .ss-tool .cell{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;min-height:0;border-radius:3px}
         .ss-tool .cell img{max-width:100%;max-height:100%;object-fit:contain;display:block}
         .ss-tool .cell.empty{border:1.4px dashed #C4CBD3;background:#FAFBFC}
