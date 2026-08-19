@@ -10,6 +10,36 @@ const SafetySignsView = ({ onNav }) => {
   const [presetMsg, setPresetMsg] = React.useState("");
   // 로고 모드: 안전표지 대신 회사 로고를 크게 넣는 표지(예: 휴게실)
   const [logoMode, setLogoMode] = React.useState(false);
+  // 표지에 쓸 회사 로고 — 설정(door_sign_logo)에 저장된 URL, 없으면 기본 번들 로고
+  const DEFAULT_LOGO = "assets/logo-will-vision2.png";
+  const [logoUrl, setLogoUrl] = React.useState(DEFAULT_LOGO);
+  const [logoUploading, setLogoUploading] = React.useState(false);
+  const logoRef = React.useRef(null);
+
+  React.useEffect(() => {
+    fetch("/api/settings/door_sign_logo").then(r => r.json())
+      .then(d => { if (d && d.value && d.value.url) setLogoUrl(d.value.url); })
+      .catch(() => {});
+  }, []);
+
+  const uploadLogo = async (file) => {
+    if (!file) return;
+    if (!/\.(png|jpe?g|webp|svg)$/i.test(file.name)) { setPresetMsg("로고는 이미지 파일만 가능합니다."); return; }
+    setLogoUploading(true); setPresetMsg("");
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const d = await res.json();
+      if (!res.ok || !d.url) throw new Error("업로드 실패");
+      setLogoUrl(d.url);
+      // 다음에도 쓰도록 설정에 저장
+      await fetch("/api/settings/door_sign_logo", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: { url: d.url } }),
+      });
+    } catch (e) { setPresetMsg("로고 업로드 실패. 다시 시도해주세요."); }
+    setLogoUploading(false);
+  };
 
   const { NAME2ID, catIdx, sById, signOrder } = React.useMemo(() => {
     const NAME2ID = {}, catIdx = {}, sById = {}, signOrder = {};
@@ -142,7 +172,7 @@ const SafetySignsView = ({ onNav }) => {
     <div key="logo" className="page">
       {headerEl}
       <div className="plogo">
-        <img src="assets/logo-will-vision2.png" alt="윌앤비전 회사 로고" />
+        <img src={logoUrl} alt="회사 로고" />
       </div>
     </div>
   ) : Array.from({ length: pages }, (_, p) => (
@@ -309,6 +339,17 @@ const SafetySignsView = ({ onNav }) => {
                 ))}
               </div>
             </div>
+            {logoMode && (
+              <div className="icrow" style={{ gap: 10, alignItems: "center", background: "var(--ss-panel)", borderRadius: 8, padding: "8px 10px" }}>
+                <img src={logoUrl} alt="로고" style={{ height: 34, maxWidth: 150, objectFit: "contain", background: "#fff", borderRadius: 4, padding: 2 }} />
+                <div style={{ fontSize: 12, color: "var(--ss-muted)", fontWeight: 700 }}>표지에 들어갈 회사 로고</div>
+                <button className="btn btn-secondary btn-sm" style={{ marginLeft: "auto" }}
+                  onClick={() => logoRef.current?.click()} disabled={logoUploading}>
+                  {logoUploading ? "업로드 중…" : "로고 변경"}
+                </button>
+                <input ref={logoRef} type="file" accept="image/*" hidden onChange={e => uploadLogo(e.target.files?.[0])} />
+              </div>
+            )}
             {presetMsg && <div className="presetmsg">{presetMsg}</div>}
             <div className="icrow ic-space">
               <label>부착 공간 명칭</label>
