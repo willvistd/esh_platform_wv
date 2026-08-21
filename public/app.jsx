@@ -85,6 +85,13 @@ const api = {
       }
     };
   },
+  async incrementView(postId) {
+    try {
+      const res = await fetch(`${ENDPOINTS.posts}/${postId}/view`, { method: "POST" });
+      const d = await res.json();
+      return d.views;
+    } catch (e) { return null; }
+  },
   async addPost(post) {
     const res = await fetch(ENDPOINTS.posts, {
       method: "POST",

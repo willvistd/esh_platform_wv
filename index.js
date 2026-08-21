@@ -364,6 +364,8 @@ async function initDB() {
   // 자료실(library) 카테고리용 — 썸네일 이미지 URL + 하위 분류
   await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS "thumbUrl" TEXT;`);
   await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS "subCategory" TEXT;`);
+  // 게시글 조회수
+  await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS views INTEGER DEFAULT 0;`);
   // 기존 행 중 sortOrder NULL인 것들에 자동 부여 (id 알파벳순으로 10씩)
   await pool.query(`
     WITH ranked AS (
@@ -865,9 +867,19 @@ app.get('/api/posts', async (req, res) => {
     // ⚠️ 이전엔 SELECT * 로 모든 카테고리의 base64 썸네일까지 통째로 실어보내 로딩이 매우 느렸음.
     result = await pool.query(`SELECT id, title, content, "categoryId", "authorId", "authorName",
       "createdAt", status, priority, "dueAt", pinned, "mustRead", "hasSubmission",
-      "submissionTarget", attachments, "subCategory" FROM posts ORDER BY id DESC`);
+      "submissionTarget", attachments, "subCategory", views FROM posts ORDER BY id DESC`);
   }
   res.json({ posts: result.rows });
+});
+
+// 게시글 조회수 +1 (상세 진입 시 호출)
+app.post('/api/posts/:id/view', async (req, res) => {
+  try {
+    const r = await pool.query('UPDATE posts SET views = COALESCE(views,0)+1 WHERE id=$1 RETURNING views', [req.params.id]);
+    res.json({ views: r.rows[0] ? r.rows[0].views : null });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.post('/api/posts', async (req, res) => {

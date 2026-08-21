@@ -300,7 +300,13 @@ const PostDetail = ({ postId, onNav, role }) => {
   React.useEffect(() => {
     window.WV_API.getPosts().then(data => {
       const found = data.find(p => String(p.id) === String(postId));
-      setPost(found || null);
+      // 조회수 +1 (상세 진입 시 1회). 낙관적으로 화면에도 즉시 반영.
+      if (found) {
+        setPost({ ...found, views: (found.views || 0) + 1 });
+        window.WV_API.incrementView?.(postId);
+      } else {
+        setPost(null);
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [postId]);
