@@ -290,6 +290,20 @@ const PostCard = ({ post, onClick }) => (
 );
 
 // ─── Post detail
+// 조회수 중복 방지 — 이 브라우저가 오늘 이미 본 글이면 true, 아니면 기록 후 false
+function _viewedToday(postId) {
+  try {
+    const key = "wv_viewed_posts";
+    const map = JSON.parse(localStorage.getItem(key) || "{}");
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    const today = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    if (map[postId] === today) return true;
+    map[postId] = today;
+    localStorage.setItem(key, JSON.stringify(map));
+    return false;
+  } catch (e) { return false; }
+}
+
 const PostDetail = ({ postId, onNav, role }) => {
   const D = window.WV_DATA;
   const can = D.can[role] || D.can["staff"];
@@ -300,10 +314,11 @@ const PostDetail = ({ postId, onNav, role }) => {
   React.useEffect(() => {
     window.WV_API.getPosts().then(data => {
       const found = data.find(p => String(p.id) === String(postId));
-      // 조회수 +1 (상세 진입 시 1회). 낙관적으로 화면에도 즉시 반영.
+      // 조회수 +1 — 단, 같은 브라우저에서 같은 글은 하루 1회만 카운트(중복 방지).
       if (found) {
-        setPost({ ...found, views: (found.views || 0) + 1 });
-        window.WV_API.incrementView?.(postId);
+        const dup = _viewedToday(postId);
+        setPost({ ...found, views: (found.views || 0) + (dup ? 0 : 1) });
+        if (!dup) window.WV_API.incrementView?.(postId);
       } else {
         setPost(null);
       }
