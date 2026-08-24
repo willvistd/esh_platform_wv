@@ -2711,6 +2711,14 @@ const RiskCoverView = ({ onNav, currentUser }) => {
           </div>
         </div>
 
+        {/* 수시 평가 사유 (수시일 때만 표지에 표기) */}
+        {ctx?.type === "occasional" && ctx?.사유 && (
+          <div style={{ flex: "0 0 auto", textAlign: "center", marginTop: 30, maxWidth: 820, marginLeft: "auto", marginRight: "auto" }}>
+            <div style={{ fontSize: 19, fontWeight: 700, color: "#111", marginBottom: 8 }}>수시 평가 사유</div>
+            <div style={{ fontSize: 17, color: "#000", lineHeight: 1.6, fontWeight: 500 }}>{ctx.사유}</div>
+          </div>
+        )}
+
         <div className="cover-flex-spacer" style={{ flex: "2.2 1 0" }} />
 
         {/* 결재란 (사진 양식: 중하단 약 70-82%) */}
