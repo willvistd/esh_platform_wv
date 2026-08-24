@@ -129,6 +129,14 @@ const RISK_EVAL_TYPES = [
     desc: "위험성평가 대상 작업 추가, 사고 발생 시",
     bg: "#fffbeb", bgActive: "#fef3c7" },
 ];
+// 수시 위험성평가 사유 선택 목록 (산업안전보건법 시행규칙 제37조 기준)
+const OCCASIONAL_REASONS = [
+  "사업장 건설물의 설치·이전·변경 또는 해체",
+  "기계·기구, 설비, 원재료 등의 신규 도입 또는 변경",
+  "건설물, 기계·기구, 설비 등의 정비 또는 보수",
+  "작업방법 또는 작업절차의 신규 도입 또는 변경",
+  "그 밖에 사업주가 필요하다고 판단한 경우",
+];
 const RISK_EVAL_CTX_KEY = "wv_risk_evalContext";
 const RISK_EVAL_LIST_KEY = "wv_risk_evalList";
 
@@ -1889,6 +1897,13 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   const [newYear, setNewYear] = React.useState(new Date().getFullYear());
   const [newDate, setNewDate] = React.useState(new Date().toISOString().slice(0, 10));
   const [newReason, setNewReason] = React.useState("");
+  // 수시 사유: 체크박스 다중 선택 + 기타 상세(선택)
+  const [reasonChecks, setReasonChecks] = React.useState([]);
+  const [reasonEtc, setReasonEtc] = React.useState("");
+  const composedReason = [...reasonChecks, reasonEtc.trim()].filter(Boolean).join(", ");
+  const toggleReason = (label) => setReasonChecks(prev =>
+    prev.includes(label) ? prev.filter(x => x !== label) : [...prev, label]
+  );
   const [newSiteName, setNewSiteName] = React.useState("");
   const [cloneFromId, setCloneFromId] = React.useState("");
   const [evalList, setEvalList] = React.useState(() => getEvalList());
@@ -1943,27 +1958,27 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   // 새 평가 모달 닫기 + 입력 초기화
   const closeNewModal = () => {
     setShowNewModal(false);
-    setNewReason(""); setNewSiteName(""); setCloneFromId("");
+    setNewReason(""); setReasonChecks([]); setReasonEtc(""); setNewSiteName(""); setCloneFromId("");
   };
 
   // 새 평가 생성
   const handleCreateNew = () => {
     if (!selectedCompany) { alert("본부를 먼저 선택해주세요."); return; }
     if (!newSiteName.trim()) { alert("사업장명을 입력해주세요."); return; }
-    if (selectedType.id === "occasional" && !newReason.trim()) {
-      alert("수시 평가는 사유를 입력해주세요."); return;
+    if (selectedType.id === "occasional" && !composedReason.trim()) {
+      alert("수시 평가 사유를 1개 이상 선택해주세요."); return;
     }
     const ctx = addEvaluation({
       type: selectedType.id,
       company: selectedCompany,
       year: newYear,
       date: newDate,
-      사유: selectedType.id === "occasional" ? newReason.trim() : "",
+      사유: selectedType.id === "occasional" ? composedReason.trim() : "",
       사업장명: newSiteName.trim(),
     });
     if (cloneFromId) cloneEvaluation(cloneFromId, ctx);
     setShowNewModal(false);
-    setNewReason(""); setNewSiteName(""); setCloneFromId("");
+    setNewReason(""); setReasonChecks([]); setReasonEtc(""); setNewSiteName(""); setCloneFromId("");
     startEvaluation(ctx);
   };
 
@@ -2198,10 +2213,21 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
                     style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 13 }} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>사유 (사고/변경 내용) *</label>
-                  <input value={newReason} onChange={e => setNewReason(e.target.value)}
-                    placeholder="예: 지게차 사고 발생 / 신규 공정 추가"
-                    style={{ width: "100%", padding: "8px 12px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 13 }} />
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>사유 (해당 항목 선택) *</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", border: "1px solid var(--line)", borderRadius: 6, background: "var(--bg-sunk)" }}>
+                    {OCCASIONAL_REASONS.map(label => {
+                      const checked = reasonChecks.includes(label);
+                      return (
+                        <label key={label} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, cursor: "pointer", lineHeight: 1.4 }}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleReason(label)} style={{ marginTop: 2, flexShrink: 0 }} />
+                          <span style={{ color: checked ? "var(--fg)" : "var(--fg-2)", fontWeight: checked ? 600 : 400 }}>{label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <input value={reasonEtc} onChange={e => setReasonEtc(e.target.value)}
+                    placeholder="기타 상세 내용 (선택) — 예: 지게차 사고 발생"
+                    style={{ width: "100%", marginTop: 8, padding: "8px 12px", border: "1px solid var(--line)", borderRadius: 6, fontSize: 13 }} />
                 </div>
               </>
             ) : (
