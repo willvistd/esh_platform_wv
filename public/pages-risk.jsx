@@ -3787,7 +3787,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
           }
           /* ── 표 제목(h2)·헤더(thead) 행은 고정 — 사용자 조절 영향 X ── */
           .risk-print-area-table h2 {
-            font-size: 12pt !important;   /* 표 제목 ("위험성평가표 — 시설관리") 고정 */
+            font-size: 12pt !important;   /* 표 제목 ("위험성평가표 (시설관리)") 고정 */
           }
           /* ⚠️ :not(.cover-page) 필수 — 글로벌 ".risk-print-area-table:not(.cover-page) th { 10.5pt !important }"
                 (specificity 0,2,1)을 이기려면 같이 (0,2,2)로 맞춰야 함 */
@@ -4126,7 +4126,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
       <div className="risk-print-area risk-print-area-table" style={{ background: "var(--card-bg)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 12px" }}>
         <h2 style={{ textAlign: "center", fontSize: 16, fontWeight: 700, marginBottom: 12 }}>
           위험성평가표 &nbsp;
-          {tableType && <span style={{ fontSize: 13, fontWeight: 600, color: "#dc2626" }}>— {tableType}</span>}
+          {tableType && <span style={{ fontSize: 13, fontWeight: 600, color: "#dc2626" }}>({tableType})</span>}
         </h2>
         <div className="risk-table-area" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 1700, tableLayout: "fixed" }}>
