@@ -131,10 +131,11 @@ const RISK_EVAL_TYPES = [
 ];
 // 수시 위험성평가 사유 선택 목록 (산업안전보건법 시행규칙 제37조 기준)
 const OCCASIONAL_REASONS = [
-  "사업장 건설물의 설치·이전·변경 또는 해체",
-  "기계·기구, 설비, 원재료 등의 신규 도입 또는 변경",
-  "건설물, 기계·기구, 설비 등의 정비 또는 보수",
+  "사업장 건설물의 설치ㆍ이전ㆍ변경 또는 해체",
+  "기계ㆍ기구, 설비, 원재료 등의 신규 도입 또는 변경",
+  "건설물, 기계ㆍ기구, 설비 등의 정비 또는 보수(주기적ㆍ반복적 작업으로서 이미 위험성평가를 실시한 경우에는 제외)",
   "작업방법 또는 작업절차의 신규 도입 또는 변경",
+  "중대산업사고 또는 산업재해(휴업 이상의 요양을 요하는 경우에 한정한다) 발생",
   "그 밖에 사업주가 필요하다고 판단한 경우",
 ];
 const RISK_EVAL_CTX_KEY = "wv_risk_evalContext";
@@ -2685,9 +2686,9 @@ const RiskCoverView = ({ onNav, currentUser }) => {
 
         <div className="cover-flex-spacer" style={{ flex: "3 1 0" }} />
 
-        {/* 제목 */}
+        {/* 제목 — 평가 유형(수시/정기/최초)을 앞에 표기 */}
         <h1 style={{ textAlign: "center", fontSize: 46, fontWeight: 900, margin: 0, letterSpacing: 8, color: "#111", flex: "0 0 auto" }}>
-          위험성평가 이행 및 조치결과
+          {ctx?.type === "occasional" ? "수시 " : ctx?.type === "regular" ? "정기 " : ctx?.type === "initial" ? "최초 " : ""}위험성평가 이행 및 조치결과
         </h1>
 
         <div className="cover-flex-spacer" style={{ flex: "2.9 1 0" }} />
