@@ -1613,6 +1613,11 @@ app.delete('/api/approvals/:id', async (req, res) => {
 // 개행·공백·따옴표 등 모든 이상문자 제거. (미제거 시 https 경로에 이상문자 →
 // "Request path contains unescaped characters" 에러)
 const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\-]/g, '');
+// 제미나이(Google) API 키 — 설정되면 AI 기능이 OpenAI 대신 Gemini를 사용
+const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').replace(/[^A-Za-z0-9_\-]/g, '');
+const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.0-flash', 'gemini-1.5-flash'];
+// AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
+const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
 // 한국산업안전보건공단 MSDS OpenAPI 서비스 키 — 원문에 특수문자 포함될 수 있어 공백/개행만 제거
 const MSDS_API_KEY = (process.env.MSDS_API_KEY || '').replace(/\s+/g, '');
@@ -1732,6 +1737,61 @@ async function callOpenAI(pdfBase64) {
   throw lastErr;
 }
 
+// ── 제미나이(Gemini) 호출 — PDF/이미지 + 프롬프트 → JSON ──
+function callGeminiModel(promptText, mimeType, base64Data, model) {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      contents: [{ parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 4096 },
+    });
+    const options = {
+      hostname: 'generativelanguage.googleapis.com',
+      path: `/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    };
+    const req = https.request(options, (res) => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try {
+          const data = Buffer.concat(chunks).toString('utf8');
+          const resp = JSON.parse(data);
+          if (resp.error) { reject(new Error(resp.error.message || 'Gemini API 오류')); return; }
+          const text = (resp.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('') || '{}';
+          const m = text.match(/\{[\s\S]*\}/);
+          if (!m) throw new Error('JSON을 찾을 수 없습니다.');
+          resolve(JSON.parse(m[0]));
+        } catch (e) { reject(new Error(e.message)); }
+      });
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+// 재시도 + 모델 폴백 포함
+async function callGemini(promptText, mimeType, base64Data) {
+  let lastErr;
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1})`);
+        const r = await callGeminiModel(promptText, mimeType, base64Data, model);
+        console.log(`[Gemini] 성공: ${model}`);
+        return r;
+      } catch (err) {
+        lastErr = err;
+        const retryable = /rate|overload|429|500|503|quota|unavailable/i.test(err.message);
+        console.warn(`[Gemini] 실패 (${model}): ${err.message.substring(0, 80)}`);
+        if (retryable && attempt === 0) { await new Promise(r => setTimeout(r, 3000)); }
+        else break;
+      }
+    }
+  }
+  throw lastErr;
+}
+
 // ── MSDS 정부 API XML 파싱 헬퍼 ──
 function parseXml(xml, tag) {
   const m = xml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
@@ -1789,15 +1849,19 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   // Supabase 모드=memoryStorage(req.file.buffer) / 로컬=diskStorage(req.file.path)
   const cleanup = () => { if (req.file.path) fs.unlink(req.file.path, () => {}); };
-  if (!OPENAI_API_KEY) {
+  if (!AI_ENABLED) {
     cleanup();
-    return res.status(503).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다.' });
+    return res.status(503).json({ error: 'AI 키(GEMINI_API_KEY 또는 OPENAI_API_KEY)가 설정되지 않았습니다.' });
   }
   try {
     const pdfBuffer = req.file.buffer || fs.readFileSync(req.file.path);
     const pdfBase64 = pdfBuffer.toString('base64');
     cleanup();
-    const result = sanitizeMsds(await callOpenAI(pdfBase64));
+    // Gemini 키가 있으면 Gemini, 아니면 OpenAI
+    const raw = GEMINI_API_KEY
+      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64)
+      : await callOpenAI(pdfBase64);
+    const result = sanitizeMsds(raw);
     res.json(result);
   } catch (err) {
     console.error('[MSDS extract]', err.message);
@@ -1864,9 +1928,21 @@ function callInspectionModel(imageBase64, mimeType, model) {
 }
 
 app.post('/api/inspection/analyze', async (req, res) => {
-  if (!OPENAI_API_KEY) return res.status(503).json({ error: 'OPENAI_API_KEY가 설정되지 않았습니다.' });
+  if (!AI_ENABLED) return res.status(503).json({ error: 'AI 키(GEMINI_API_KEY 또는 OPENAI_API_KEY)가 설정되지 않았습니다.' });
   const { imageBase64, mimeType } = req.body;
   if (!imageBase64) return res.status(400).json({ error: 'imageBase64 필드가 없습니다.' });
+
+  // Gemini 키가 있으면 Gemini 사용
+  if (GEMINI_API_KEY) {
+    try {
+      const result = await callGemini(INSPECTION_PROMPT, mimeType || 'image/jpeg', imageBase64);
+      return res.json(result);
+    } catch (err) {
+      console.warn('[inspection analyze] Gemini 실패:', err.message);
+      if (!OPENAI_API_KEY) return res.status(500).json({ error: err.message });
+      // OpenAI 폴백으로 계속
+    }
+  }
 
   const models = ['gpt-4o-mini', 'gpt-4o'];
   let lastErr;
