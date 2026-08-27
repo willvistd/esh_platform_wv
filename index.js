@@ -1,4 +1,5 @@
 ﻿require('dotenv').config(); // 로컬 .env 자동 로드 (Railway는 env vars 직접 주입)
+// redeploy: GEMINI_API_KEY 환경변수 적용을 위한 재배포 트리거 (2026-08-27)
 const express = require('express');
 const { Pool } = require('pg');
 const cors = require('cors');
