@@ -1618,7 +1618,7 @@ const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\
 // 유효 문자에 점(.)도 포함 — 새 형식 키(예: AQ.Ab8...)에 점이 들어가므로 제거하면 키가 깨짐.
 // 공백/개행/따옴표만 걸러지도록 키 구성 문자(영문/숫자/_/-/.)를 허용.
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za-z0-9_.\-]/g, '');
-const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.5-flash', 'gemini-2.5-pro'];
+const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.5-flash', 'gemini-flash-latest'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
