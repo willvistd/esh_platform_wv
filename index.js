@@ -1774,10 +1774,13 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
   });
 }
 // 재시도 + 모델 폴백 포함
+// "high demand/overload"(503 UNAVAILABLE)는 구글 서버가 잠깐 붐비는 일시 현상 →
+// 모델별로 최대 3회, 지수 백오프(2s→4s)로 재시도하고, 그래도 안 되면 다음 모델로 폴백.
 async function callGemini(promptText, mimeType, base64Data) {
   let lastErr;
+  const MAX_ATTEMPTS = 3;
   for (const model of GEMINI_MODELS) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
         console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1})`);
         const r = await callGeminiModel(promptText, mimeType, base64Data, model);
@@ -1785,10 +1788,13 @@ async function callGemini(promptText, mimeType, base64Data) {
         return r;
       } catch (err) {
         lastErr = err;
-        const retryable = /rate|overload|429|500|503|quota|unavailable/i.test(err.message);
+        const retryable = /rate|overload|high demand|429|500|503|quota|unavailable/i.test(err.message);
         console.warn(`[Gemini] 실패 (${model}): ${err.message.substring(0, 80)}`);
-        if (retryable && attempt === 0) { await new Promise(r => setTimeout(r, 3000)); }
-        else break;
+        if (retryable && attempt < MAX_ATTEMPTS - 1) {
+          await new Promise(r => setTimeout(r, 2000 * (attempt + 1))); // 2s, 4s
+        } else {
+          break; // 재시도 불가 또는 마지막 시도 → 다음 모델로 폴백
+        }
       }
     }
   }
