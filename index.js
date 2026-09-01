@@ -9,6 +9,7 @@ const fs = require('fs');
 const https = require('https');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const judge = require('./judge'); // 규제 판정 엔진(작업환경측정·특수건강진단 등)
 
 // ── 세션 (HMAC 서명 쿠키, 무상태) ──
 // SESSION_SECRET 권장. 없으면 PGPASSWORD 기반 파생(재시작에도 안정 — 새 env 없이 동작)
@@ -1876,6 +1877,24 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
     console.error('[MSDS extract]', err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── POST /api/substances/judge — 성분 목록 규제 판정 (작업환경측정/특수건강진단 등) ──
+//  body: { components:[{name,cas,content}], product:{name,manufacturer,revisionDate} }
+app.post('/api/substances/judge', (req, res) => {
+  try {
+    const components = Array.isArray(req.body.components) ? req.body.components : [];
+    const result = judge.judgeAll(components, req.body.product || {});
+    res.json(result);
+  } catch (err) {
+    console.error('[substances/judge]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/substances/meta — 데이터 기준일·출처 ──
+app.get('/api/substances/meta', (req, res) => {
+  res.json(judge.meta());
 });
 
 // ── POST /api/inspection/analyze — 현장점검 사진 AI 분석 ──

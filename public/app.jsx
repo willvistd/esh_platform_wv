@@ -882,6 +882,7 @@ function App() {
               { label: "결재함", route: { name: "approval-inbox" } },
               { label: "결재 작성/기안", route: { name: "approval-compose" } },
               { label: "MSDS 서식 생성", route: { name: "msds-generate" } },
+              { label: "작업환경측정·특수건진 대상물질 판정", route: { name: "substance-judge" } },
               { label: "카테고리 관리", route: { name: "manage-categories" } },
               { label: "사용자 관리", route: { name: "manage-users" } },
               { label: "사업장 관리", route: { name: "manage-sites" } },
@@ -988,6 +989,8 @@ function App() {
           <ApprovalDetail onNav={onNav} docId={route.id} currentUser={currentUser} />
         ) : route.name === "msds-generate" ? (
           <MsdsGeneratorView onNav={onNav} currentUser={currentUser} role={role} />
+        ) : route.name === "substance-judge" ? (
+          <SubstanceJudgeView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "tool-safety-signs" ? (
           <SafetySignsView onNav={onNav} />
         ) : route.name === "tool-org-chart" ? (
