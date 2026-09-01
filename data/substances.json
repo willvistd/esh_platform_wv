@@ -1,0 +1,6678 @@
+{
+  "meta": {
+    "기준일": "2026-06-01",
+    "생성일": "2026-09-01",
+    "출처": [
+      "산업안전보건법 시행규칙 별표21 작업환경측정 대상 유해인자 (제186조제1항)",
+      "산업안전보건법 시행규칙 별표22 특수건강진단 대상 유해인자 (제201조)",
+      "산업안전보건기준에 관한 규칙 별표12 관리대상 유해물질 (제420조·제439조·제440조)",
+      "산업안전보건법 시행규칙 별표19 유해인자별 노출농도의 허용기준 (제145조제1항)"
+    ],
+    "건수": {
+      "총_CAS물질": 224,
+      "그룹": 30
+    }
+  },
+  "substances": [
+    {
+      "cas": "111-30-8",
+      "name_ko": "글루타르알데히드",
+      "name_en": "Glutaraldehyde",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "55-63-0",
+      "name_ko": "니트로글리세린",
+      "name_en": "Nitroglycerin",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-52-5",
+      "name_ko": "니트로메탄",
+      "name_en": "Nitromethane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "98-95-3",
+      "name_ko": "니트로벤젠",
+      "name_en": "Nitrobenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "100-01-6",
+      "name_ko": "p-니트로아닐린",
+      "name_en": "p-Nitroaniline",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "100-00-5",
+      "name_ko": "p-니트로클로로벤젠",
+      "name_en": "p-Nitrochlorobenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "25321-14-6",
+      "name_ko": "디니트로톨루엔",
+      "name_en": "Dinitrotoluene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "121-69-7",
+      "name_ko": "N,N-디메틸아닐린",
+      "name_en": "N,N-Dimethylaniline",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "124-40-3",
+      "name_ko": "디메틸아민",
+      "name_en": "Dimethylamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "127-19-5",
+      "name_ko": "N,N-디메틸아세트아미드",
+      "name_en": "N,N-Dimethylacetamide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "68-12-2",
+      "name_ko": "디메틸포름아미드",
+      "name_en": "Dimethylformamide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "111-42-2",
+      "name_ko": "디에탄올아민",
+      "name_en": "Diethanolamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "60-29-7",
+      "name_ko": "디에틸에테르",
+      "name_en": "Diethyl ether",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "111-40-0",
+      "name_ko": "디에틸렌트리아민",
+      "name_en": "Diethylenetriamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "100-37-8",
+      "name_ko": "2-디에틸아미노에탄올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "109-89-7",
+      "name_ko": "디에틸아민",
+      "name_en": "Diethylamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "123-91-1",
+      "name_ko": "1,4-디옥산",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-83-8",
+      "name_ko": "디이소부틸케톤",
+      "name_en": "Diisobutylketone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1717-00-6",
+      "name_ko": "1,1-디클로로-1-플루오로에탄",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-09-2",
+      "name_ko": "디클로로메탄",
+      "name_en": "Dichloromethane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "95-50-1",
+      "name_ko": "o-디클로로벤젠",
+      "name_en": "o-Dichlorobenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "107-06-2",
+      "name_ko": "1,2-디클로로에탄",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "540-59-0",
+      "name_ko": "1,2-디클로로에틸렌",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "78-87-5",
+      "name_ko": "1,2-디클로로프로판",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-43-4",
+      "name_ko": "디클로로플루오로메탄",
+      "name_en": "Dichlorofluoromethane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "123-31-9",
+      "name_ko": "p-디히드록시벤젠",
+      "name_en": "p-Dihydroxybenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "67-56-1",
+      "name_ko": "메탄올",
+      "name_en": "Methanol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "109-86-4",
+      "name_ko": "2-메톡시에탄올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-49-6",
+      "name_ko": "2-메톡시에틸아세테이트",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "591-78-6",
+      "name_ko": "메틸n-부틸케톤",
+      "name_en": "Methyl n-butyl ketone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-43-0",
+      "name_ko": "메틸n-아밀케톤",
+      "name_en": "Methyl n-amyl ketone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "74-89-5",
+      "name_ko": "메틸아민",
+      "name_en": "Methyl amine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-20-9",
+      "name_ko": "메틸아세테이트",
+      "name_en": "Methyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "78-93-3",
+      "name_ko": "메틸에틸케톤",
+      "name_en": "Methyl ethyl ketone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-10-1",
+      "name_ko": "메틸이소부틸케톤",
+      "name_en": "Methyl isobutyl ketone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "74-87-3",
+      "name_ko": "메틸클로라이드",
+      "name_en": "Methyl chloride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "71-55-6",
+      "name_ko": "메틸클로로포름",
+      "name_en": "Methyl chloroform",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "101-68-8",
+      "name_ko": "메틸렌비스",
+      "name_en": "Methylene bis(phenyl isocyanate",
+      "aliases": [
+        "메틸렌 비스"
+      ],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "583-60-8",
+      "name_ko": "o-메틸시클로헥사논",
+      "name_en": "o-Methylcyclohexanone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "25639-42-3",
+      "name_ko": "메틸시클로헥사놀",
+      "name_en": "Methylcyclohexanol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-31-6",
+      "name_ko": "무수말레산",
+      "name_en": "Maleic anhydride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "85-44-9",
+      "name_ko": "무수프탈산",
+      "name_en": "Phthalic anhydride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "71-43-2",
+      "name_ko": "벤젠",
+      "name_en": "Benzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "106-99-0",
+      "name_ko": "1,3-부타디엔",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "71-36-3",
+      "name_ko": "n-부탄올",
+      "name_en": "n-Butanol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "78-92-2",
+      "name_ko": "2-부탄올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "111-76-2",
+      "name_ko": "2-부톡시에탄올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "112-07-2",
+      "name_ko": "2-부톡시에틸아세테이트",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "123-86-4",
+      "name_ko": "n-부틸아세테이트",
+      "name_en": "n-Butyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "106-94-5",
+      "name_ko": "1-브로모프로판",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-26-3",
+      "name_ko": "2-브로모프로판",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "74-83-9",
+      "name_ko": "브롬화메틸",
+      "name_en": "Methyl bromide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-05-4",
+      "name_ko": "비닐아세테이트",
+      "name_en": "Vinyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "56-23-5",
+      "name_ko": "사염화탄소",
+      "name_en": "Carbon tetrachloride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "8052-41-3",
+      "name_ko": "스토다드솔벤트",
+      "name_en": "Stoddard solvent",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "100-42-5",
+      "name_ko": "스티렌",
+      "name_en": "Styrene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-94-1",
+      "name_ko": "시클로헥사논",
+      "name_en": "Cyclohexanone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-93-0",
+      "name_ko": "시클로헥사놀",
+      "name_en": "Cyclohexanol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-82-7",
+      "name_ko": "시클로헥산",
+      "name_en": "Cyclohexane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-83-8",
+      "name_ko": "시클로헥센",
+      "name_en": "Cyclohexene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "62-53-3",
+      "name_ko": "아닐린",
+      "name_en": "Aniline and its homologues",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-05-8",
+      "name_ko": "아세토니트릴",
+      "name_en": "Acetonitrile",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "67-64-1",
+      "name_ko": "아세톤",
+      "name_en": "Acetone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-07-0",
+      "name_ko": "아세트알데히드",
+      "name_en": "Acetaldehyde",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "107-13-1",
+      "name_ko": "아크릴로니트릴",
+      "name_en": "Acrylonitrile",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-06-1",
+      "name_ko": "아크릴아미드",
+      "name_en": "Acrylamide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "106-92-3",
+      "name_ko": "알릴글리시딜에테르",
+      "name_en": "Allyl glycidyl ether",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "141-43-5",
+      "name_ko": "에탄올아민",
+      "name_en": "Ethanolamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-80-5",
+      "name_ko": "2-에톡시에탄올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "111-15-9",
+      "name_ko": "2-에톡시에틸아세테이트",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "100-41-4",
+      "name_ko": "에틸벤젠",
+      "name_en": "Ethyl benzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "141-78-6",
+      "name_ko": "에틸아세테이트",
+      "name_en": "Ethyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "140-88-5",
+      "name_ko": "에틸아크릴레이트",
+      "name_en": "Ethyl acrylate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "107-21-1",
+      "name_ko": "에틸렌글리콜",
+      "name_en": "Ethylene glycol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "628-96-6",
+      "name_ko": "에틸렌글리콜디니트레이트",
+      "name_en": "Ethylene glycol dinitrate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "107-07-3",
+      "name_ko": "에틸렌클로로히드린",
+      "name_en": "Ethylene chlorohydrin",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "151-56-4",
+      "name_ko": "에틸렌이민",
+      "name_en": "Ethyleneimine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-04-7",
+      "name_ko": "에틸아민",
+      "name_en": "Ethylamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "556-52-5",
+      "name_ko": "2,3-에폭시-1-프로판올",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-56-9",
+      "name_ko": "1,2-에폭시프로판",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "106-89-8",
+      "name_ko": "에피클로로히드린",
+      "name_en": "Epichlorohydrin",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "74-88-4",
+      "name_ko": "요오드화메틸",
+      "name_en": "Methyl iodide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-19-0",
+      "name_ko": "이소부틸아세테이트",
+      "name_en": "Isobutyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "78-83-1",
+      "name_ko": "이소부틸알코올",
+      "name_en": "Isobutyl alcohol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "123-92-2",
+      "name_ko": "이소아밀아세테이트",
+      "name_en": "Isoamyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "123-51-3",
+      "name_ko": "이소아밀알코올",
+      "name_en": "Isoamyl alcohol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-21-4",
+      "name_ko": "이소프로필아세테이트",
+      "name_en": "Isopropyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "67-63-0",
+      "name_ko": "이소프로필알코올",
+      "name_en": "Isopropyl alcohol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-15-0",
+      "name_ko": "이황화탄소",
+      "name_en": "Carbon disulfide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1319-77-3",
+      "name_ko": "크레졸",
+      "name_en": "Cresol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1330-20-7",
+      "name_ko": "크실렌",
+      "name_en": "Xylene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-90-7",
+      "name_ko": "클로로벤젠",
+      "name_en": "Chlorobenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-34-5",
+      "name_ko": "1,1,2,2-테트라클로로에탄",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "109-99-9",
+      "name_ko": "테트라히드로푸란",
+      "name_en": "Tetrahydrofuran",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-88-3",
+      "name_ko": "톨루엔",
+      "name_en": "Toluene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "584-84-9",
+      "name_ko": "톨루엔-2,4-디이소시아네이트",
+      "name_en": "Toluene-2,4-diisocyanate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "91-08-7",
+      "name_ko": "톨루엔-2,6-디이소시아네이트",
+      "name_en": "Toluene-2,6-diisocyanate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "121-44-8",
+      "name_ko": "트리에틸아민",
+      "name_en": "Triethylamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "67-66-3",
+      "name_ko": "트리클로로메탄",
+      "name_en": "Trichloromethane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-00-5",
+      "name_ko": "1,1,2-트리클로로에탄",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-01-6",
+      "name_ko": "트리클로로에틸렌",
+      "name_en": "Trichloroethylene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "96-18-4",
+      "name_ko": "1,2,3-트리클로로프로판",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "127-18-4",
+      "name_ko": "퍼클로로에틸렌",
+      "name_en": "Perchloroethylene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-95-2",
+      "name_ko": "페놀",
+      "name_en": "Phenol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "87-86-5",
+      "name_ko": "펜타클로로페놀",
+      "name_en": "Pentachlorophenol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "50-00-0",
+      "name_ko": "포름알데히드",
+      "name_en": "Formaldehyde",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-55-8",
+      "name_ko": "프로필렌이민",
+      "name_en": "Propyleneimine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "109-60-4",
+      "name_ko": "n-프로필아세테이트",
+      "name_en": "n-Propyl acetate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-86-1",
+      "name_ko": "피리딘",
+      "name_en": "Pyridine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "822-06-0",
+      "name_ko": "헥사메틸렌디이소시아네이트",
+      "name_en": "Hexamethylene diisocyanate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "110-54-3",
+      "name_ko": "n-헥산",
+      "name_en": "n-Hexane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "142-82-5",
+      "name_ko": "n-헵탄",
+      "name_en": "n-Heptane",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "77-78-1",
+      "name_ko": "황산디메틸",
+      "name_en": "Dimethyl sulfate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "302-01-2",
+      "name_ko": "히드라진",
+      "name_en": "Hydrazine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "유기화합물",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-50-8",
+      "name_ko": "구리",
+      "name_en": "Copper",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7439-92-1",
+      "name_ko": "납",
+      "name_en": "Lead and its inorganic compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-02-0",
+      "name_ko": "니켈",
+      "name_en": "Nickel and its inorganic compounds, Nickel carbonyl",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "13463-39-3",
+      "name_ko": "니켈",
+      "name_en": "Nickel and its inorganic compounds, Nickel carbonyl",
+      "aliases": [
+        "니켈[7440-02-0] 화합물"
+      ],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7439-96-5",
+      "name_ko": "망간",
+      "name_en": "Manganese and its inorganic compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-39-3",
+      "name_ko": "바륨",
+      "name_en": "Barium and its soluble compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-06-4",
+      "name_ko": "백금",
+      "name_en": "Platinum and its soluble salts",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1309-48-4",
+      "name_ko": "산화마그네슘",
+      "name_en": "Magnesium oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1314-13-2",
+      "name_ko": "산화아연",
+      "name_en": "Zinc oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1309-37-1",
+      "name_ko": "산화철",
+      "name_en": "Iron oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7782-49-2",
+      "name_ko": "셀레늄",
+      "name_en": "Selenium and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7439-97-6",
+      "name_ko": "수은",
+      "name_en": "Mercury and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-36-0",
+      "name_ko": "안티몬",
+      "name_en": "Antimony and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7429-90-5",
+      "name_ko": "알루미늄",
+      "name_en": "Aluminum and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1314-62-1",
+      "name_ko": "오산화바나듐",
+      "name_en": "Vanadium pentoxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7553-56-2",
+      "name_ko": "요오드",
+      "name_en": "Iodine and iodides",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-74-6",
+      "name_ko": "인듐",
+      "name_en": "Indium and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-22-4",
+      "name_ko": "은",
+      "name_en": "Silver and its soluble compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "13463-67-7",
+      "name_ko": "이산화티타늄",
+      "name_en": "Titanium dioxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-31-5",
+      "name_ko": "주석",
+      "name_en": "Tin and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-67-7",
+      "name_ko": "지르코늄",
+      "name_en": "Zirconium and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-43-9",
+      "name_ko": "카드뮴",
+      "name_en": "Cadmium and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-48-4",
+      "name_ko": "코발트",
+      "name_en": "Cobalt and its inorganic compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-47-3",
+      "name_ko": "크롬",
+      "name_en": "Chromium and its inorganic compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-33-7",
+      "name_ko": "텅스텐",
+      "name_en": "Tungsten and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "금속류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "64-18-6",
+      "name_ko": "개미산",
+      "name_en": "Formic acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7722-84-1",
+      "name_ko": "과산화수소",
+      "name_en": "Hydrogen peroxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-24-7",
+      "name_ko": "무수초산",
+      "name_en": "Acetic anhydride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7664-39-3",
+      "name_ko": "불화수소",
+      "name_en": "Hydrogen fluoride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "10035-10-6",
+      "name_ko": "브롬화수소",
+      "name_en": "Hydrogen bromide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1310-73-2",
+      "name_ko": "수산화나트륨",
+      "name_en": "Sodium hydroxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1310-58-3",
+      "name_ko": "수산화칼륨",
+      "name_en": "Potassium hydroxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "143-33-9",
+      "name_ko": "시안화나트륨",
+      "name_en": "Sodium cyanide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "151-50-8",
+      "name_ko": "시안화칼륨",
+      "name_en": "Potassium cyanide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "592-01-8",
+      "name_ko": "시안화칼슘",
+      "name_en": "Calcium cyanide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "79-10-7",
+      "name_ko": "아크릴산",
+      "name_en": "Acrylic acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7647-01-0",
+      "name_ko": "염화수소",
+      "name_en": "Hydrogen chloride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7664-38-2",
+      "name_ko": "인산",
+      "name_en": "Phosphoric acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7697-37-2",
+      "name_ko": "질산",
+      "name_en": "Nitric acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "64-19-7",
+      "name_ko": "초산",
+      "name_en": "Acetic acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "76-03-9",
+      "name_ko": "트리클로로아세트산",
+      "name_en": "Trichloroacetic acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7664-93-9",
+      "name_ko": "황산",
+      "name_en": "Sulfuric acid",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "산·알칼리류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "산·알칼리류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7782-41-4",
+      "name_ko": "불소",
+      "name_en": "Fluorine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7726-95-6",
+      "name_ko": "브롬",
+      "name_en": "Bromine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-21-8",
+      "name_ko": "산화에틸렌",
+      "name_en": "Ethylene oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7784-42-1",
+      "name_ko": "삼수소화비소",
+      "name_en": "Arsine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "74-90-8",
+      "name_ko": "시안화수소",
+      "name_en": "Hydrogen cyanide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7664-41-7",
+      "name_ko": "암모니아",
+      "name_en": "Ammonia",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7782-50-5",
+      "name_ko": "염소",
+      "name_en": "Chlorine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "10028-15-6",
+      "name_ko": "오존",
+      "name_en": "Ozone",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "10102-44-0",
+      "name_ko": "이산화질소",
+      "name_en": "nitrogen dioxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7446-09-5",
+      "name_ko": "이산화황",
+      "name_en": "Sulfur dioxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "10102-43-9",
+      "name_ko": "일산화질소",
+      "name_en": "Nitric oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "630-08-0",
+      "name_ko": "일산화탄소",
+      "name_en": "Carbon monoxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-44-5",
+      "name_ko": "포스겐",
+      "name_en": "Phosgene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7803-51-2",
+      "name_ko": "포스핀",
+      "name_en": "Phosphine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7783-06-4",
+      "name_ko": "황화수소",
+      "name_en": "Hydrogen sulfide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "가스상태물질류",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "가스상태물질류"
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "134-32-7",
+      "name_ko": "α-나프틸아민",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "119-90-4",
+      "name_ko": "디아니시딘",
+      "name_en": "Dianisidine and its salts",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "91-94-1",
+      "name_ko": "디클로로벤지딘",
+      "name_en": "Dichlorobenzidine and its salts",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-41-7",
+      "name_ko": "베릴륨",
+      "name_en": "Beryllium and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "98-07-7",
+      "name_ko": "벤조트리클로라이드",
+      "name_en": "Benzotrichloride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 0.5
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-38-2",
+      "name_ko": "비소",
+      "name_en": "Arsenic and its inorganic compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-01-4",
+      "name_ko": "염화비닐",
+      "name_en": "Vinyl chloride",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "65996-93-2",
+      "name_ko": "콜타르피치",
+      "name_en": "Coal tar pitch volatiles as benzene soluble aerosol",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "13530-65-9",
+      "name_ko": "크롬산아연",
+      "name_en": "Zinc chromates",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "119-93-7",
+      "name_ko": "o-톨리딘",
+      "name_en": "o-Tolidine and its salts",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "12035-72-2",
+      "name_ko": "황화니켈류",
+      "name_en": "Nickel sulfides",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "16812-54-7",
+      "name_ko": "황화니켈류",
+      "name_en": "Nickel sulfides",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": true,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "8006-61-9",
+      "name_ko": "가솔린",
+      "name_en": "Gasoline",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "91-59-8",
+      "name_ko": "β-나프틸아민",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "60-11-7",
+      "name_ko": "p-디메틸아미노아조벤젠",
+      "name_en": "p-Dimethylaminoazobenzene",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "569-61-9",
+      "name_ko": "마젠타",
+      "name_en": "Magenta",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "101-14-4",
+      "name_ko": "4,4'-메틸렌 비스",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "92-87-5",
+      "name_ko": "벤지딘",
+      "name_en": "Benzidine and its salts",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "542-88-1",
+      "name_ko": "비스",
+      "name_en": "bis(Chloromethyl",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "492-80-8",
+      "name_ko": "아우라민",
+      "name_en": "Auramine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "53469-21-9",
+      "name_ko": "염소화비페닐",
+      "name_en": "Polychlorobiphenyls",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "11097-69-1",
+      "name_ko": "염소화비페닐",
+      "name_en": "Polychlorobiphenyls",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "8007-45-2",
+      "name_ko": "콜타르",
+      "name_en": "Coal tar",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "107-30-2",
+      "name_ko": "클로로메틸메틸에테르",
+      "name_en": "Chloromethyl methyl ether",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "8006-64-2",
+      "name_ko": "테레빈유",
+      "name_en": "Turpentine oil",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "57-57-8",
+      "name_ko": "β-프로피오락톤",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "91-15-6",
+      "name_ko": "o-프탈로디니트릴",
+      "name_en": "o-Phthalodinitrile",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "유기화합물"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "78-00-2",
+      "name_ko": "사알킬납",
+      "name_en": "Tetraalkyl lead",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1327-53-3",
+      "name_ko": "삼산화비소",
+      "name_en": "Arsenic trioxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": true,
+        "category": "금속류"
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "88-72-2",
+      "name_ko": "2-니트로톨루엔",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "117-81-7",
+      "name_ko": "디",
+      "name_en": "Di(2-ethylhexyl",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "84-74-2",
+      "name_ko": "디부틸프탈레이트",
+      "name_en": "Dibutyl phthalate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "50-32-8",
+      "name_ko": "벤조",
+      "name_en": "a",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "8032-32-4",
+      "name_ko": "브이엠및피나프타",
+      "name_en": "VM&P Naphtha",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "108-91-8",
+      "name_ko": "시클로헥실아민",
+      "name_en": "Cyclohexylamine",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "81-81-2",
+      "name_ko": "와파린",
+      "name_en": "Warfarin",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "126-99-8",
+      "name_ko": "2-클로로-1,3-부타디엔",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "122-60-1",
+      "name_ko": "페닐글리시딜에테르",
+      "name_en": "Phenyl glycidyl ether",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "75-12-7",
+      "name_ko": "포름아미드",
+      "name_en": "Formamide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1303-86-2",
+      "name_ko": "산화붕소",
+      "name_en": "Boron oxide",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7440-66-6",
+      "name_ko": "아연",
+      "name_en": "Zinc and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7439-89-6",
+      "name_ko": "철",
+      "name_en": "Iron and its compounds",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1330-43-4",
+      "name_ko": "사붕소산나트륨",
+      "name_en": "Sodium tetraborate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "12179-04-3",
+      "name_ko": "사붕소산나트륨",
+      "name_en": "Sodium tetraborate",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": true,
+        "special": true
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "14808-60-7",
+      "name_ko": "석영",
+      "name_en": "Quartz",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "14464-46-1",
+      "name_ko": "크리스토발라이트",
+      "name_en": "Cristobalite",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "15468-32-3",
+      "name_ko": "트리디마이트",
+      "name_en": "Trydimite",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "14807-96-6",
+      "name_ko": "소우프스톤",
+      "name_en": "Soapstone",
+      "aliases": [
+        "활석"
+      ],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "12001-26-2",
+      "name_ko": "운모",
+      "name_en": "Mica",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "65997-15-1",
+      "name_ko": "포틀랜드시멘트",
+      "name_en": "Portland cement",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "7782-42-5",
+      "name_ko": "흑연",
+      "name_en": "Graphite",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": true,
+        "category": "분진",
+        "threshold_pct": null
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": false
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "18540-29-9",
+      "name_ko": "6가크롬",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    },
+    {
+      "cas": "1332-21-4",
+      "name_ko": "석면",
+      "name_en": "",
+      "aliases": [],
+      "cas_valid": true,
+      "wem": {
+        "listed": false
+      },
+      "she": {
+        "listed": false
+      },
+      "managed": {
+        "listed": false,
+        "special": false
+      },
+      "permit_required": false,
+      "allowable_std": {
+        "listed": true
+      },
+      "exposure_limit": {
+        "twa": null,
+        "stel": null,
+        "c": null
+      }
+    }
+  ],
+  "substance_groups": [
+    {
+      "group_name": "아닐린",
+      "match_keywords": [
+        "아닐린"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "62-53-3",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "납",
+      "match_keywords": [
+        "납"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7439-92-1",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "니켈",
+      "match_keywords": [
+        "니켈"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-02-0",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "망간",
+      "match_keywords": [
+        "망간"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7439-96-5",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "셀레늄",
+      "match_keywords": [
+        "셀레늄"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7782-49-2",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "수은",
+      "match_keywords": [
+        "수은"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7439-97-6",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "안티몬",
+      "match_keywords": [
+        "안티몬"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-36-0",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "알루미늄",
+      "match_keywords": [
+        "알루미늄"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7429-90-5",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "인듐",
+      "match_keywords": [
+        "인듐"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-74-6",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "주석",
+      "match_keywords": [
+        "주석"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-31-5",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "지르코늄",
+      "match_keywords": [
+        "지르코늄"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-67-7",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "카드뮴",
+      "match_keywords": [
+        "카드뮴"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-43-9",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "코발트",
+      "match_keywords": [
+        "코발트"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-48-4",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "크롬",
+      "match_keywords": [
+        "크롬"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-47-3",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "텅스텐",
+      "match_keywords": [
+        "텅스텐"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-33-7",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "α-나프틸아민",
+      "match_keywords": [
+        "α-나프틸아민"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "134-32-7",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "디아니시딘",
+      "match_keywords": [
+        "디아니시딘"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "119-90-4",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "디클로로벤지딘",
+      "match_keywords": [
+        "디클로로벤지딘"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "91-94-1",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "베릴륨",
+      "match_keywords": [
+        "베릴륨"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-41-7",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "비소",
+      "match_keywords": [
+        "비소"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-38-2",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "크롬광가공",
+      "match_keywords": [
+        "크롬광가공"
+      ],
+      "exclude_keywords": [],
+      "category": "허가대상유해물질",
+      "wem": {
+        "listed": true,
+        "category": "허가대상유해물질",
+        "threshold_pct": 1.0
+      },
+      "permit_required": true
+    },
+    {
+      "group_name": "o-톨리딘",
+      "match_keywords": [
+        "o-톨리딘"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "119-93-7",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "벤지딘",
+      "match_keywords": [
+        "벤지딘"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "92-87-5",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "크롬광 가공",
+      "match_keywords": [
+        "크롬광 가공"
+      ],
+      "exclude_keywords": [],
+      "category": "허가대상유해물질",
+      "she": {
+        "listed": true,
+        "category": "허가대상유해물질"
+      },
+      "permit_required": true
+    },
+    {
+      "group_name": "메틸렌비스",
+      "match_keywords": [
+        "메틸렌비스"
+      ],
+      "exclude_keywords": [],
+      "category": "유기화합물",
+      "managed": {
+        "listed": true,
+        "category": "유기화합물",
+        "special": false
+      }
+    },
+    {
+      "group_name": "구리",
+      "match_keywords": [
+        "구리"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-50-8",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "백금",
+      "match_keywords": [
+        "백금"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-06-4",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "아연",
+      "match_keywords": [
+        "아연"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-66-6",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "은",
+      "match_keywords": [
+        "은"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7440-22-4",
+      "note": "대표 CAS 보유 그룹"
+    },
+    {
+      "group_name": "철",
+      "match_keywords": [
+        "철"
+      ],
+      "exclude_keywords": [],
+      "represent_cas": "7439-89-6",
+      "note": "대표 CAS 보유 그룹"
+    }
+  ]
+}
