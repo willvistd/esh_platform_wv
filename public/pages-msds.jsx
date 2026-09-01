@@ -124,6 +124,112 @@ const MsdsInlineEdit = ({ value, onChange, placeholder, rows, isSelect, bold, ce
 };
 
 // ── 메인 컴포넌트 ────────────────────────────────────────
+// ── MSDS 성분 규제 판정 패널 (측정·특수건진) ──
+const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge, product }) => {
+  const setRow = (i, k, v) => setComponents(cs => cs.map((c, j) => j === i ? { ...c, [k]: v } : c));
+  const addRow = () => setComponents(cs => [...cs, { name: '', cas: '', content: '' }]);
+  const delRow = (i) => setComponents(cs => cs.filter((_, j) => j !== i));
+
+  const RES = (typeof SJ_RESULT_STYLE !== 'undefined') ? SJ_RESULT_STYLE : {
+    TARGET: { label: '측정 대상', bg: '#fdeeee', fg: '#b42318', bd: '#f3c0bd' },
+    BELOW_THRESHOLD: { label: '기준 미달', bg: '#fff7e6', fg: '#b25e09', bd: '#f5d199' },
+    NOT_LISTED: { label: '대상 아님', bg: '#eef2f7', fg: '#475467', bd: '#d5dce6' },
+    UNDETERMINED: { label: '판정 불가', bg: '#f2eefe', fg: '#6941c6', bd: '#d9ccf7' },
+  };
+  const badge = (r) => { const s = RES[r] || RES.NOT_LISTED; return (
+    <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 6, background: s.bg, color: s.fg, border: `1px solid ${s.bd}`, whiteSpace: 'nowrap' }}>{s.label}</span>); };
+
+  const exportCsv = () => {
+    if (!judgeRes) return;
+    const H = ['연번','제품명','성분명','CAS No.','함유량','취급부서','취급장소','월 취급량','작업환경측정 대상','특수건강진단 대상','특별관리물질','허가대상','판정근거','판정일','데이터 기준일'];
+    const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+    const lines = [H.map(q).join(',')];
+    judgeRes.components.forEach((c, i) => lines.push([i + 1, judgeRes.product_name || (product && product.name) || '', c.name, c.cas || c.cas_raw || '', c.content_raw, '', '', '',
+      (RES[c.wem.result] || {}).label || c.wem.result, c.she.result === 'TARGET' ? '대상' : '—',
+      c.flags.includes('특별관리물질') ? '○' : '', c.flags.includes('허가대상물질') ? '○' : '', c.wem.reason, judgeRes.judged_at, judgeRes.data_baseline].map(q).join(',')));
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `화학물질판정대장_${((product && product.name) || 'MSDS').replace(/[^\w가-힣]+/g, '')}_${judgeRes.judged_at}.csv`;
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  const inp = { padding: '6px 8px', border: '1px solid #d5dce6', borderRadius: 6, fontSize: 13, width: '100%', boxSizing: 'border-box' };
+  const th = { textAlign: 'left', fontSize: 12, color: '#667085', fontWeight: 700, padding: '7px 9px', borderBottom: '2px solid #e5e9ef', whiteSpace: 'nowrap' };
+  const td = { padding: '7px 9px', borderBottom: '1px solid #eef1f5', fontSize: 13, verticalAlign: 'top' };
+
+  return (
+    <div style={{ padding: '4px 2px' }}>
+      <p style={{ color: '#667085', fontSize: 13, margin: '4px 0 12px' }}>
+        MSDS에서 추출한 구성성분을 법정 유해인자 목록(작업환경측정·특수건강진단·관리대상)과 대조한 결과입니다.
+        성분·함유량을 직접 수정한 뒤 다시 판정할 수 있습니다.
+      </p>
+      {/* 성분 편집 표 */}
+      <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+          <thead><tr><th style={{ ...th, width: 34 }}>#</th><th style={th}>성분명</th><th style={{ ...th, width: 140 }}>CAS</th><th style={{ ...th, width: 110 }}>함유량</th><th style={{ ...th, width: 36 }}></th></tr></thead>
+          <tbody>
+            {components.length === 0 && (<tr><td style={{ ...td, color: '#98a2b3', textAlign: 'center' }} colSpan={5}>MSDS를 업로드하면 성분이 자동으로 채워집니다. 직접 추가할 수도 있어요.</td></tr>)}
+            {components.map((c, i) => (
+              <tr key={i}>
+                <td style={{ ...td, color: '#98a2b3' }}>{i + 1}</td>
+                <td style={td}><input style={inp} value={c.name} onChange={e => setRow(i, 'name', e.target.value)} placeholder="톨루엔" /></td>
+                <td style={td}><input style={inp} value={c.cas} onChange={e => setRow(i, 'cas', e.target.value)} placeholder="108-88-3" /></td>
+                <td style={td}><input style={inp} value={c.content} onChange={e => setRow(i, 'content', e.target.value)} placeholder="30~40%" /></td>
+                <td style={td}><button className="btn btn-ghost btn-sm" onClick={() => delRow(i)}>✕</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: 'flex', gap: 8, margin: '10px 0', flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost btn-sm" onClick={addRow}>+ 성분 추가</button>
+        <button className="btn btn-primary" onClick={() => runJudge()} disabled={judging || !components.length}>{judging ? '판정 중…' : '판정하기'}</button>
+        {judgeRes && <button className="btn btn-ghost btn-sm" onClick={exportCsv}>📥 판정 대장 CSV</button>}
+      </div>
+
+      {judgeRes && (<>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
+          {[['측정 대상', judgeRes.summary.wem_target_count, '#b42318', '#fdeeee'],
+            ['특수건진', judgeRes.summary.she_target_count, '#087443', '#eafaf0'],
+            ['기준 미달', judgeRes.summary.wem_below_count, '#b25e09', '#fff7e6'],
+            ['판정 불가', judgeRes.summary.undetermined_count, '#6941c6', '#f2eefe'],
+            ['대상 아님', judgeRes.summary.not_listed_count, '#475467', '#eef2f7']].map(([l, n, fg, bg], k) => (
+            <div key={k} style={{ background: bg, color: fg, borderRadius: 8, padding: '8px 14px', minWidth: 80, textAlign: 'center' }}>
+              <div style={{ fontSize: 20, fontWeight: 800 }}>{n}</div><div style={{ fontSize: 11, fontWeight: 600 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {(judgeRes.summary.special_substance || judgeRes.summary.permit_substance) && (
+          <div style={{ padding: '8px 12px', background: '#fef3f2', border: '1px solid #f3c0bd', borderRadius: 8, color: '#b42318', fontSize: 13, marginBottom: 12 }}>
+            ⚠ {judgeRes.summary.special_substance && '특별관리물질 포함'} {judgeRes.summary.permit_substance && '· 허가대상물질 포함'} — 별도 관리·기록 의무가 있습니다.
+          </div>
+        )}
+        <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+            <thead><tr><th style={th}>성분명</th><th style={th}>CAS</th><th style={th}>함유량</th><th style={th}>작업환경측정</th><th style={th}>특수건진</th><th style={th}>구분</th></tr></thead>
+            <tbody>
+              {judgeRes.components.map((c, i) => (
+                <tr key={i}>
+                  <td style={td}>{c.name || <span style={{ color: '#bbb' }}>—</span>}</td>
+                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{c.cas || c.cas_raw || '—'}</td>
+                  <td style={td}>{c.content_raw || '—'}</td>
+                  <td style={td}>{badge(c.wem.result)}</td>
+                  <td style={td}><span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: c.she.result === 'TARGET' ? '#eafaf0' : '#eef2f7', color: c.she.result === 'TARGET' ? '#087443' : '#98a2b3', border: `1px solid ${c.she.result === 'TARGET' ? '#bce8cf' : '#e0e5ec'}` }}>{c.she.result === 'TARGET' ? '대상' : '—'}</span></td>
+                  <td style={td}>{c.flags.filter(f => f !== '이름매칭(신뢰도 낮음)').map((f, k) => (<span key={k} style={{ display: 'inline-block', fontSize: 11, background: '#eef2f7', color: '#475467', borderRadius: 5, padding: '1px 6px', margin: '1px 2px 1px 0' }}>{f}</span>))}{c.match_method === 'keyword' && <span style={{ fontSize: 11, color: '#b25e09' }}>이름매칭</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <ul style={{ fontSize: 12, color: '#667085', marginTop: 12, paddingLeft: 18, lineHeight: 1.7 }}>
+          {judgeRes.notices.map((n, i) => <li key={i}>{n}</li>)}
+          <li>판정일 {judgeRes.judged_at} · 법령 데이터 기준일 {judgeRes.data_baseline}</li>
+        </ul>
+      </>)}
+    </div>
+  );
+};
+
 const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
 
   const [inputTab,   setInputTab]   = React.useState(0);
@@ -148,6 +254,9 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     storagePhrases: '', disposalPhrases: '',
     companyName: '', companyPhone: '', companyAddress: '',
   });
+  const [components, setComponents] = React.useState([]);   // MSDS 3절 구성성분
+  const [judgeRes,   setJudgeRes]   = React.useState(null); // 판정 결과
+  const [judging,    setJudging]    = React.useState(false);
 
   const fileRef = React.useRef(null);
   const cardRef = React.useRef(null);
@@ -189,7 +298,30 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     }));
     if (Array.isArray(d.ghsIds) && d.ghsIds.length) setGhsSel(d.ghsIds.map(Number).filter(n => !isNaN(n) && n > 0));
     if (Array.isArray(d.ppeIds) && d.ppeIds.length) setPpeSel(d.ppeIds.map(Number).filter(n => !isNaN(n) && n > 0));
+    if (Array.isArray(d.components)) {
+      setComponents(d.components.filter(c => c && (c.name || c.cas)).map(c => ({
+        name: c.name || '', cas: c.cas || '', content: c.content || '',
+      })));
+      setJudgeRes(null);   // 새 MSDS → 판정 초기화
+    }
   };
+
+  // 성분 목록으로 규제 판정 실행
+  const runJudge = React.useCallback((comps) => {
+    const list = comps || components;
+    if (!list.length) return;
+    setJudging(true); setJudgeRes(null);
+    fetch('/api/substances/judge', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ components: list, product: { name: form.productName, manufacturer: form.companyName, revisionDate: '' } }),
+    }).then(r => r.json()).then(d => { if (!d.error) setJudgeRes(d); })
+      .catch(() => {}).finally(() => setJudging(false));
+  }, [components, form.productName, form.companyName]);
+
+  // 판정 탭 진입 시 성분 있으면 자동 판정
+  React.useEffect(() => {
+    if (previewTab === 2 && components.length && !judgeRes && !judging) runJudge(components);
+  }, [previewTab, components]);
 
   // 실제 업로드 처리 (파일 선택, 드래그&드롭 모두 공통 호출)
   const processPdfFile = async (file) => {
@@ -764,7 +896,15 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         <div className="msds-otabs">
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>
           <button className={`msds-otab${previewTab === 1 ? ' on' : ''}`} onClick={() => setPreviewTab(1)}>경고표지</button>
+          <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>측정·특수건진 판정{components.length ? ` (${components.length})` : ''}</button>
         </div>
+
+        {/* ── 측정·특수건진 판정 ── */}
+        {previewTab === 2 && (
+          <MsdsJudgePanel components={components} setComponents={setComponents}
+            judgeRes={judgeRes} judging={judging} runJudge={runJudge}
+            product={{ name: form.productName, manufacturer: form.companyName }} />
+        )}
 
         {previewTab === 0 && a4Over && (
           <div className="msds-a4w">

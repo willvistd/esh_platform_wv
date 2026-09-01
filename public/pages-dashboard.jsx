@@ -108,12 +108,6 @@ const Dashboard = ({ role, currentUser, onNav }) => {
       icon: "graduation", color: "#f59e0b",
       action: () => onNav({ name: "education-list" }),
     });
-    base.push({
-      label: "측정·특수건진 판정",
-      desc: "MSDS 성분 규제 대상 판정",
-      icon: "alert", color: "#ef4444",
-      action: () => onNav({ name: "substance-judge" }),
-    });
     if (isAdmin || isManager || isStaff) {
       base.push({
         label: "내 사업장 정보",
