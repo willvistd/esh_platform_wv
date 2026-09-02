@@ -1619,7 +1619,8 @@ const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\
 // 유효 문자에 점(.)도 포함 — 새 형식 키(예: AQ.Ab8...)에 점이 들어가므로 제거하면 키가 깨짐.
 // 공백/개행/따옴표만 걸러지도록 키 구성 문자(영문/숫자/_/-/.)를 허용.
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za-z0-9_.\-]/g, '');
-const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.5-flash', 'gemini-flash-latest'];
+// gemini-2.5-flash만 사용 — 실측 결과 안정적(5/5). flash-latest는 과부하 잦아 제외.
+const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.5-flash'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
@@ -1779,8 +1780,8 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
 // "high demand/overload"(503 UNAVAILABLE)는 구글 서버가 잠깐 붐비는 일시 현상 →
 // 모델별로 최대 3회, 지수 백오프(2s→4s)로 재시도하고, 그래도 안 되면 다음 모델로 폴백.
 async function callGemini(promptText, mimeType, base64Data) {
-  let lastErr;
-  const MAX_ATTEMPTS = 3;
+  let lastErr, sawOverload = false;
+  const MAX_ATTEMPTS = 5;
   for (const model of GEMINI_MODELS) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       try {
@@ -1790,15 +1791,23 @@ async function callGemini(promptText, mimeType, base64Data) {
         return r;
       } catch (err) {
         lastErr = err;
-        const retryable = /rate|overload|high demand|429|500|503|quota|unavailable/i.test(err.message);
+        const overload = /overload|high demand|429|503|quota|unavailable/i.test(err.message);
+        const retryable = overload || /rate|500/i.test(err.message);
+        if (overload) sawOverload = true;
         console.warn(`[Gemini] 실패 (${model}): ${err.message.substring(0, 80)}`);
         if (retryable && attempt < MAX_ATTEMPTS - 1) {
-          await new Promise(r => setTimeout(r, 2000 * (attempt + 1))); // 2s, 4s
+          await new Promise(r => setTimeout(r, Math.min(1500 * (attempt + 1), 8000))); // 1.5→3→4.5→6s
         } else {
           break; // 재시도 불가 또는 마지막 시도 → 다음 모델로 폴백
         }
       }
     }
+  }
+  // 과부하로 끝내 실패하면 사용자에게 명확한 안내 메시지로 변환
+  if (sawOverload) {
+    const e = new Error('AI 서버가 일시적으로 혼잡합니다. 20~30초 후 다시 시도해 주세요.');
+    e.overloaded = true;
+    throw e;
   }
   throw lastErr;
 }
