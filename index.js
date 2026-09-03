@@ -1748,7 +1748,9 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       contents: [{ parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ] }],
-      generationConfig: { temperature: 0, maxOutputTokens: 4096 },
+      // thinkingBudget:0 — gemini-2.5-flash의 기본 '사고' 토큰이 출력 한도를 잠식해
+      // JSON이 잘리는 문제 방지. 출력 한도도 8192로 상향.
+      generationConfig: { temperature: 0, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } },
     });
     const options = {
       hostname: 'generativelanguage.googleapis.com',
