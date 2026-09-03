@@ -451,7 +451,23 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     w.document.close();
     w.document.title = pdfTitle;   // 일부 브라우저는 인쇄 시점 document.title을 PDF 파일명으로 사용
     w.focus();
-    setTimeout(() => w.print(), 400);
+
+    // 그림문자·보호구 등 이미지가 모두 로드된 뒤에 인쇄 — 미로딩 상태로 찍혀
+    // 이미지가 빠지는 문제 방지. (기존: 고정 400ms 후 바로 인쇄 → 이미지 누락)
+    let printed = false;
+    const doPrint = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch (e) {} };
+    const imgs = Array.from(w.document.images || []);
+    if (imgs.length === 0) {
+      setTimeout(doPrint, 300);
+    } else {
+      let pending = imgs.length;
+      const one = () => { if (--pending <= 0) doPrint(); };
+      imgs.forEach(img => {
+        if (img.complete && img.naturalWidth > 0) one();
+        else { img.addEventListener('load', one); img.addEventListener('error', one); }
+      });
+      setTimeout(doPrint, 4000); // 안전장치: 최대 4초 후 강제 인쇄
+    }
   };
 
   // ── 경고표지 렌더 ──────────────────────────────────────
