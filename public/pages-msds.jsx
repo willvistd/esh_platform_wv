@@ -124,7 +124,7 @@ const MsdsInlineEdit = ({ value, onChange, placeholder, rows, isSelect, bold, ce
 };
 
 // ── 메인 컴포넌트 ────────────────────────────────────────
-// ── MSDS 성분 규제 판정 패널 (측정·특수건진) ──
+// ── MSDS 성분 규제 판정 패널 (작업환경측정·특수검진) ──
 const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge, product }) => {
   const setRow = (i, k, v) => setComponents(cs => cs.map((c, j) => j === i ? { ...c, [k]: v } : c));
   const addRow = () => setComponents(cs => [...cs, { name: '', cas: '', content: '' }]);
@@ -190,7 +190,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
       {judgeRes && (<>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
           {[['측정 대상', judgeRes.summary.wem_target_count, '#b42318', '#fdeeee'],
-            ['특수건진', judgeRes.summary.she_target_count, '#087443', '#eafaf0'],
+            ['특수검진', judgeRes.summary.she_target_count, '#087443', '#eafaf0'],
             ['기준 미달', judgeRes.summary.wem_below_count, '#b25e09', '#fff7e6'],
             ['판정 불가', judgeRes.summary.undetermined_count, '#6941c6', '#f2eefe'],
             ['대상 아님', judgeRes.summary.not_listed_count, '#475467', '#eef2f7']].map(([l, n, fg, bg], k) => (
@@ -206,7 +206,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
         )}
         <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
-            <thead><tr><th style={th}>성분명</th><th style={th}>CAS</th><th style={th}>함유량</th><th style={th}>작업환경측정</th><th style={th}>특수건진</th><th style={th}>구분</th></tr></thead>
+            <thead><tr><th style={th}>성분명</th><th style={th}>CAS</th><th style={th}>함유량</th><th style={th}>작업환경측정</th><th style={th}>특수검진</th><th style={th}>구분</th></tr></thead>
             <tbody>
               {judgeRes.components.map((c, i) => (
                 <tr key={i}>
@@ -896,10 +896,10 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         <div className="msds-otabs">
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>
           <button className={`msds-otab${previewTab === 1 ? ' on' : ''}`} onClick={() => setPreviewTab(1)}>경고표지</button>
-          <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>측정·특수건진 판정{components.length ? ` (${components.length})` : ''}</button>
+          <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정 특수검진 판정{components.length ? ` (${components.length})` : ''}</button>
         </div>
 
-        {/* ── 측정·특수건진 판정 ── */}
+        {/* ── 작업환경측정 특수검진 판정 ── */}
         {previewTab === 2 && (
           <MsdsJudgePanel components={components} setComponents={setComponents}
             judgeRes={judgeRes} judging={judging} runJudge={runJudge}
