@@ -2052,9 +2052,9 @@ const ManageUsersView = ({ currentUser }) => {
           font-size: 13px;
         }
         @media (max-width: 1400px) {
-          .acct-hd, .acct-row { grid-template-columns: 160px 1fr 110px 110px 150px; }
+          /* 좁은 화면: 아이디(3)·유효기간(5)만 숨기고 '최근 접속'(4)은 유지 */
+          .acct-hd, .acct-row { grid-template-columns: 160px 1fr 130px 84px 100px 44px; }
           .acct-row > div:nth-child(3), .acct-hd > div:nth-child(3),
-          .acct-row > div:nth-child(4), .acct-hd > div:nth-child(4),
           .acct-row > div:nth-child(5), .acct-hd > div:nth-child(5) { display: none; }
         }
         .acct-hd {
