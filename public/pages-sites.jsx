@@ -22,6 +22,9 @@ function regionFromAddress(addr) {
   return "기타";
 }
 
+// 파견 사업장 여부 (계약형태에 '파견' 포함)
+const isDispatchSite = (s) => String((s && s["계약형태"]) || "").includes("파견");
+
 // 본부별 색상 (UI 구분용)
 const HQ_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#84cc16", "#ec4899"];
 const colorForHQ = (idx) => HQ_COLORS[idx % HQ_COLORS.length];
@@ -95,6 +98,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [hqEditing, setHQEditing] = React.useState(null);      // 본부 수정 모달
   const [search, setSearch] = React.useState("");
   const [regionFilter, setRegionFilter] = React.useState("전체");
+  const [contractFilter, setContractFilter] = React.useState("전체"); // 전체 | 파견제외 | 파견만
   const [hqFilter, setHQFilter] = React.useState("전체");
   const [view, setView] = React.useState("grouped");           // grouped | flat
   const [addingForHQ, setAddingForHQ] = React.useState(null);  // 본부 카드에서 + 클릭 시 미리 hqId 설정
@@ -167,11 +171,14 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
     return map;
   }, [sites, hqs]);
 
+  const matchContractFilter = (s) =>
+    contractFilter === "전체" || (contractFilter === "파견만" ? isDispatchSite(s) : !isDispatchSite(s));
+
   const filtered = sites.filter(s => {
     const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
     const matchHQ = hqFilter === "전체" || String(s.hqId) === String(hqFilter);
     const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
-    return matchRegion && matchHQ && matchSearch;
+    return matchRegion && matchHQ && matchSearch && matchContractFilter(s);
   });
 
   // 사업장 삭제
@@ -242,11 +249,13 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
 
       {/* 통계 — 현장대리인에게는 숨김 (본인 사업장만 보면 됨) */}
       {!loading && !userIsSiteAgent && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
           {[
             { label: "전체 본부", value: hqs.length, color: "var(--primary)" },
             { label: "전체 사업장", value: sites.length, color: "var(--success)" },
-            { label: "운영중", value: sites.filter(s => s["상태"] === "active").length, color: "var(--warning)" },
+            { label: "파견 외 (도급 등)", value: sites.filter(s => !isDispatchSite(s)).length, color: "var(--primary)" },
+            { label: "파견", value: sites.filter(isDispatchSite).length, color: "var(--warning)" },
+            { label: "운영중", value: sites.filter(s => s["상태"] === "active").length, color: "var(--success)" },
             { label: "본부 미지정", value: sites.filter(s => !s.hqId).length, color: "var(--fg-3)" },
           ].map(stat => (
             <div key={stat.label} className="card" style={{ padding: 16, textAlign: "center" }}>
@@ -272,6 +281,13 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           value={regionFilter} onChange={e => setRegionFilter(e.target.value)}>
           <option>전체</option>
           {REGIONS.map(r => <option key={r}>{r}</option>)}
+        </select>
+        <select className="field-select" style={{ width: 130 }}
+          value={contractFilter} onChange={e => setContractFilter(e.target.value)}
+          title="계약형태로 거르기">
+          <option value="전체">계약형태 전체</option>
+          <option value="파견제외">파견 제외</option>
+          <option value="파견만">파견만</option>
         </select>
         <div style={{ flex: 1 }} />
         <div style={{ display: "inline-flex", padding: 3, background: "var(--bg-sunk)", borderRadius: 6 }}>
@@ -365,7 +381,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
               let groupSites = (sitesByHQ[h.id] || []).filter(s => {
                 const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
                 const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
-                return matchRegion && matchSearch;
+                return matchRegion && matchSearch && matchContractFilter(s);
               });
               // 파견 사업장은 해당 본부 안에서 항상 도급·그 외보다 아래로 정렬.
               // (산업안전보건법상 파견은 사용사업주 의무가 커 우선순위 대상이 아님. 나머지 순서는 유지)
