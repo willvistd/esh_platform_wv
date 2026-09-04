@@ -397,7 +397,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                         <thead>
                           <tr style={{ background: "var(--bg-sunk)", borderBottom: "1px solid var(--line)" }}>
-                            {["사업장명", "지역", "고객사", "담당자", "전화번호", "상태", ""].map(h => (
+                            {["사업장명", "지역", "계약형태", "담당자", "전화번호", "상태", ""].map(h => (
                               <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: 11, color: "var(--fg-3)" }}>{h}</th>
                             ))}
                           </tr>
@@ -413,7 +413,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                               <td style={{ padding: "12px 14px" }}>
                                 <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || "-"}</span>
                               </td>
-                              <td style={{ padding: "12px 14px", color: "var(--fg-2)" }}>{site["고객사"] || "-"}</td>
+                              <td style={{ padding: "12px 14px" }}>{site["계약형태"] ? <span className="chip" style={{ fontSize: 11 }}>{site["계약형태"]}</span> : <span style={{ color: "var(--fg-3)" }}>-</span>}</td>
                               <td style={{ padding: "12px 14px" }}>{site["담당자"] || "-"}</td>
                               <td style={{ padding: "12px 14px", color: "var(--fg-3)", fontSize: 12 }}>{site["전화번호"] || "-"}</td>
                               <td style={{ padding: "12px 14px" }}>
@@ -489,7 +489,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ background: "var(--bg-sunk)", borderBottom: "1px solid var(--line)" }}>
-                {["No", "본부", "사업장명", "지역", "고객사", "담당자", "전화번호", "상태", ""].map(h => (
+                {["No", "본부", "사업장명", "지역", "계약형태", "담당자", "전화번호", "상태", ""].map(h => (
                   <th key={h} style={{ padding: "10px 14px", textAlign: "left", fontWeight: 600, fontSize: 12, color: "var(--fg-3)" }}>{h}</th>
                 ))}
               </tr>
