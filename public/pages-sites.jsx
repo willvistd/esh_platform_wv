@@ -1269,7 +1269,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
               )}
               <button className="btn btn-primary" onClick={doImport}
                 disabled={busy || stats.willCreate === 0 || (stats.dups > 0 && !dupAck)}>
-                {busy ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {stats.willCreate}건 등록</>}
+                {busy ? <><span className="login-spinner" /> 등록 중…</> : <><Icon name="check" size={14} /> {stats.willCreate}건 등록</>}
               </button>
             </>
           ) : (
@@ -1412,7 +1412,7 @@ const SiteNameCleanupModal = ({ sites = [], onDone, onClose }) => {
             <>
               <button className="btn btn-secondary" onClick={onClose} disabled={busy}>취소</button>
               <button className="btn btn-primary" onClick={apply} disabled={busy || plan.renames.length === 0 || !ack}>
-                {busy ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {plan.renames.length}건 정리</>}
+                {busy ? <><span className="login-spinner" /> 정리 중…</> : <><Icon name="check" size={14} /> {plan.renames.length}건 정리</>}
               </button>
             </>
           ) : (
