@@ -150,7 +150,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const filtered = sites.filter(s => {
     const matchRegion = regionFilter === "전체" || s["지역"] === regionFilter;
     const matchHQ = hqFilter === "전체" || String(s.hqId) === String(hqFilter);
-    const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["고객사"]?.includes(search);
+    const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
     return matchRegion && matchHQ && matchSearch;
   });
 
@@ -241,7 +241,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
       {!userIsSiteAgent && (
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
         <input className="field-input" style={{ width: 220 }}
-          placeholder="사업장명, 담당자, 고객사 검색"
+          placeholder="사업장명, 담당자, 계약형태 검색"
           value={search} onChange={e => setSearch(e.target.value)} />
         <select className="field-select" style={{ width: 160 }}
           value={hqFilter} onChange={e => setHQFilter(e.target.value)}>
@@ -344,7 +344,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
             .map((h, idx) => {
               const groupSites = (sitesByHQ[h.id] || []).filter(s => {
                 const matchRegion = regionFilter === "전체" || s["지역"] === regionFilter;
-                const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["고객사"]?.includes(search);
+                const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
                 return matchRegion && matchSearch;
               });
               const color = colorForHQ(idx);
