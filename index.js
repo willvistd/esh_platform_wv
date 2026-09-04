@@ -1577,6 +1577,33 @@ app.post('/api/sites/bulk', async (req, res) => {
   }
 });
 
+// ── 사업장명 일괄 변경 (접미사 정리 등) ──
+// body: { renames: [{ id, name }] }  — name만 변경, 다른 필드는 손대지 않음
+app.post('/api/sites/rename-bulk', async (req, res) => {
+  try {
+    const renames = Array.isArray(req.body && req.body.renames) ? req.body.renames : [];
+    if (renames.length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' });
+    if (renames.length > 3000) return res.status(400).json({ error: '한 번에 최대 3000건까지 변경할 수 있습니다.' });
+    let updated = 0;
+    const errors = [];
+    for (const r of renames) {
+      const id = r && r.id;
+      const name = String((r && r.name) || '').trim();
+      if (!id || !name) { errors.push({ id, reason: 'id 또는 name 누락' }); continue; }
+      try {
+        const rr = await pool.query('UPDATE sites SET name=$1 WHERE id=$2', [name, id]);
+        if (rr.rowCount) updated++; else errors.push({ id, name, reason: '해당 사업장 없음' });
+      } catch (e) {
+        errors.push({ id, name, reason: e.message });
+      }
+    }
+    res.json({ total: renames.length, updated, errors });
+  } catch (e) {
+    console.error('POST /api/sites/rename-bulk 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/sites/:id', async (req, res) => {
   try {
     const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,

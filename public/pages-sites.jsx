@@ -79,6 +79,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [view, setView] = React.useState("grouped");           // grouped | flat
   const [addingForHQ, setAddingForHQ] = React.useState(null);  // 본부 카드에서 + 클릭 시 미리 hqId 설정
   const [bulkOpen, setBulkOpen] = React.useState(false);       // 엑셀 일괄 등록 모달
+  const [cleanupOpen, setCleanupOpen] = React.useState(false); // 사업장명 정리 모달
 
   // 본인 본부 목록 — 공통 권한 헬퍼 사용 (admin/safety는 전체)
   const userHQs = React.useMemo(() => {
@@ -204,6 +205,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           {!userIsSiteAgent && canManageHQ(role) && (
             <button className="btn btn-secondary" onClick={() => setBulkOpen(true)} title="엑셀/CSV 파일로 여러 사업장을 한 번에 등록">
               <Icon name="upload" size={14} /> 엑셀 일괄 등록
+            </button>
+          )}
+          {!userIsSiteAgent && canManageHQ(role) && (
+            <button className="btn btn-secondary" onClick={() => setCleanupOpen(true)} title="사업장명 뒤 (HR)(FM)(대구) 등 접미사 일괄 정리">
+              <Icon name="edit" size={14} /> 사업장명 정리
             </button>
           )}
           {!userIsSiteAgent && canAddSite(role) && (
@@ -593,6 +599,15 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           existingSites={sites}
           onDone={async () => { await reloadAll(); }}
           onClose={() => setBulkOpen(false)}
+        />
+      )}
+
+      {/* 사업장명 정리 모달 */}
+      {cleanupOpen && (
+        <SiteNameCleanupModal
+          sites={sites}
+          onDone={async () => { await reloadAll(); }}
+          onClose={() => setCleanupOpen(false)}
         />
       )}
 
@@ -1266,4 +1281,147 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
   );
 };
 
-Object.assign(window, { ManageSitesView, SiteFormModal, HQFormModal, SiteBulkImportModal });
+// ─────────────────────────────────────────────────────────────
+// 사업장명 정리 — 이름 뒤 (HR)(FM)(CRM)(대구)(부산)(광주)(대전)(공항) 접미사 제거.
+// 단, 접미사를 떼면 다른 사업장과 이름이 겹치는 경우(같은 고객사 다지역)는 건드리지 않음.
+// ─────────────────────────────────────────────────────────────
+const SITE_SUFFIX_RE = /\s*\((?:HR|FM|CRM|대구|부산|광주|대전|공항)\)\s*$/i;
+const SiteNameCleanupModal = ({ sites = [], onDone, onClose }) => {
+  const [busy, setBusy] = React.useState(false);
+  const [ack, setAck] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+  const [error, setError] = React.useState("");
+
+  const plan = React.useMemo(() => {
+    const items = sites.map(s => {
+      const name = String(s.사업장명 || s.name || "").trim();
+      const stripped = name.replace(SITE_SUFFIX_RE, "").trim();
+      return { id: s.id, name, stripped, changed: stripped !== "" && stripped !== name };
+    });
+    // 최종 이름(변경 후) 기준 그룹핑 → 충돌 감지
+    const byResult = {};
+    items.forEach(it => {
+      const key = it.changed ? it.stripped : it.name;
+      (byResult[key] = byResult[key] || []).push(it);
+    });
+    const renames = [];
+    const collided = [];
+    items.forEach(it => {
+      if (!it.changed) return;
+      if ((byResult[it.stripped] || []).length > 1) collided.push(it);   // 겹침 → 유지
+      else renames.push({ id: it.id, name: it.stripped, from: it.name });
+    });
+    // 충돌 그룹명(중복 제거)
+    const collisionBases = [...new Set(collided.map(c => c.stripped))];
+    return { renames, collided, collisionBases };
+  }, [sites]);
+
+  const apply = async () => {
+    setBusy(true); setError("");
+    try {
+      const res = await window.WV_API.renameSitesBulk(plan.renames.map(r => ({ id: r.id, name: r.name })));
+      setResult(res);
+      await onDone?.();
+    } catch (e) {
+      setError(e.message || "정리 실패");
+    } finally { setBusy(false); }
+  };
+
+  const cellS = { padding: "5px 10px", borderBottom: "1px solid var(--line)", fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 340 };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 720 }}>
+        <div className="modal-hd">
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>사업장명 정리</h2>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={14} /></button>
+        </div>
+        <div className="modal-bd">
+          {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
+
+          {!result && (
+            <>
+              <div style={{ fontSize: 13, color: "var(--fg-2)", marginBottom: 10, lineHeight: 1.6 }}>
+                사업장명 뒤의 <b>(HR) (FM) (CRM) (대구) (부산) (광주) (대전) (공항)</b> 접미사를 제거합니다.<br />
+                <span style={{ color: "var(--fg-3)" }}>※ 접미사를 떼면 다른 사업장과 이름이 겹치는 경우(예: 중소벤처기업진흥공단 6곳)는 <b>그대로 유지</b>합니다.</span>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                <span className="chip chip-success">정리 예정 {plan.renames.length}</span>
+                {plan.collisionBases.length > 0 && <span className="chip chip-warning">충돌로 유지 {plan.collided.length}</span>}
+              </div>
+
+              {plan.collisionBases.length > 0 && (
+                <div style={{ fontSize: 12, color: "#c2410c", marginBottom: 10, padding: "8px 10px", background: "var(--bg-sunk)", borderRadius: 6 }}>
+                  유지되는(겹침) 그룹: {plan.collisionBases.join(", ")}
+                </div>
+              )}
+
+              {plan.renames.length === 0 ? (
+                <div style={{ padding: 30, textAlign: "center", color: "var(--fg-3)", fontSize: 13 }}>
+                  정리할 접미사가 있는 사업장이 없습니다.
+                </div>
+              ) : (
+                <>
+                  <div style={{ maxHeight: 300, overflow: "auto", border: "1px solid var(--line)", borderRadius: 8 }}>
+                    <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead>
+                        <tr style={{ position: "sticky", top: 0, background: "var(--bg-sunk)" }}>
+                          <th style={{ ...cellS, fontWeight: 700, textAlign: "left" }}>현재 이름</th>
+                          <th style={{ ...cellS, fontWeight: 700, textAlign: "left" }}>→ 변경 후</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {plan.renames.slice(0, 100).map((r, i) => (
+                          <tr key={i}>
+                            <td style={{ ...cellS, color: "var(--fg-3)" }}>{r.from}</td>
+                            <td style={{ ...cellS, fontWeight: 600 }}>{r.name}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {plan.renames.length > 100 && <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>… 외 {plan.renames.length - 100}건</div>}
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", marginTop: 12 }}>
+                    <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} style={{ cursor: "pointer" }} />
+                    위 {plan.renames.length}건의 이름 변경을 확인했습니다.
+                  </label>
+                </>
+              )}
+            </>
+          )}
+
+          {result && (
+            <div style={{ fontSize: 14, lineHeight: 1.8 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>✅ 정리 완료</div>
+              <div>• 이름 변경: <b style={{ color: "var(--primary)" }}>{result.updated}</b>건</div>
+              {result.errors?.length > 0 && (
+                <div style={{ marginTop: 8, color: "var(--danger)" }}>
+                  • 실패 {result.errors.length}건
+                  <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 12 }}>
+                    {result.errors.slice(0, 8).map((e, i) => <li key={i}>{e.name || e.id} — {e.reason}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="modal-ft">
+          {!result ? (
+            <>
+              <button className="btn btn-secondary" onClick={onClose} disabled={busy}>취소</button>
+              <button className="btn btn-primary" onClick={apply} disabled={busy || plan.renames.length === 0 || !ack}>
+                {busy ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {plan.renames.length}건 정리</>}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" onClick={onClose}>닫기</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { ManageSitesView, SiteFormModal, HQFormModal, SiteBulkImportModal, SiteNameCleanupModal });

@@ -278,6 +278,17 @@ const api = {
     if (!res.ok) throw new Error(data.error || `일괄 등록 실패 (${res.status})`);
     return data;
   },
+  // 사업장명 일괄 변경 (접미사 정리 등) — renames: [{id, name}]
+  async renameSitesBulk(renames) {
+    const res = await fetch(`${ENDPOINTS.sites}/rename-bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ renames }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `이름 정리 실패 (${res.status})`);
+    return data;
+  },
   // ── HQ (본부) ──
   async getHQs() {
     const res = await fetch(ENDPOINTS.hq);
