@@ -966,7 +966,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
           </div>
           <div className="field">
             <label className="field-label">
-              계정 사용 가능 기한 (계약 종료일)
+              계약 종료일 (계정 사용 가능 기한)
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}> · 비워두면 무기한</span>
             </label>
             <input className="field-input" type="date" value={form.expiresAt}
