@@ -782,13 +782,15 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 540 }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 880 }}>
         <div className="modal-hd">
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>{title}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={14} /></button>
         </div>
         <div className="modal-bd">
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px", alignItems: "start" }}>
+          <div>
           {/* ── ① 소속 · 기본정보 ── */}
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "2px 0 8px" }}>① 소속 · 기본정보</div>
           <div className="field">
@@ -832,6 +834,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               onChange={e => update("주소", e.target.value)} placeholder="사업장 주소 입력" />
           </div>
 
+          </div>
+          <div>
           {/* ── ② 식별번호 ── */}
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>② 식별번호</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -847,6 +851,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
             </div>
           </div>
 
+          </div>
+          <div>
           {/* ── ③ 담당 ── */}
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>③ 담당</div>
 
@@ -877,7 +883,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               </div>
             ) : (
               <div style={{
-                maxHeight: 200, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 6, padding: 4,
+                maxHeight: 150, overflowY: "auto", border: "1px solid var(--line)", borderRadius: 6, padding: 4,
                 background: "var(--bg)",
               }}>
                 {candidateUsers.map(u => {
@@ -925,6 +931,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
             </div>
           </div>
 
+          </div>
+          <div>
           {/* ── ④ 업무 · 계약 ── */}
           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>④ 업무 · 계약</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -933,7 +941,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               <input className="field-input" list="sj-worktype" value={form.업무내용}
                 onChange={e => update("업무내용", e.target.value)} placeholder="예: 사무직" />
               <datalist id="sj-worktype">
-                <option value="사무직" /><option value="고객상담" /><option value="인바운드" /><option value="아웃바운드" />
+                <option value="고객상담" /><option value="사무직" /><option value="콜센터운영관리" /><option value="종합" />
               </datalist>
             </div>
             <div className="field">
@@ -941,7 +949,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               <input className="field-input" list="sj-contracttype" value={form.계약형태}
                 onChange={e => update("계약형태", e.target.value)} placeholder="예: 도급" />
               <datalist id="sj-contracttype">
-                <option value="도급" /><option value="파견" /><option value="본사" /><option value="용역" />
+                <option value="도급" /><option value="파견" /><option value="F/O" /><option value="I/H" /><option value="정규직" />
               </datalist>
             </div>
           </div>
@@ -991,6 +999,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               <option value="active">운영중</option>
               <option value="inactive">종료</option>
             </select>
+          </div>
+          </div>
           </div>
         </div>
         <div className="modal-ft">
