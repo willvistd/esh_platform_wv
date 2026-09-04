@@ -340,6 +340,14 @@ async function initDB() {
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS address TEXT;`);
   // 사업장 계약 종료일(계정 사용 가능 기한) — 비우면 무기한. 만료 시 해당 사업장 현장계정 로그인 차단.
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "expiresAt" TEXT;`);
+  // ── 사업장 등록 개편(2026-09): 식별번호·계약 정보 컬럼 ──
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "orgType" TEXT;`);        // 본사/계열사
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "affiliateName" TEXT;`);  // 계열사명(계열사일 때)
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "mgmtNo" TEXT;`);         // 사업장관리번호
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "openNo" TEXT;`);         // 사업개시번호
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "workType" TEXT;`);       // 업무내용
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "contractType" TEXT;`);   // 계약형태
+  await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "startAt" TEXT;`);        // 계약 시작일
 
   // 기존 users 테이블에 셀프서비스/가입승인 컬럼 추가
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;`);
@@ -1479,11 +1487,14 @@ async function syncSiteAssignees(siteId, assigneeIds) {
 
 app.post('/api/sites', async (req, res) => {
   try {
-    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt } = req.body;
+    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
+            orgType, affiliateName, mgmtNo, openNo, workType, contractType, startAt } = req.body;
     const result = await pool.query(
-      `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', expiresAt||null]
+      `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
+        "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
+      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', expiresAt||null,
+       orgType||'본사', affiliateName||'', mgmtNo||'', openNo||'', workType||'', contractType||'', startAt||null]
     );
     const site = result.rows[0];
     // 담당자 동기화 (배열로 들어왔을 때만)
@@ -1516,7 +1527,8 @@ app.post('/api/sites', async (req, res) => {
 
 app.put('/api/sites/:id', async (req, res) => {
   try {
-    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt } = req.body;
+    const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
+            orgType, affiliateName, mgmtNo, openNo, workType, contractType, startAt } = req.body;
     // 계약 종료일(expiresAt)은 본사 관리자·안전관리자·팀 공용계정만 변경 가능.
     // 현장대리인(site_manager/site_staff)이 자기 사업장 정보를 수정할 때는 기존 종료일을 그대로 유지.
     let finalExpiresAt = expiresAt || null;
@@ -1526,9 +1538,11 @@ app.put('/api/sites/:id', async (req, res) => {
       finalExpiresAt = (cur.rows[0] && cur.rows[0].expiresAt) || null;
     }
     const result = await pool.query(
-      `UPDATE sites SET name=$1, region=$2, client=$3, manager=$4, phone=$5, status=$6, "hqId"=$7, address=$8, "expiresAt"=$9
-       WHERE id=$10 RETURNING *`,
-      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', finalExpiresAt, req.params.id]
+      `UPDATE sites SET name=$1, region=$2, client=$3, manager=$4, phone=$5, status=$6, "hqId"=$7, address=$8, "expiresAt"=$9,
+        "orgType"=$10, "affiliateName"=$11, "mgmtNo"=$12, "openNo"=$13, "workType"=$14, "contractType"=$15, "startAt"=$16
+       WHERE id=$17 RETURNING *`,
+      [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', finalExpiresAt,
+       orgType||'본사', affiliateName||'', mgmtNo||'', openNo||'', workType||'', contractType||'', startAt||null, req.params.id]
     );
     if (Array.isArray(assigneeIds)) {
       await syncSiteAssignees(req.params.id, assigneeIds);

@@ -227,6 +227,14 @@ const api = {
       전화번호: s["전화번호"] || s.phone || "",
       상태: s["상태"] || s.status || "active",
       expiresAt: s.expiresAt || s["expiresAt"] || "",
+      // 사업장 등록 개편 신규 필드
+      구분: s.orgType || "본사",
+      계열사명: s.affiliateName || "",
+      사업장관리번호: s.mgmtNo || "",
+      사업개시번호: s.openNo || "",
+      업무내용: s.workType || "",
+      계약형태: s.contractType || "",
+      startAt: s.startAt || "",
     }));
   },
   async addSite(site) {
@@ -244,6 +252,13 @@ const api = {
         address: site.주소 || site.address || "",
         expiresAt: site.expiresAt || "",
         assigneeIds: site.assigneeIds,
+        orgType: site.구분 || "본사",
+        affiliateName: site.계열사명 || "",
+        mgmtNo: site.사업장관리번호 || "",
+        openNo: site.사업개시번호 || "",
+        workType: site.업무내용 || "",
+        contractType: site.계약형태 || "",
+        startAt: site.startAt || "",
       })
     });
     return await res.json();
@@ -417,6 +432,13 @@ const api = {
         address: data.주소 || data.address || "",
         expiresAt: data.expiresAt || "",
         assigneeIds: data.assigneeIds,
+        orgType: data.구분 || "본사",
+        affiliateName: data.계열사명 || "",
+        mgmtNo: data.사업장관리번호 || "",
+        openNo: data.사업개시번호 || "",
+        workType: data.업무내용 || "",
+        contractType: data.계약형태 || "",
+        startAt: data.startAt || "",
       })
     });
     return await res.json();

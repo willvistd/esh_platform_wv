@@ -687,13 +687,20 @@ const HQFormModal = ({ title, initialData, onSave, onClose }) => {
 const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, allowedHQIds, canEditExpiry = true, onSave, onClose }) => {
   const [form, setForm] = React.useState({
     사업장명: initialData?.["사업장명"] || "",
+    구분: initialData?.["구분"] || initialData?.orgType || "본사",   // 본사 / 계열사
+    계열사명: initialData?.["계열사명"] || initialData?.affiliateName || "",
     hqId: initialData?.hqId || defaultHQId || "",
     지역: initialData?.["지역"] || "서울",
     고객사: initialData?.["고객사"] || "",
     담당자: initialData?.["담당자"] || "",
     주소: initialData?.["주소"] || "",
     전화번호: initialData?.["전화번호"] || "",
+    사업장관리번호: initialData?.["사업장관리번호"] || initialData?.mgmtNo || "",
+    사업개시번호: initialData?.["사업개시번호"] || initialData?.openNo || "",
+    업무내용: initialData?.["업무내용"] || initialData?.workType || "",
+    계약형태: initialData?.["계약형태"] || initialData?.contractType || "",
     상태: initialData?.["상태"] || "active",
+    startAt: (initialData?.startAt || "").slice(0, 10),
     expiresAt: (initialData?.expiresAt || "").slice(0, 10),
   });
 
@@ -755,7 +762,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
   const handleSave = async () => {
     if (!form.사업장명) { setError("사업장명을 입력해주세요."); return; }
-    if (!form.hqId) { setError("소속 본부를 선택해주세요."); return; }
+    if (form.구분 === "본사" && !form.hqId) { setError("본사 소속이면 소속 본부를 선택해주세요."); return; }
     setSaving(true);
     try {
       // 담당자 표기: 직접 입력한 실명이 최우선. 없을 때만 개인 계정 자동값 사용.
@@ -782,41 +789,66 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
         </div>
         <div className="modal-bd">
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
+          {/* ── ① 소속 · 기본정보 ── */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "2px 0 8px" }}>① 소속 · 기본정보</div>
           <div className="field">
-            <label className="field-label">소속 본부 *</label>
-            <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
-              <option value="">— 본부 선택 —</option>
-              {hqOptions.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
-            {allowedHQIds && allowedHQIds.length === 0 && (
-              <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 6 }}>
-                ⚠️ 등록 가능한 본부가 없습니다. 관리자에게 본부 권한을 요청하세요.
-              </div>
-            )}
+            <label className="field-label">구분 *</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["본사", "계열사"].map(t => (
+                <button key={t} type="button"
+                  className={`btn btn-sm ${form.구분 === t ? "btn-primary" : "btn-secondary"}`}
+                  onClick={() => update("구분", t)}>{t}</button>
+              ))}
+            </div>
           </div>
+          {form.구분 === "본사" ? (
+            <div className="field">
+              <label className="field-label">소속 본부 *</label>
+              <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
+                <option value="">— 본부 선택 —</option>
+                {hqOptions.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
+              </select>
+              {allowedHQIds && allowedHQIds.length === 0 && (
+                <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 6 }}>
+                  ⚠️ 등록 가능한 본부가 없습니다. 관리자에게 본부 권한을 요청하세요.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="field">
+              <label className="field-label">계열사명</label>
+              <input className="field-input" value={form.계열사명}
+                onChange={e => update("계열사명", e.target.value)} placeholder="계열사명 입력" />
+            </div>
+          )}
           <div className="field">
             <label className="field-label">사업장명 *</label>
             <input className="field-input" value={form.사업장명}
               onChange={e => update("사업장명", e.target.value)} placeholder="사업장명 입력" />
           </div>
+          <div className="field">
+            <label className="field-label">사업장 주소지</label>
+            <input className="field-input" value={form.주소}
+              onChange={e => update("주소", e.target.value)} placeholder="사업장 주소 입력" />
+          </div>
+
+          {/* ── ② 식별번호 ── */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>② 식별번호</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field">
-              <label className="field-label">지역</label>
-              <select className="field-select" value={form.지역} onChange={e => update("지역", e.target.value)}>
-                {REGIONS.map(r => <option key={r}>{r}</option>)}
-              </select>
+              <label className="field-label">사업장관리번호</label>
+              <input className="field-input" value={form.사업장관리번호}
+                onChange={e => update("사업장관리번호", e.target.value)} placeholder="예: 12345678900" />
             </div>
             <div className="field">
-              <label className="field-label">고객사</label>
-              <input className="field-input" value={form.고객사}
-                onChange={e => update("고객사", e.target.value)} placeholder="고객사명" />
+              <label className="field-label">사업개시번호</label>
+              <input className="field-input" value={form.사업개시번호}
+                onChange={e => update("사업개시번호", e.target.value)} placeholder="현장 개시번호" />
             </div>
           </div>
-          <div className="field">
-            <label className="field-label">전화번호</label>
-            <input className="field-input" value={form.전화번호}
-              onChange={e => update("전화번호", e.target.value)} placeholder="02-0000-0000" />
-          </div>
+
+          {/* ── ③ 담당 ── */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>③ 담당</div>
 
           {/* ── 담당 직원 다중선택 (본부 선택 후 활성화) ── */}
           <div className="field">
@@ -834,7 +866,9 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
             </label>
             {!form.hqId ? (
               <div style={{ fontSize: 12, color: "var(--fg-3)", padding: "12px", background: "var(--bg-sunk)", borderRadius: 6, textAlign: "center" }}>
-                ⬆ 먼저 소속 본부를 선택해주세요
+                {form.구분 === "계열사"
+                  ? "계열사 사업장은 담당 직원 배정 대신 아래 '사업담당자'에 실명을 입력하세요."
+                  : "⬆ 먼저 소속 본부를 선택해주세요"}
               </div>
             ) : candidateUsers.length === 0 ? (
               <div style={{ fontSize: 12, color: "var(--fg-3)", padding: "12px", background: "var(--bg-sunk)", borderRadius: 6, textAlign: "center" }}>
@@ -875,18 +909,46 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
             </div>
           </div>
 
-          {/* 담당자 표시 텍스트 (자동/수동) */}
-          <div className="field">
-            <label className="field-label">담당자 (실명) <span style={{ fontSize: 11, color: "var(--fg-3)" }}>실제 담당자 이름을 입력하세요. (팀 공용계정명은 담당자로 쓰지 않습니다)</span></label>
-            <input className="field-input"
-              value={form.담당자}
-              onChange={e => update("담당자", e.target.value)}
-              placeholder={autoManagerLabel || "예: 이준형"} />
+          {/* 사업담당자(본사 담당자) 실명 + 연락처 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="field">
+              <label className="field-label">사업담당자 (실명)</label>
+              <input className="field-input"
+                value={form.담당자}
+                onChange={e => update("담당자", e.target.value)}
+                placeholder={autoManagerLabel || "예: 이준형"} />
+            </div>
+            <div className="field">
+              <label className="field-label">담당자 연락처</label>
+              <input className="field-input" value={form.전화번호}
+                onChange={e => update("전화번호", e.target.value)} placeholder="010-0000-0000" />
+            </div>
+          </div>
+
+          {/* ── ④ 업무 · 계약 ── */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>④ 업무 · 계약</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="field">
+              <label className="field-label">업무내용</label>
+              <input className="field-input" list="sj-worktype" value={form.업무내용}
+                onChange={e => update("업무내용", e.target.value)} placeholder="예: 사무직" />
+              <datalist id="sj-worktype">
+                <option value="사무직" /><option value="고객상담" /><option value="인바운드" /><option value="아웃바운드" />
+              </datalist>
+            </div>
+            <div className="field">
+              <label className="field-label">계약형태</label>
+              <input className="field-input" list="sj-contracttype" value={form.계약형태}
+                onChange={e => update("계약형태", e.target.value)} placeholder="예: 도급" />
+              <datalist id="sj-contracttype">
+                <option value="도급" /><option value="파견" /><option value="본사" /><option value="용역" />
+              </datalist>
+            </div>
           </div>
           <div className="field">
-            <label className="field-label">주소</label>
-            <input className="field-input" value={form.주소}
-              onChange={e => update("주소", e.target.value)} placeholder="사업장 주소 입력" />
+            <label className="field-label">계약 시작일</label>
+            <input className="field-input" type="date" value={form.startAt}
+              onChange={e => update("startAt", e.target.value)} />
           </div>
           <div className="field">
             <label className="field-label">
