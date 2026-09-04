@@ -78,6 +78,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [hqFilter, setHQFilter] = React.useState("전체");
   const [view, setView] = React.useState("grouped");           // grouped | flat
   const [addingForHQ, setAddingForHQ] = React.useState(null);  // 본부 카드에서 + 클릭 시 미리 hqId 설정
+  const [bulkOpen, setBulkOpen] = React.useState(false);       // 엑셀 일괄 등록 모달
 
   // 본인 본부 목록 — 공통 권한 헬퍼 사용 (admin/safety는 전체)
   const userHQs = React.useMemo(() => {
@@ -198,6 +199,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           {!userIsSiteAgent && canManageHQ(role) && (
             <button className="btn btn-secondary" onClick={() => setHQAdding(true)}>
               <Icon name="building" size={14} /> 본부 추가
+            </button>
+          )}
+          {!userIsSiteAgent && canManageHQ(role) && (
+            <button className="btn btn-secondary" onClick={() => setBulkOpen(true)} title="엑셀/CSV 파일로 여러 사업장을 한 번에 등록">
+              <Icon name="upload" size={14} /> 엑셀 일괄 등록
             </button>
           )}
           {!userIsSiteAgent && canAddSite(role) && (
@@ -577,6 +583,16 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
             setEditing(null);
           }}
           onClose={() => setEditing(null)}
+        />
+      )}
+
+      {/* 엑셀 일괄 등록 모달 */}
+      {bulkOpen && (
+        <SiteBulkImportModal
+          hqs={hqs}
+          existingSites={sites}
+          onDone={async () => { await reloadAll(); }}
+          onClose={() => setBulkOpen(false)}
         />
       )}
 
@@ -1020,4 +1036,213 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
   );
 };
 
-Object.assign(window, { ManageSitesView, SiteFormModal, HQFormModal });
+// ─────────────────────────────────────────────────────────────
+// 사업장 엑셀/CSV 일괄 등록 모달
+// 기대 컬럼(헤더): 사업장명 · 담당자 · 본부 · 구분 · 계약형태 · 업무내용 · 주소 · 관리번호 · 개시번호 · 시작일 · 상태
+// ─────────────────────────────────────────────────────────────
+const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) => {
+  const [fileName, setFileName] = React.useState("");
+  const [rows, setRows] = React.useState([]);       // 매핑된 API 행 + _meta
+  const [error, setError] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [result, setResult] = React.useState(null);
+
+  const norm = (v) => String(v == null ? "" : v).replace(/\s+/g, "").toLowerCase();
+
+  // 헤더 별칭 → 값 추출
+  const pick = (obj, aliases) => {
+    for (const key of Object.keys(obj)) {
+      const nk = norm(key);
+      if (aliases.some(a => nk === norm(a))) return String(obj[key] == null ? "" : obj[key]).trim();
+    }
+    return "";
+  };
+
+  // 본부명 → hqId 매칭 (정확 → 포함 → 코드)
+  const resolveHqId = (hqName) => {
+    if (!hqName) return { id: null, matched: false };
+    const n = norm(hqName);
+    let hq = hqs.find(h => norm(h.name) === n);
+    if (!hq) hq = hqs.find(h => norm(h.name).includes(n) || n.includes(norm(h.name)));
+    if (!hq) hq = hqs.find(h => h.code && norm(h.code) === n);
+    return hq ? { id: hq.id, matched: true, name: hq.name } : { id: null, matched: false };
+  };
+
+  const existingNameSet = React.useMemo(
+    () => new Set(existingSites.map(s => norm(s.사업장명 || s.name)).filter(Boolean)),
+    [existingSites]
+  );
+
+  const parseFile = async (file) => {
+    setError(""); setResult(null); setRows([]); setFileName(file.name);
+    try {
+      if (typeof XLSX === "undefined") { setError("엑셀 파서(XLSX)가 로드되지 않았습니다. 새로고침 후 다시 시도해주세요."); return; }
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
+      if (!json.length) { setError("첫 시트에서 데이터를 찾지 못했습니다."); return; }
+      const seen = new Set();
+      const mapped = json.map((r) => {
+        const name = pick(r, ["사업장명", "사업장", "name"]);
+        const hqName = pick(r, ["본부", "소속본부", "소속", "소속부서", "hq", "본부명"]);
+        const hq = resolveHqId(hqName);
+        const 상태raw = pick(r, ["상태", "status"]);
+        const status = /종료|비활|inactive/.test(상태raw) ? "inactive" : "active";
+        const dupInFile = seen.has(norm(name)); if (name) seen.add(norm(name));
+        return {
+          name,
+          manager: pick(r, ["담당자", "사업부담당자", "manager"]),
+          hqId: hq.id,
+          orgType: pick(r, ["구분", "orgtype"]) || "본사",
+          affiliateName: pick(r, ["계열사명", "affiliatename"]),
+          contractType: pick(r, ["계약형태", "파견도급", "파견/도급구분", "contracttype"]),
+          workType: pick(r, ["업무내용", "worktype"]),
+          address: pick(r, ["주소", "주소지", "사업장주소지", "address"]),
+          mgmtNo: pick(r, ["관리번호", "사업장관리번호", "mgmtno"]),
+          openNo: pick(r, ["개시번호", "사업개시번호", "openno"]),
+          startAt: pick(r, ["시작일", "계약시작일", "startat"]),
+          region: pick(r, ["지역", "region"]),
+          client: pick(r, ["고객사", "client"]),
+          phone: pick(r, ["전화", "연락처", "전화번호", "phone"]),
+          status,
+          _hqName: hqName, _hqMatched: hq.matched, _hqResolved: hq.name || "",
+          _dup: !!name && (existingNameSet.has(norm(name)) || dupInFile),
+          _noName: !name,
+        };
+      });
+      setRows(mapped);
+    } catch (e) {
+      setError("파일을 읽는 중 오류: " + e.message);
+    }
+  };
+
+  const stats = React.useMemo(() => {
+    const valid = rows.filter(r => !r._noName);
+    const dups = valid.filter(r => r._dup);
+    const noHq = valid.filter(r => r._hqName && !r._hqMatched);
+    const willCreate = valid.filter(r => !r._dup);
+    const unmatchedNames = [...new Set(noHq.map(r => r._hqName))];
+    return { total: rows.length, valid: valid.length, dups: dups.length, noHq: noHq.length, willCreate: willCreate.length, unmatchedNames };
+  }, [rows]);
+
+  const doImport = async () => {
+    setBusy(true); setError("");
+    try {
+      // API로 보낼 순수 행(메타 제거). 서버도 중복 사업장명은 스킵함.
+      const payload = rows.filter(r => !r._noName).map(({ _hqName, _hqMatched, _hqResolved, _dup, _noName, ...api }) => api);
+      const res = await window.WV_API.bulkImportSites(payload, true);
+      setResult(res);
+      await onDone?.();
+    } catch (e) {
+      setError(e.message || "등록 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cellS = { padding: "5px 8px", borderBottom: "1px solid var(--line)", fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 860 }}>
+        <div className="modal-hd">
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>사업장 엑셀 일괄 등록</h2>
+          <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={14} /></button>
+        </div>
+        <div className="modal-bd">
+          {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
+
+          {!result && (
+            <>
+              <div style={{ fontSize: 13, color: "var(--fg-2)", marginBottom: 10, lineHeight: 1.6 }}>
+                <b>.xlsx</b> 또는 <b>.csv</b> 파일을 올리면 첫 시트를 읽어 미리보기 후 등록합니다.<br />
+                인식 컬럼: <span className="mono" style={{ fontSize: 11 }}>사업장명 · 담당자 · 본부 · 구분 · 계약형태 · 업무내용 · 주소 · 관리번호 · 개시번호 · 시작일 · 상태</span><br />
+                <span style={{ color: "var(--fg-3)" }}>※ 이미 있는 사업장명은 자동으로 건너뜁니다. '본부'는 이름이 비슷한 기존 본부로 매칭됩니다.</span>
+              </div>
+
+              <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
+                <Icon name="upload" size={14} /> 파일 선택
+                <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
+                  onChange={e => { const f = e.target.files?.[0]; if (f) parseFile(f); e.target.value = ""; }} />
+              </label>
+              {fileName && <span style={{ marginLeft: 10, fontSize: 13, color: "var(--fg-2)" }}>{fileName}</span>}
+
+              {rows.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  {/* 요약 */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                    <span className="chip chip-success">등록 예정 {stats.willCreate}</span>
+                    <span className="chip">전체 {stats.valid}</span>
+                    {stats.dups > 0 && <span className="chip chip-warning">중복 건너뜀 {stats.dups}</span>}
+                    {stats.noHq > 0 && <span className="chip chip-rejected">본부 미매칭 {stats.noHq}</span>}
+                  </div>
+                  {stats.unmatchedNames.length > 0 && (
+                    <div style={{ fontSize: 12, color: "#c2410c", marginBottom: 10, padding: "8px 10px", background: "var(--bg-sunk)", borderRadius: 6 }}>
+                      ⚠️ 매칭 안 된 본부명: {stats.unmatchedNames.join(", ")}<br />
+                      <span style={{ color: "var(--fg-3)" }}>이 사업장들은 본부 미지정으로 등록됩니다. 먼저 본부를 만들거나 파일의 본부명을 맞춰주세요.</span>
+                    </div>
+                  )}
+                  {/* 미리보기 (상위 12행) */}
+                  <div style={{ maxHeight: 280, overflow: "auto", border: "1px solid var(--line)", borderRadius: 8 }}>
+                    <table style={{ borderCollapse: "collapse", width: "100%" }}>
+                      <thead>
+                        <tr style={{ position: "sticky", top: 0, background: "var(--bg-sunk)" }}>
+                          {["사업장명", "담당자", "본부(매칭)", "계약형태", "업무내용", "상태"].map(h =>
+                            <th key={h} style={{ ...cellS, fontWeight: 700, textAlign: "left" }}>{h}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.slice(0, 12).map((r, i) => (
+                          <tr key={i} style={{ background: r._noName ? "#fef2f2" : r._dup ? "var(--bg-sunk)" : "transparent" }}>
+                            <td style={cellS}>{r.name || <span style={{ color: "var(--danger)" }}>(비어있음)</span>}{r._dup && <span style={{ color: "#c2410c", fontSize: 10 }}> ·중복</span>}</td>
+                            <td style={cellS}>{r.manager}</td>
+                            <td style={cellS}>{r._hqMatched ? r._hqResolved : <span style={{ color: "#c2410c" }}>{r._hqName || "-"} ✕</span>}</td>
+                            <td style={cellS}>{r.contractType}</td>
+                            <td style={cellS}>{r.workType}</td>
+                            <td style={cellS}>{r.status === "active" ? "운영중" : "종료"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {rows.length > 12 && <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 6 }}>… 외 {rows.length - 12}행</div>}
+                </div>
+              )}
+            </>
+          )}
+
+          {result && (
+            <div style={{ fontSize: 14, lineHeight: 1.8 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>✅ 일괄 등록 완료</div>
+              <div>• 신규 등록: <b style={{ color: "var(--primary)" }}>{result.created}</b>건</div>
+              <div>• 중복 건너뜀: {result.skipped}건</div>
+              {result.errors?.length > 0 && (
+                <div style={{ marginTop: 8, color: "var(--danger)" }}>
+                  • 실패 {result.errors.length}건:
+                  <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 12 }}>
+                    {result.errors.slice(0, 8).map((e, i) => <li key={i}>{e.name || `${e.row}행`} — {e.reason}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="modal-ft">
+          {!result ? (
+            <>
+              <button className="btn btn-secondary" onClick={onClose} disabled={busy}>취소</button>
+              <button className="btn btn-primary" onClick={doImport} disabled={busy || stats.willCreate === 0}>
+                {busy ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {stats.willCreate}건 등록</>}
+              </button>
+            </>
+          ) : (
+            <button className="btn btn-primary" onClick={onClose}>닫기</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+Object.assign(window, { ManageSitesView, SiteFormModal, HQFormModal, SiteBulkImportModal });

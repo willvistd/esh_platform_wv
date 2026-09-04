@@ -267,6 +267,17 @@ const api = {
     const res = await fetch(`${ENDPOINTS.sites}/${rowId}`, { method: "DELETE" });
     return await res.json();
   },
+  // 사업장 일괄 등록 (엑셀/CSV 가져오기) — rows: 이미 API 필드(name, manager, hqId, orgType…)로 정규화된 배열
+  async bulkImportSites(rows, skipDuplicates = true) {
+    const res = await fetch(`${ENDPOINTS.sites}/bulk`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows, skipDuplicates }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `일괄 등록 실패 (${res.status})`);
+    return data;
+  },
   // ── HQ (본부) ──
   async getHQs() {
     const res = await fetch(ENDPOINTS.hq);

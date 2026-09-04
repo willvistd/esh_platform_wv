@@ -1525,6 +1525,58 @@ app.post('/api/sites', async (req, res) => {
   }
 });
 
+// ── 사업장 일괄 등록 (엑셀/CSV 가져오기) ──
+// body: { rows: [{ name, manager, hqId, orgType, affiliateName, contractType,
+//                  workType, address, mgmtNo, openNo, startAt, region, client, phone, status }],
+//         skipDuplicates?: true }
+// 사업장명(공백/대소문자 무시) 기준으로 기존 DB·배치 내 중복은 건너뜀.
+app.post('/api/sites/bulk', async (req, res) => {
+  try {
+    const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows : [];
+    const skipDup = req.body.skipDuplicates !== false; // 기본 true
+    if (rows.length === 0) return res.status(400).json({ error: '등록할 행이 없습니다.' });
+    if (rows.length > 2000) return res.status(400).json({ error: '한 번에 최대 2000행까지 등록할 수 있습니다.' });
+
+    const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+
+    // 기존 사업장명 집합 (중복 방지)
+    const existing = new Set(
+      (await pool.query('SELECT name FROM sites')).rows.map(r => norm(r.name)).filter(Boolean)
+    );
+
+    let created = 0, skipped = 0;
+    const errors = [];
+    const createdNames = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i] || {};
+      const name = String(r.name || '').trim();
+      if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
+      const key = norm(name);
+      if (skipDup && existing.has(key)) { skipped++; continue; }
+      try {
+        await pool.query(
+          `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
+            "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+          [name, r.region || '', r.client || '', r.manager || '', r.phone || '', r.status || 'active',
+           r.hqId || null, r.address || '', r.expiresAt || null,
+           r.orgType || '본사', r.affiliateName || '', r.mgmtNo || '', r.openNo || '',
+           r.workType || '', r.contractType || '', r.startAt || null]
+        );
+        existing.add(key);
+        created++; createdNames.push(name);
+      } catch (e) {
+        errors.push({ row: i + 1, name, reason: e.message });
+      }
+    }
+    res.json({ total: rows.length, created, skipped, errors, createdNames });
+  } catch (e) {
+    console.error('POST /api/sites/bulk 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/sites/:id', async (req, res) => {
   try {
     const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
