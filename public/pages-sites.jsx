@@ -378,17 +378,20 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           {hqs
             .filter(h => hqFilter === "전체" || String(h.id) === String(hqFilter))
             .map((h, idx) => {
-              let groupSites = (sitesByHQ[h.id] || []).filter(s => {
+              // 지역·검색만 적용한 본부 기준 목록 (계약형태 필터 전) → 본부별 분포 계산용
+              const groupBase = (sitesByHQ[h.id] || []).filter(s => {
                 const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
                 const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
-                return matchRegion && matchSearch && matchContractFilter(s);
+                return matchRegion && matchSearch;
               });
-              // 파견 사업장은 해당 본부 안에서 항상 도급·그 외보다 아래로 정렬.
+              const grpDispatch = groupBase.filter(isDispatchSite).length;      // 파견
+              const grpNonDispatch = groupBase.length - grpDispatch;             // 파견 외(도급 등)
+              // 계약형태 필터 적용 + 파견은 항상 하단 정렬
               // (산업안전보건법상 파견은 사용사업주 의무가 커 우선순위 대상이 아님. 나머지 순서는 유지)
-              {
-                const isDispatch = s => String(s["계약형태"] || "").includes("파견");
-                groupSites = [...groupSites].sort((a, b) => (isDispatch(a) ? 1 : 0) - (isDispatch(b) ? 1 : 0));
-              }
+              let groupSites = groupBase
+                .filter(matchContractFilter)
+                .slice()
+                .sort((a, b) => (isDispatchSite(a) ? 1 : 0) - (isDispatchSite(b) ? 1 : 0));
               const color = colorForHQ(idx);
               const canManageThis = canManageSite(role, userHQs, h.id);
               return (
@@ -408,6 +411,12 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                         <span className="meta" style={{ fontSize: 12, color: "var(--fg-3)" }}>
                           사업장 {groupSites.length}개
                         </span>
+                        {groupBase.length > 0 && (
+                          <span style={{ display: "inline-flex", gap: 6 }}>
+                            <span className="chip" style={{ fontSize: 10.5 }}>도급 등 {grpNonDispatch}</span>
+                            {grpDispatch > 0 && <span className="chip chip-warning" style={{ fontSize: 10.5 }}>파견 {grpDispatch}</span>}
+                          </span>
+                        )}
                       </div>
                       {h.description && (
                         <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>{h.description}</div>
