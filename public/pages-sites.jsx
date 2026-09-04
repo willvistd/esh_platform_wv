@@ -780,19 +780,22 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
     }
   };
 
+  const sjCard = { border: "1px solid var(--line)", borderRadius: 10, padding: "13px 15px", background: "var(--bg-elev)" };
+  const sjCardTitle = { fontSize: 13, fontWeight: 700, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--line)", color: "var(--fg)", display: "flex", alignItems: "center", gap: 6 };
+  const sjDot = (c) => ({ width: 7, height: 7, borderRadius: "50%", background: c, display: "inline-block", flexShrink: 0 });
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 880 }}>
+      <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 860 }}>
         <div className="modal-hd">
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>{title}</h2>
           <button className="btn btn-ghost btn-sm" onClick={onClose}><Icon name="x" size={14} /></button>
         </div>
         <div className="modal-bd">
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 24px", alignItems: "start" }}>
-          <div>
-          {/* ── ① 소속 · 기본정보 ── */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "2px 0 8px" }}>① 소속 · 기본정보</div>
+          <div style={{ columnCount: 2, columnGap: 16 }}>
+          <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
+          <div style={sjCardTitle}><span style={sjDot("#3b82f6")} />소속 · 기본정보</div>
           <div className="field">
             <label className="field-label">구분 *</label>
             <div style={{ display: "flex", gap: 8 }}>
@@ -835,26 +838,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
           </div>
 
           </div>
-          <div>
-          {/* ── ② 식별번호 ── */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>② 식별번호</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div className="field">
-              <label className="field-label">사업장관리번호</label>
-              <input className="field-input" value={form.사업장관리번호}
-                onChange={e => update("사업장관리번호", e.target.value)} placeholder="예: 12345678900" />
-            </div>
-            <div className="field">
-              <label className="field-label">사업개시번호</label>
-              <input className="field-input" value={form.사업개시번호}
-                onChange={e => update("사업개시번호", e.target.value)} placeholder="현장 개시번호" />
-            </div>
-          </div>
-
-          </div>
-          <div>
-          {/* ── ③ 담당 ── */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>③ 담당</div>
+          <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
+          <div style={sjCardTitle}><span style={sjDot("#f59e0b")} />담당</div>
 
           {/* ── 담당 직원 다중선택 (본부 선택 후 활성화) ── */}
           <div className="field">
@@ -932,9 +917,23 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
           </div>
 
           </div>
-          <div>
-          {/* ── ④ 업무 · 계약 ── */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", margin: "16px 0 8px" }}>④ 업무 · 계약</div>
+          <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
+          <div style={sjCardTitle}><span style={sjDot("#8b5cf6")} />식별번호</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div className="field">
+              <label className="field-label">사업장관리번호</label>
+              <input className="field-input" value={form.사업장관리번호}
+                onChange={e => update("사업장관리번호", e.target.value)} placeholder="예: 12345678900" />
+            </div>
+            <div className="field">
+              <label className="field-label">사업개시번호</label>
+              <input className="field-input" value={form.사업개시번호}
+                onChange={e => update("사업개시번호", e.target.value)} placeholder="현장 개시번호" />
+            </div>
+          </div>
+          </div>
+          <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
+          <div style={sjCardTitle}><span style={sjDot("#10b981")} />업무 · 계약</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field">
               <label className="field-label">업무내용</label>
