@@ -922,7 +922,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
               <input className="field-input"
                 value={form.담당자}
                 onChange={e => update("담당자", e.target.value)}
-                placeholder={autoManagerLabel || "예: 이준형"} />
+                placeholder="" />
             </div>
             <div className="field">
               <label className="field-label">담당자 연락처</label>
