@@ -781,8 +781,15 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
   };
 
   const sjCard = { border: "1px solid var(--line)", borderRadius: 10, padding: "13px 15px", background: "var(--bg-elev)" };
-  const sjCardTitle = { fontSize: 13, fontWeight: 700, marginBottom: 10, paddingBottom: 8, borderBottom: "1px solid var(--line)", color: "var(--fg)", display: "flex", alignItems: "center", gap: 6 };
-  const sjDot = (c) => ({ width: 7, height: 7, borderRadius: "50%", background: c, display: "inline-block", flexShrink: 0 });
+  // 제목 칸을 색 배경 바로 — 카드 상단 가장자리까지 채움 (카드 padding 13/15 만큼 음수 마진)
+  const sjTitleBar = (c) => ({
+    fontSize: 13, fontWeight: 700,
+    margin: "-13px -15px 13px", padding: "9px 15px",
+    background: `color-mix(in oklab, ${c} 14%, transparent)`,
+    color: c,
+    borderTopLeftRadius: 9, borderTopRightRadius: 9,
+    borderBottom: `1px solid color-mix(in oklab, ${c} 28%, transparent)`,
+  });
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -795,7 +802,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
           {error && <div style={{ color: "var(--danger)", fontSize: 13, marginBottom: 12, padding: "8px 12px", background: "#fef2f2", borderRadius: 6 }}>{error}</div>}
           <div style={{ columnCount: 2, columnGap: 16 }}>
           <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
-          <div style={sjCardTitle}><span style={sjDot("#3b82f6")} />소속 · 기본정보</div>
+          <div style={sjTitleBar("#2563eb")}>소속 · 기본정보</div>
           <div className="field">
             <label className="field-label">구분 *</label>
             <div style={{ display: "flex", gap: 8 }}>
@@ -839,7 +846,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
           </div>
           <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
-          <div style={sjCardTitle}><span style={sjDot("#f59e0b")} />담당</div>
+          <div style={sjTitleBar("#d97706")}>담당</div>
 
           {/* ── 담당 직원 다중선택 (본부 선택 후 활성화) ── */}
           <div className="field">
@@ -918,7 +925,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
 
           </div>
           <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
-          <div style={sjCardTitle}><span style={sjDot("#8b5cf6")} />식별번호</div>
+          <div style={sjTitleBar("#7c3aed")}>식별번호</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field">
               <label className="field-label">사업장관리번호</label>
@@ -933,7 +940,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
           </div>
           </div>
           <div style={{ ...sjCard, marginBottom: 14, breakInside: "avoid" }}>
-          <div style={sjCardTitle}><span style={sjDot("#10b981")} />업무 · 계약</div>
+          <div style={sjTitleBar("#059669")}>업무 · 계약</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field">
               <label className="field-label">업무내용</label>
