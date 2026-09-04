@@ -2,6 +2,26 @@
 
 const REGIONS = ["서울", "경기", "인천", "충남", "충북", "강원", "경남", "경북", "전남", "전북", "부산", "대구", "대전", "광주", "울산", "세종", "제주", "기타"];
 
+// 주소의 시/도를 읽어 지역(REGIONS) 자동 매칭. 주소 첫 토큰(시·도)만 검사.
+const REGION_RULES = [
+  ["서울", "서울"], ["경기", "경기"], ["인천", "인천"],
+  ["충청남", "충남"], ["충남", "충남"], ["충청북", "충북"], ["충북", "충북"],
+  ["강원", "강원"],
+  ["경상남", "경남"], ["경남", "경남"], ["경상북", "경북"], ["경북", "경북"],
+  ["전라남", "전남"], ["전남", "전남"], ["전라북", "전북"], ["전북", "전북"],
+  ["부산", "부산"], ["대구", "대구"], ["대전", "대전"], ["광주", "광주"],
+  ["울산", "울산"], ["세종", "세종"], ["제주", "제주"],
+];
+function regionFromAddress(addr) {
+  const s = String(addr || "").trim();
+  if (!s) return "";
+  const head = s.split(/\s+/)[0];               // 시/도 토큰
+  for (const [kw, label] of REGION_RULES) {
+    if (head.includes(kw)) return label;
+  }
+  return "기타";
+}
+
 // 본부별 색상 (UI 구분용)
 const HQ_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ef4444", "#06b6d4", "#84cc16", "#ec4899"];
 const colorForHQ = (idx) => HQ_COLORS[idx % HQ_COLORS.length];
@@ -148,7 +168,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   }, [sites, hqs]);
 
   const filtered = sites.filter(s => {
-    const matchRegion = regionFilter === "전체" || s["지역"] === regionFilter;
+    const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
     const matchHQ = hqFilter === "전체" || String(s.hqId) === String(hqFilter);
     const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
     return matchRegion && matchHQ && matchSearch;
@@ -343,7 +363,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
             .filter(h => hqFilter === "전체" || String(h.id) === String(hqFilter))
             .map((h, idx) => {
               const groupSites = (sitesByHQ[h.id] || []).filter(s => {
-                const matchRegion = regionFilter === "전체" || s["지역"] === regionFilter;
+                const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
                 const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
                 return matchRegion && matchSearch;
               });
@@ -411,7 +431,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                                 </span>
                               </td>
                               <td style={{ padding: "12px 14px" }}>
-                                <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || "-"}</span>
+                                <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || regionFromAddress(site["주소"]) || "-"}</span>
                               </td>
                               <td style={{ padding: "12px 14px" }}>{site["계약형태"] ? <span className="chip" style={{ fontSize: 11 }}>{site["계약형태"]}</span> : <span style={{ color: "var(--fg-3)" }}>-</span>}</td>
                               <td style={{ padding: "12px 14px" }}>{site["담당자"] || "-"}</td>
@@ -515,7 +535,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                       </span>
                     </td>
                     <td style={{ padding: "12px 14px" }}>
-                      <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || "-"}</span>
+                      <span className="chip" style={{ fontSize: 11 }}>{site["지역"] || regionFromAddress(site["주소"]) || "-"}</span>
                     </td>
                     <td style={{ padding: "12px 14px", color: "var(--fg-2)" }}>{site["고객사"] || "-"}</td>
                     <td style={{ padding: "12px 14px" }}>{site["담당자"] || "-"}</td>
@@ -721,7 +741,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
     구분: initialData?.["구분"] || initialData?.orgType || "본사",   // 본사 / 계열사
     계열사명: initialData?.["계열사명"] || initialData?.affiliateName || "",
     hqId: initialData?.hqId || defaultHQId || "",
-    지역: initialData?.["지역"] || "서울",
+    지역: initialData?.["지역"] || regionFromAddress(initialData?.["주소"]) || "",
     고객사: initialData?.["고객사"] || "",
     담당자: initialData?.["담당자"] || "",
     주소: initialData?.["주소"] || "",
@@ -802,6 +822,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
       await onSave({
         ...form,
         담당자: finalManager,
+        지역: form.지역 || regionFromAddress(form.주소),  // 주소에서 지역 자동 매칭
         hqId: parseInt(form.hqId) || null,
         assigneeIds, // 백엔드가 user.siteIds 동기화에 사용
       });
@@ -1118,7 +1139,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
           mgmtNo: pick(r, ["관리번호", "사업장관리번호", "mgmtno"]),
           openNo: pick(r, ["개시번호", "사업개시번호", "openno"]),
           startAt: pick(r, ["시작일", "계약시작일", "startat"]),
-          region: pick(r, ["지역", "region"]),
+          region: pick(r, ["지역", "region"]) || regionFromAddress(pick(r, ["주소", "주소지", "사업장주소지", "address"])),
           client: pick(r, ["고객사", "client"]),
           phone: pick(r, ["전화", "연락처", "전화번호", "phone"]),
           status,
