@@ -367,9 +367,9 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
                 const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
                 return matchRegion && matchSearch;
               });
-              // HR사업본부: 파견 사업장은 항상 도급·그 외보다 아래로 정렬.
+              // 파견 사업장은 해당 본부 안에서 항상 도급·그 외보다 아래로 정렬.
               // (산업안전보건법상 파견은 사용사업주 의무가 커 우선순위 대상이 아님. 나머지 순서는 유지)
-              if (String(h.name || "").includes("HR")) {
+              {
                 const isDispatch = s => String(s["계약형태"] || "").includes("파견");
                 groupSites = [...groupSites].sort((a, b) => (isDispatch(a) ? 1 : 0) - (isDispatch(b) ? 1 : 0));
               }
