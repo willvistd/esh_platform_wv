@@ -1046,6 +1046,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
   const [error, setError] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState(null);
+  const [dupAck, setDupAck] = React.useState(false);   // 중복 확인(안전장치) 체크
 
   const norm = (v) => String(v == null ? "" : v).replace(/\s+/g, "").toLowerCase();
 
@@ -1074,7 +1075,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
   );
 
   const parseFile = async (file) => {
-    setError(""); setResult(null); setRows([]); setFileName(file.name);
+    setError(""); setResult(null); setRows([]); setDupAck(false); setFileName(file.name);
     try {
       if (typeof XLSX === "undefined") { setError("엑셀 파서(XLSX)가 로드되지 않았습니다. 새로고침 후 다시 시도해주세요."); return; }
       const buf = await file.arrayBuffer();
@@ -1123,7 +1124,8 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
     const noHq = valid.filter(r => r._hqName && !r._hqMatched);
     const willCreate = valid.filter(r => !r._dup);
     const unmatchedNames = [...new Set(noHq.map(r => r._hqName))];
-    return { total: rows.length, valid: valid.length, dups: dups.length, noHq: noHq.length, willCreate: willCreate.length, unmatchedNames };
+    const dupNames = dups.map(r => r.name);
+    return { total: rows.length, valid: valid.length, dups: dups.length, noHq: noHq.length, willCreate: willCreate.length, unmatchedNames, dupNames };
   }, [rows]);
 
   const doImport = async () => {
@@ -1183,6 +1185,21 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
                       <span style={{ color: "var(--fg-3)" }}>이 사업장들은 본부 미지정으로 등록됩니다. 먼저 본부를 만들거나 파일의 본부명을 맞춰주세요.</span>
                     </div>
                   )}
+                  {/* 중복 안전장치 — 이미 등록된 사업장이 있으면 확인 후에만 진행 */}
+                  {stats.dups > 0 && (
+                    <div style={{ marginBottom: 12, padding: "10px 12px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#c2410c", marginBottom: 6 }}>
+                        ⚠️ 이미 등록된 사업장 {stats.dups}건이 발견되었습니다 — 이 사업장들은 <u>등록에서 제외</u>됩니다.
+                      </div>
+                      <div style={{ maxHeight: 96, overflowY: "auto", fontSize: 12, color: "var(--fg-2)", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 6, padding: "6px 8px", marginBottom: 8 }}>
+                        {stats.dupNames.map((n, i) => <div key={i}>· {n}</div>)}
+                      </div>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--fg)" }}>
+                        <input type="checkbox" checked={dupAck} onChange={e => setDupAck(e.target.checked)} style={{ cursor: "pointer" }} />
+                        위 중복 사업장을 확인했습니다. (중복은 제외하고 신규 {stats.willCreate}건만 등록)
+                      </label>
+                    </div>
+                  )}
                   {/* 미리보기 (상위 12행) */}
                   <div style={{ maxHeight: 280, overflow: "auto", border: "1px solid var(--line)", borderRadius: 8 }}>
                     <table style={{ borderCollapse: "collapse", width: "100%" }}>
@@ -1232,7 +1249,11 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
           {!result ? (
             <>
               <button className="btn btn-secondary" onClick={onClose} disabled={busy}>취소</button>
-              <button className="btn btn-primary" onClick={doImport} disabled={busy || stats.willCreate === 0}>
+              {stats.dups > 0 && !dupAck && rows.length > 0 && (
+                <span style={{ fontSize: 12, color: "#c2410c", alignSelf: "center", marginRight: 4 }}>중복 확인 후 등록 가능</span>
+              )}
+              <button className="btn btn-primary" onClick={doImport}
+                disabled={busy || stats.willCreate === 0 || (stats.dups > 0 && !dupAck)}>
                 {busy ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {stats.willCreate}건 등록</>}
               </button>
             </>
