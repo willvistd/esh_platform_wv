@@ -554,6 +554,16 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
           /* 8) 제목 폰트 크기 */
           .edu-print-area h1 { font-size: 18pt !important; }
           .edu-print-area h2 { font-size: 14pt !important; }
+
+          /* 9) 1페이지 압축 — 긴 교육내용(관리감독자 등)도 18명까지 한 장에 */
+          .edu-print-area .edu-tbl td, .edu-print-area .edu-tbl th { padding: 4px 8px !important; }
+          .edu-print-area .edu-content-cell {
+            line-height: 1.4 !important; min-height: 0 !important; padding: 6px 10px !important; font-size: 9.5pt !important;
+          }
+          .edu-print-area .edu-attendee-tbl td,
+          .edu-print-area .edu-attendee-tbl th { padding: 2px 6px !important; height: 22px !important; }
+          .edu-print-area .edu-attendee-tbl th { font-size: 9pt !important; }
+          .edu-print-area th, .edu-print-area td { font-size: 9.5pt !important; }
         }
 
         /* ── 서식 표 스타일 (사업장명~교육내용) ── */
@@ -816,7 +826,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
             {/* 교육내용 */}
             <tr>
               <td className="lbl">교육내용</td>
-              <td colSpan={5} style={{ whiteSpace: "pre-line", fontSize: 12.5, lineHeight: 1.9, padding: "14px 12px", minHeight: 180 }}>
+              <td className="edu-content-cell" colSpan={5} style={{ whiteSpace: "pre-line", fontSize: 12.5, lineHeight: 1.9, padding: "14px 12px", minHeight: 180 }}>
                 {eduContent}
                 {currentEduType.id === "MSDS" && (
                   <div style={{ marginTop: 8, borderTop: "1px dashed #ccc", paddingTop: 6 }}>
