@@ -396,6 +396,9 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
   const currentEduType = eduTypes.find(t => t.label === eduType) || eduTypes[0] || EDU_TYPES[0];
   // 백엔드 type은 content 필드 직접 가짐, fallback은 EDU_CONTENT 맵 참조
   const eduContent = currentEduType?.content || EDU_CONTENT[currentEduType?.id] || "해당 교육의 법령 내용이 적용됩니다.";
+  // 참석자 명단 인원수 (MSDS는 1페이지에 맞게 17명, 그 외 18명). 2열 배치 → 행 수는 절반.
+  const maxAttendees = currentEduType?.id === "MSDS" ? 17 : 18;
+  const attRows = Math.ceil(maxAttendees / 2);
 
   // 결재 권한 확인
   const canSign담당 = APPROVAL_ROLES.담당.includes(currentUser.role);
@@ -853,23 +856,29 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 9 }, (_, i) => (
+              {Array.from({ length: attRows }, (_, i) => (
                 <tr key={i}>
-                  {[i, i + 9].map(idx => (
-                    <React.Fragment key={idx}>
-                      <td>{idx + 1}</td>
-                      <td>
-                        <input value={attendees[idx]?.직종 || ""}
-                          onChange={e => updateAttendee(idx, "직종", e.target.value)}
-                          readOnly={isView} />
-                      </td>
-                      <td>
-                        <input value={attendees[idx]?.성명 || ""}
-                          onChange={e => updateAttendee(idx, "성명", e.target.value)}
-                          readOnly={isView} />
-                      </td>
-                      <td style={{ height: 38 }}></td>
-                    </React.Fragment>
+                  {[i, i + attRows].map(idx => (
+                    idx < maxAttendees ? (
+                      <React.Fragment key={idx}>
+                        <td>{idx + 1}</td>
+                        <td>
+                          <input value={attendees[idx]?.직종 || ""}
+                            onChange={e => updateAttendee(idx, "직종", e.target.value)}
+                            readOnly={isView} />
+                        </td>
+                        <td>
+                          <input value={attendees[idx]?.성명 || ""}
+                            onChange={e => updateAttendee(idx, "성명", e.target.value)}
+                            readOnly={isView} />
+                        </td>
+                        <td style={{ height: 38 }}></td>
+                      </React.Fragment>
+                    ) : (
+                      <React.Fragment key={idx}>
+                        <td></td><td></td><td></td><td style={{ height: 38 }}></td>
+                      </React.Fragment>
+                    )
                   ))}
                 </tr>
               ))}
