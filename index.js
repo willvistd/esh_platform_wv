@@ -367,6 +367,9 @@ async function initDB() {
   await pool.query(`ALTER TABLE compliance_submissions ADD COLUMN IF NOT EXISTS "fileUrl" TEXT;`);
   // 교육종류 숨김 플래그 (회사에서 미사용 교육은 숨김 처리)
   await pool.query(`ALTER TABLE education_types ADD COLUMN IF NOT EXISTS hidden BOOLEAN DEFAULT false;`);
+  // 교육일지 추가 필드: MSDS 추가 교육내용(대상화학물질명) / 교육 실시 사유(체크박스)
+  await pool.query(`ALTER TABLE education_logs ADD COLUMN IF NOT EXISTS "추가교육내용" TEXT;`);
+  await pool.query(`ALTER TABLE education_logs ADD COLUMN IF NOT EXISTS "실시사유" TEXT;`);
   // 카테고리 정렬 순서 (드래그앤드롭으로 변경)
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS "sortOrder" INTEGER;`);
   // 외부 링크 카테고리용 URL (type='link'일 때 클릭 시 새 탭으로 이동)
@@ -527,7 +530,7 @@ async function initDB() {
       ['작업내용변경_관리감독자',     '작업내용 변경 시 교육 (관리감독자)',     '2시간',
        '산업안전보건법 시행규칙 [별표 5] 제1호의2 나목 (채용 시 교육 및 작업내용 변경 시 교육)\n○ 산업안전 및 산업재해 예방에 관한 사항(화재ㆍ폭발 사고 발생 시 대피에 관한 사항을 포함한다)\n○ 산업보건 및 건강장해 예방에 관한 사항\n○ 위험성평가에 관한 사항\n○ 산업안전보건법령 및 산업재해보상보험 제도에 관한 사항\n○ 기계ㆍ기구의 위험성과 작업의 순서 및 동선에 관한 사항\n○ 작업 개시 전 점검에 관한 사항\n○ 물질안전보건자료에 관한 사항\n○ 사업장 내 안전보건관리체제 및 안전ㆍ보건조치 현황에 관한 사항\n○ 표준안전 작업방법 결정 및 지도ㆍ감독 요령에 관한 사항\n○ 비상시 또는 재해 발생 시 긴급조치에 관한 사항\n○ 그 밖의 관리감독자의 직무에 관한 사항', 60],
       ['MSDS',                  '물질안전보건자료 (MSDS)',              '2시간',
-       '물질안전보건자료(MSDS) 교육\n○ 대상화학물질의 명칭\n○ 물리적 위험성 및 건강 유해성\n○ 취급상의 주의사항\n○ 적절한 보호구\n○ 응급조치 요령 및 사고 시 대처방법', 70],
+       '물질안전보건자료(MSDS) 교육\n○ 대상화학물질의 명칭(또는 제품명)\n○ 물리적 위험성 및 건강 유해성\n○ 취급상의 주의사항\n○ 적절한 보호구\n○ 응급조치 요령 및 사고시 대처방법\n○ 물질안전보건자료 및 경고표지를 이해하는 방법', 70],
       ['특별교육_공통_근로자',       '특별교육 공통내용 (근로자)',            '8시간',
        '산업안전보건법 시행규칙 [별표 5] 제3호 가목 (특별교육 공통내용 - 근로자)\n○ 산업안전 및 산업재해 예방에 관한 사항\n○ 위험성평가에 관한 사항\n○ 산업안전보건법령 및 산업재해보상보험 제도에 관한 사항\n○ 직무스트레스 예방 및 관리에 관한 사항\n○ 직장 내 괴롭힘, 고객의 폭언 등으로 인한 건강장해 예방 및 관리에 관한 사항\n○ 기계ㆍ기구의 위험성과 작업의 순서 및 동선에 관한 사항\n○ 작업 개시 전 점검에 관한 사항\n○ 정리정돈 및 청소에 관한 사항\n○ 사고 발생 시 긴급조치에 관한 사항\n○ 물질안전보건자료에 관한 사항\n○ 보호구 착용 및 취급방법에 관한 사항', 80],
       ['특별교육_공통_관리감독자',    '특별교육 공통내용 (관리감독자)',         '8시간',
@@ -583,6 +586,19 @@ async function initDB() {
       console.log("[DB] 특별교육 공통내용(근로자) 문구 보정 완료");
     }
   } catch (e) { console.error("특별교육 공통내용(근로자) 문구 보정 실패:", e); }
+
+  // ── (1회) MSDS 교육내용 갱신 (항목 보정 + '경고표지 이해' 추가) ──
+  try {
+    const doneM = await pool.query("SELECT value FROM app_settings WHERE key='edu_msds_content_v2'");
+    if (doneM.rowCount === 0) {
+      await pool.query(
+        `UPDATE education_types SET content=$1 WHERE id='MSDS'`,
+        ['물질안전보건자료(MSDS) 교육\n○ 대상화학물질의 명칭(또는 제품명)\n○ 물리적 위험성 및 건강 유해성\n○ 취급상의 주의사항\n○ 적절한 보호구\n○ 응급조치 요령 및 사고시 대처방법\n○ 물질안전보건자료 및 경고표지를 이해하는 방법']
+      );
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('edu_msds_content_v2', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log("[DB] MSDS 교육내용 갱신 완료");
+    }
+  } catch (e) { console.error("MSDS 교육내용 갱신 실패:", e); }
 
   // ── base64 썸네일 → 스토리지 URL 이관(1회) ──
   // 예전엔 미리보기 이미지를 base64로 posts.thumbUrl에 통째로 저장해 DB가 무겁고 느렸음.
@@ -1290,9 +1306,9 @@ app.post('/api/edu-logs', async (req, res) => {
         "강사명","강사직책","교육방법","교육내용","교육교재",
         "대상자수_계","대상자수_남","대상자수_여",
         "실시자수_계","실시자수_남","실시자수_여",
-        "미실시사유","특이사항","담당서명","검토서명","승인서명","작성자","작성일","createdAt"
+        "미실시사유","특이사항","담당서명","검토서명","승인서명","작성자","작성일","추가교육내용","실시사유","createdAt"
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,NOW()::TEXT
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,NOW()::TEXT
       ) RETURNING *`,
       [
         b['교육종류'] || '', b['사업장명'] || '', b['교육일자'] || '', b['시작시간'] || '', b['종료시간'] || '',
@@ -1303,6 +1319,7 @@ app.post('/api/edu-logs', async (req, res) => {
         b['미실시사유'] || '', b['특이사항'] || '',
         b['담당서명'] || '', b['검토서명'] || '', b['승인서명'] || '',
         b['작성자'] || '', b['작성일'] || new Date().toISOString(),
+        b['추가교육내용'] || '', b['실시사유'] || '',
       ]
     );
     res.json({ success: true, log: result.rows[0], 'EducationLog': result.rows[0] });
@@ -1323,8 +1340,9 @@ app.put('/api/edu-logs/:id', async (req, res) => {
          "대상자수_계"=$13, "대상자수_남"=$14, "대상자수_여"=$15,
          "실시자수_계"=$16, "실시자수_남"=$17, "실시자수_여"=$18,
          "미실시사유"=$19, "특이사항"=$20,
-         "담당서명"=$21, "검토서명"=$22, "승인서명"=$23
-       WHERE id=$24 RETURNING *`,
+         "담당서명"=$21, "검토서명"=$22, "승인서명"=$23,
+         "추가교육내용"=$24, "실시사유"=$25
+       WHERE id=$26 RETURNING *`,
       [
         b['교육종류'] || '', b['사업장명'] || '', b['교육일자'] || '', b['시작시간'] || '', b['종료시간'] || '',
         b['교육시간'] || '', b['교육장소'] || '',
@@ -1333,6 +1351,7 @@ app.put('/api/edu-logs/:id', async (req, res) => {
         parseInt(b['실시자수_계']) || 0, parseInt(b['실시자수_남']) || 0, parseInt(b['실시자수_여']) || 0,
         b['미실시사유'] || '', b['특이사항'] || '',
         b['담당서명'] || '', b['검토서명'] || '', b['승인서명'] || '',
+        b['추가교육내용'] || '', b['실시사유'] || '',
         req.params.id,
       ]
     );
