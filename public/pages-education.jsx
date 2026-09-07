@@ -357,7 +357,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
     실시사유: editData?.["실시사유"] || "",            // MSDS: 교육 실시 사유 체크(콤마구분 번호)
   });
   const [attendees, setAttendees] = React.useState(
-    Array.from({ length: 20 }, (_, i) => ({ 연번: i + 1, 직종: "", 성명: "" }))
+    Array.from({ length: 18 }, (_, i) => ({ 연번: i + 1, 직종: "", 성명: "" }))
   );
   const [saving, setSaving] = React.useState(false);
   const [saved, setSaved] = React.useState(false);
@@ -376,7 +376,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
         }));
         // 폼은 20명 고정 슬롯 — 비어있는 칸 채우기
         const padded = [...restored];
-        while (padded.length < 20) padded.push({ 연번: padded.length + 1, 직종: "", 성명: "" });
+        while (padded.length < 18) padded.push({ 연번: padded.length + 1, 직종: "", 성명: "" });
         setAttendees(padded);
       }).catch(() => {/* 로드 실패해도 빈 폼 유지 */});
     }
@@ -797,7 +797,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
             {/* 교육 실시 사유 (MSDS 전용) */}
             {currentEduType.id === "MSDS" && (
               <tr>
-                <td className="lbl">교육 실시 사유</td>
+                <td className="lbl" style={{ lineHeight: 1.35 }}>교육<br />실시<br />사유</td>
                 <td colSpan={5} style={{ padding: "10px 12px" }}>
                   {MSDS_REASONS.map((r, i) => {
                     const n = i + 1;
@@ -853,9 +853,9 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 10 }, (_, i) => (
+              {Array.from({ length: 9 }, (_, i) => (
                 <tr key={i}>
-                  {[i, i + 10].map(idx => (
+                  {[i, i + 9].map(idx => (
                     <React.Fragment key={idx}>
                       <td>{idx + 1}</td>
                       <td>
