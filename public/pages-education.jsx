@@ -396,8 +396,12 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
   const currentEduType = eduTypes.find(t => t.label === eduType) || eduTypes[0] || EDU_TYPES[0];
   // 백엔드 type은 content 필드 직접 가짐, fallback은 EDU_CONTENT 맵 참조
   const eduContent = currentEduType?.content || EDU_CONTENT[currentEduType?.id] || "해당 교육의 법령 내용이 적용됩니다.";
-  // 참석자 명단 인원수 (MSDS는 1페이지에 맞게 17명, 그 외 18명). 2열 배치 → 행 수는 절반.
-  const maxAttendees = currentEduType?.id === "MSDS" ? 17 : 18;
+  // 참석자 명단 인원수 — 교육내용이 긴 종류는 1페이지에 맞게 줄임(2열 배치라 2명당 1줄).
+  const ATT_LIMIT = {
+    "MSDS": 16,                    // 8줄
+    "채용시교육_관리감독자": 16,     // 8줄 (교육내용 13항목으로 긴 편)
+  };
+  const maxAttendees = ATT_LIMIT[currentEduType?.id] ?? 18;
   const attRows = Math.ceil(maxAttendees / 2);
 
   // 결재 권한 확인
