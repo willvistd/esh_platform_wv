@@ -651,7 +651,10 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               {saving ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {isEditMode ? "수정 저장" : "저장"}</>}
             </button>
           )}
-          <PrintButton onClick={handlePrint} />
+          {/* 저장 버튼과 동일한 높이(btn-sm 미사용)로 맞춤 */}
+          <button className="btn btn-secondary no-print" onClick={handlePrint}>
+            <Icon name="printer" size={14} /> PDF 출력
+          </button>
         </div>
       </div>
 
