@@ -789,8 +789,8 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
                   onChange={e => update("강사명", e.target.value)}
                   placeholder="강사명" readOnly={isView} />
               </td>
-              <td className="lbl" style={{ background: "#fafafa" }}>교육장소</td>
-              <td>
+              <td className="lbl" rowSpan={2} style={{ background: "#fafafa" }}>교육장소</td>
+              <td rowSpan={2}>
                 <input type="text" value={form.교육장소}
                   onChange={e => update("교육장소", e.target.value)}
                   placeholder="교육장소" readOnly={isView} />
@@ -798,7 +798,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
             </tr>
             <tr>
               <td className="lbl" style={{ background: "#fafafa" }}>직책</td>
-              <td colSpan={4}>
+              <td colSpan={2}>
                 <input type="text" value={form.강사직책}
                   onChange={e => update("강사직책", e.target.value)}
                   placeholder="직책 입력" readOnly={isView} />
