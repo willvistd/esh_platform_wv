@@ -157,8 +157,19 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
   const th = { textAlign: 'left', fontSize: 12, color: '#667085', fontWeight: 700, padding: '7px 9px', borderBottom: '2px solid #e5e9ef', whiteSpace: 'nowrap' };
   const td = { padding: '7px 9px', borderBottom: '1px solid #eef1f5', fontSize: 13, verticalAlign: 'top' };
 
+  const productName = (judgeRes && judgeRes.product_name) || (product && product.name) || '';
+  const manufacturer = (product && product.manufacturer) || '';
+
   return (
     <div style={{ padding: '4px 2px' }}>
+      {/* 물질명(제품명) 헤더 — 관리요령·경고표지와 동일하게 상단에 표기 */}
+      <div style={{ borderBottom: '2px solid #e5e9ef', paddingBottom: 10, marginBottom: 12 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#98a2b3', letterSpacing: 0.4 }}>물질명 / 제품명</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: '#101828', marginTop: 2 }}>
+          {productName || <span style={{ fontSize: 14, fontWeight: 600, color: '#c0c6d0' }}>제품명 미입력 — 좌측에서 제품명을 입력하세요</span>}
+        </div>
+        {manufacturer && <div style={{ fontSize: 12, color: '#667085', marginTop: 2 }}>제조사·공급자: {manufacturer}</div>}
+      </div>
       <p style={{ color: '#667085', fontSize: 13, margin: '4px 0 12px' }}>
         MSDS에서 추출한 구성성분을 법정 유해인자 목록(작업환경측정·특수건강진단·관리대상)과 대조한 결과입니다.
         성분·함유량을 직접 수정한 뒤 다시 판정할 수 있습니다.
