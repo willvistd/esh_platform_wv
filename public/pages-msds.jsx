@@ -144,7 +144,8 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
     const H = ['연번','제품명','성분명','CAS No.','함유량','취급부서','취급장소','월 취급량','작업환경측정 대상','특수건강진단 대상','특별관리물질','허가대상','판정근거','판정일','데이터 기준일'];
     const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
     const lines = [H.map(q).join(',')];
-    judgeRes.components.forEach((c, i) => lines.push([i + 1, judgeRes.product_name || (product && product.name) || '', c.name, c.cas || c.cas_raw || '', c.content_raw, '', '', '',
+    const compName = c => { const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim(); return ko ? (sub && sub !== ko ? `${ko} (${sub})` : ko) : c.name; };
+    judgeRes.components.forEach((c, i) => lines.push([i + 1, judgeRes.product_name || (product && product.name) || '', compName(c), c.cas || c.cas_raw || '', c.content_raw, '', '', '',
       (RES[c.wem.result] || {}).label || c.wem.result, c.she.result === 'TARGET' ? '대상' : '—',
       c.flags.includes('특별관리물질') ? '○' : '', c.flags.includes('허가대상물질') ? '○' : '', c.wem.reason, judgeRes.judged_at, judgeRes.data_baseline].map(q).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -221,7 +222,15 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
             <tbody>
               {judgeRes.components.map((c, i) => (
                 <tr key={i}>
-                  <td style={td}>{c.name || <span style={{ color: '#bbb' }}>—</span>}</td>
+                  <td style={td}>{(() => {
+                    const ko = c.name_ko && c.name_ko.trim();
+                    const sub = (c.name_en && c.name_en.trim()) || (c.name && c.name.trim());
+                    if (!ko && !c.name) return <span style={{ color: '#bbb' }}>—</span>;
+                    return (<>
+                      <div style={{ fontWeight: 600 }}>{ko || c.name}</div>
+                      {ko && sub && sub !== ko && <div style={{ fontSize: 11, color: '#98a2b3' }}>{sub}</div>}
+                    </>);
+                  })()}</td>
                   <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{c.cas || c.cas_raw || '—'}</td>
                   <td style={td}>{c.content_raw || '—'}</td>
                   <td style={td}>{badge(c.wem.result)}</td>
