@@ -1365,15 +1365,15 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
               </div>
               <div className="meta" style={{whiteSpace: "normal", lineHeight: 1.4}}>{c.desc}</div>
               <div className="mono" style={{ color: "var(--fg-2)" }}>{c.count}</div>
-              <div style={{ display: "flex", gap: 4 }}>
+              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 <button className="btn btn-ghost btn-sm" title="하위메뉴 편집"
                   onClick={(e) => { e.stopPropagation(); setExpandedCat(expanded ? null : c.id); }}
                   style={{ color: expanded ? "var(--primary)" : undefined }}>
                   <Icon name={expanded ? "chevron-down" : "chevron-right"} size={12} /> 하위 {subCount}
                 </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => startEdit(c)}><Icon name="edit" size={12} /></button>
-                <button className="btn btn-ghost btn-sm" onClick={() => remove(c)}><Icon name="trash" size={12} /></button>
-                <button className="btn btn-ghost btn-sm"><Icon name="more-horizontal" size={12} /></button>
+                <button className="btn btn-ghost btn-sm" title="수정" onClick={() => startEdit(c)}><Icon name="edit" size={12} /></button>
+                <button className="btn btn-ghost btn-sm" title="삭제" onClick={() => remove(c)}
+                  style={{ color: "#dc2626" }}><Icon name="trash" size={12} /></button>
               </div>
             </div>
             {expanded && (
@@ -1475,13 +1475,13 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
       <style>{`
         .cat-mng-hd, .cat-mng-row {
           display: grid;
-          grid-template-columns: 240px 1.5fr 80px 110px;
+          grid-template-columns: 220px 1.5fr 80px 184px;
           gap: 16px; align-items: center;
           padding: 14px 18px;
           font-size: 13px;
         }
         @media (max-width: 900px) {
-          .cat-mng-hd, .cat-mng-row { grid-template-columns: 200px 1fr 90px; }
+          .cat-mng-hd, .cat-mng-row { grid-template-columns: 150px 1fr 160px; }
           .cat-mng-row > div:nth-child(3), .cat-mng-hd > div:nth-child(3) { display: none; }
         }
         .cat-mng-hd {
