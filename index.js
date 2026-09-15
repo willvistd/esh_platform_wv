@@ -1755,8 +1755,12 @@ const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\
 // 유효 문자에 점(.)도 포함 — 새 형식 키(예: AQ.Ab8...)에 점이 들어가므로 제거하면 키가 깨짐.
 // 공백/개행/따옴표만 걸러지도록 키 구성 문자(영문/숫자/_/-/.)를 허용.
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za-z0-9_.\-]/g, '');
-// gemini-2.5-flash만 사용 — 실측 결과 안정적(5/5). flash-latest는 과부하 잦아 제외.
-const GEMINI_MODELS = process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : ['gemini-2.5-flash'];
+// 최신 모델 우선, 접근 불가 시 하위 모델로 자동 폴백.
+// (구 gemini-2.5-flash는 2026년부터 신규 사용자에게 제공 중단 → 3.x 계열로 교체)
+// 특정 모델 고정이 필요하면 환경변수 GEMINI_MODEL 로 지정.
+const GEMINI_MODELS = process.env.GEMINI_MODEL
+  ? [process.env.GEMINI_MODEL]
+  : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
