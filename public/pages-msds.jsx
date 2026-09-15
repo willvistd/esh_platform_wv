@@ -175,32 +175,9 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
         MSDS에서 추출한 구성성분을 법정 유해인자 목록(작업환경측정·특수건강진단·관리대상)과 대조한 결과입니다.
         성분·함유량을 직접 수정한 뒤 다시 판정할 수 있습니다.
       </p>
-      {/* 성분 편집 표 */}
-      <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
-          <thead><tr><th style={{ ...th, width: 34 }}>#</th><th style={th}>성분명</th><th style={{ ...th, width: 140 }}>CAS</th><th style={{ ...th, width: 110 }}>함유량</th><th style={{ ...th, width: 36 }}></th></tr></thead>
-          <tbody>
-            {components.length === 0 && (<tr><td style={{ ...td, color: '#98a2b3', textAlign: 'center' }} colSpan={5}>MSDS를 업로드하면 성분이 자동으로 채워집니다. 직접 추가할 수도 있어요.</td></tr>)}
-            {components.map((c, i) => (
-              <tr key={i}>
-                <td style={{ ...td, color: '#98a2b3' }}>{i + 1}</td>
-                <td style={td}><input style={inp} value={c.name} onChange={e => setRow(i, 'name', e.target.value)} placeholder="톨루엔" /></td>
-                <td style={td}><input style={inp} value={c.cas} onChange={e => setRow(i, 'cas', e.target.value)} placeholder="108-88-3" /></td>
-                <td style={td}><input style={inp} value={c.content} onChange={e => setRow(i, 'content', e.target.value)} placeholder="30~40%" /></td>
-                <td style={td}><button className="btn btn-ghost btn-sm" onClick={() => delRow(i)}>✕</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div style={{ display: 'flex', gap: 8, margin: '10px 0', flexWrap: 'wrap' }}>
-        <button className="btn btn-ghost btn-sm" onClick={addRow}>+ 성분 추가</button>
-        <button className="btn btn-primary" onClick={() => runJudge()} disabled={judging || !components.length}>{judging ? '판정 중…' : '판정하기'}</button>
-        {judgeRes && <button className="btn btn-ghost btn-sm" onClick={exportCsv}>📥 판정 대장 CSV</button>}
-      </div>
-
-      {judgeRes && (<>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
+      {/* ── 판정 결과 (자동 판정) — 상단 배치 ── */}
+      {judgeRes ? (<>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '4px 0 12px' }}>
           {[['측정 대상', judgeRes.summary.wem_target_count, '#b42318', '#fdeeee'],
             ['특수검진', judgeRes.summary.she_target_count, '#087443', '#eafaf0'],
             ['기준 미달', judgeRes.summary.wem_below_count, '#b25e09', '#fff7e6'],
@@ -245,7 +222,36 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
           {judgeRes.notices.map((n, i) => <li key={i}>{n}</li>)}
           <li>판정일 {judgeRes.judged_at} · 법령 데이터 기준일 {judgeRes.data_baseline}</li>
         </ul>
-      </>)}
+      </>) : (
+        <div style={{ padding: '18px 12px', textAlign: 'center', color: '#98a2b3', fontSize: 13, border: '1px dashed #e0e5ec', borderRadius: 8 }}>
+          아래 표에서 성분을 확인하고 <b style={{ color: '#475467' }}>판정하기</b>를 누르면, 여기에 작업환경측정·특수검진 대상 여부가 표시됩니다.
+        </div>
+      )}
+
+      {/* ── 성분 직접 수정 · 재판정 — 하단 배치 ── */}
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#475467', margin: '18px 0 6px' }}>성분 직접 수정 · 재판정</div>
+      <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 520 }}>
+          <thead><tr><th style={{ ...th, width: 34 }}>#</th><th style={th}>성분명</th><th style={{ ...th, width: 140 }}>CAS</th><th style={{ ...th, width: 110 }}>함유량</th><th style={{ ...th, width: 36 }}></th></tr></thead>
+          <tbody>
+            {components.length === 0 && (<tr><td style={{ ...td, color: '#98a2b3', textAlign: 'center' }} colSpan={5}>MSDS를 업로드하면 성분이 자동으로 채워집니다. 직접 추가할 수도 있어요.</td></tr>)}
+            {components.map((c, i) => (
+              <tr key={i}>
+                <td style={{ ...td, color: '#98a2b3' }}>{i + 1}</td>
+                <td style={td}><input style={inp} value={c.name} onChange={e => setRow(i, 'name', e.target.value)} placeholder="톨루엔" /></td>
+                <td style={td}><input style={inp} value={c.cas} onChange={e => setRow(i, 'cas', e.target.value)} placeholder="108-88-3" /></td>
+                <td style={td}><input style={inp} value={c.content} onChange={e => setRow(i, 'content', e.target.value)} placeholder="30~40%" /></td>
+                <td style={td}><button className="btn btn-ghost btn-sm" onClick={() => delRow(i)}>✕</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ display: 'flex', gap: 8, margin: '10px 0', flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost btn-sm" onClick={addRow}>+ 성분 추가</button>
+        <button className="btn btn-primary" onClick={() => runJudge()} disabled={judging || !components.length}>{judging ? '판정 중…' : '판정하기'}</button>
+        {judgeRes && <button className="btn btn-ghost btn-sm" onClick={exportCsv}>📥 판정 대장 CSV</button>}
+      </div>
     </div>
   );
 };
@@ -699,7 +705,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         .msds-otabs { display:flex; gap:8px; margin-bottom:14px; }
         .msds-otab { padding:6px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--line); background:white; color:var(--fg-3); transition:all .2s; font-family:inherit; }
         .msds-otab.on { background:var(--primary); border-color:var(--primary); color:white; }
-        .msds-a4w { background:#fff3cd; border:1.5px solid #e0a800; border-radius:8px; padding:9px 13px; margin-bottom:12px; font-size:12px; color:#856404; display:flex; align-items:center; gap:8px; }
+        .msds-a4w { background:#fff3cd; border:1.5px solid #e0a800; border-radius:8px; padding:9px 13px; margin-bottom:12px; font-size:12px; color:#856404; display:flex; align-items:center; gap:8px; max-width:860px; box-sizing:border-box; }
         .msds-print-btn { padding:8px 14px; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; display:flex; align-items:center; gap:5px; background:white; border:1.5px solid var(--line); color:var(--fg); transition:all .2s; }
         .msds-print-btn:hover { border-color:var(--primary); color:var(--primary); }
 
