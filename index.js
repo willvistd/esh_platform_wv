@@ -1888,9 +1888,9 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       contents: [{ parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ] }],
-      // thinkingBudget:0 — gemini-2.5-flash의 기본 '사고' 토큰이 출력 한도를 잠식해
-      // JSON이 잘리는 문제 방지. 출력 한도도 8192로 상향.
-      generationConfig: { temperature: 0, maxOutputTokens: 8192, thinkingConfig: { thinkingBudget: 0 } },
+      // 레거시 thinkingConfig.thinkingBudget:0 은 Gemini 3.x에서 오류(429/400)를 유발하므로 제거.
+      // 대신 출력 한도를 크게 잡아, 기본 '사고' 토큰이 출력을 잠식해 JSON이 잘리는 것을 방지.
+      generationConfig: { temperature: 0, maxOutputTokens: 32768 },
     });
     const options = {
       hostname: 'generativelanguage.googleapis.com',
