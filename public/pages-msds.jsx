@@ -279,6 +279,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     hazardCodes: '', preventPhrases: '', responsePhrases: '',
     storagePhrases: '', disposalPhrases: '',
     companyName: '', companyPhone: '', companyAddress: '',
+    revisionDate: '',   // MSDS 개정일자 (문서 마지막)
   });
   const [components, setComponents] = React.useState([]);   // MSDS 3절 구성성분
   const [judgeRes,   setJudgeRes]   = React.useState(null); // 판정 결과
@@ -321,6 +322,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       companyName:     d.companyName      || f.companyName,
       companyPhone:    d.companyPhone     || f.companyPhone,
       companyAddress:  d.companyAddress   || f.companyAddress,
+      revisionDate:    d.revisionDate     || f.revisionDate,
     }));
     if (Array.isArray(d.ghsIds) && d.ghsIds.length) setGhsSel(d.ghsIds.map(Number).filter(n => !isNaN(n) && n > 0));
     if (Array.isArray(d.ppeIds) && d.ppeIds.length) setPpeSel(d.ppeIds.map(Number).filter(n => !isNaN(n) && n > 0));
@@ -1041,6 +1043,11 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                   ))}
                 </tbody>
               </table>
+              {/* 개정일자 — MSDS 마지막 개정일. 오래되면 최신본 아닐 수 있어 참고용 표기 */}
+              <div style={{ textAlign: 'right', fontSize: 11, color: '#777', padding: '6px 12px 8px' }}>
+                개정일자&nbsp;
+                <MsdsInlineEdit value={form.revisionDate} onChange={v => sf('revisionDate', v)} placeholder="YYYY-MM-DD" rows={1} inline />
+              </div>
             </div>
           </div>
         )}
