@@ -127,6 +127,9 @@ function judgeComponent(comp) {
 
   // 3) 성분 미공개/함유량 미기재 → UNDETERMINED (등재는 됐으나 판정 근거 부족)
   const src = rec || {};
+  // 매칭된 법정 목록의 한글/영문 물질명 — 화면 한글 병기용
+  out.name_ko = src.name_ko || (group && group.group_name) || '';
+  out.name_en = src.name_en || '';
   const wem = src.wem || (group && group.wem) || { listed: false };
   const she = src.she || (group && group.she) || { listed: false };
 
