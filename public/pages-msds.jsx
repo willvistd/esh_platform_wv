@@ -162,7 +162,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
   const manufacturer = (product && product.manufacturer) || '';
 
   return (
-    <div style={{ padding: '4px 2px' }}>
+    <div style={{ padding: '4px 2px', maxWidth: 860 }}>
       {/* 물질명(제품명) 헤더 — 관리요령·경고표지와 동일하게 상단에 표기 */}
       <div style={{ borderBottom: '2px solid #e5e9ef', paddingBottom: 10, marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#98a2b3', letterSpacing: 0.4 }}>물질명 / 제품명</div>
