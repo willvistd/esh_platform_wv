@@ -1269,12 +1269,18 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   };
 
   const remove = async (cat) => {
-    if (!confirm(`"${cat.name}" 카테고리를 삭제할까요?`)) return;
-    await window.WV_API.deleteCategory(cat.id);
-    setCats(prev => prev.filter(c => c.id !== cat.id));
-    const idx = D.categories.findIndex(c => c.id === cat.id);
-    if (idx > -1) D.categories.splice(idx, 1);
-    if (onCategoryUpdate) onCategoryUpdate([...D.categories]);
+    if (!confirm(`"${cat.name}" 카테고리를 삭제할까요?`)) return false;
+    try {
+      await window.WV_API.deleteCategory(cat.id);
+      setCats(prev => prev.filter(c => c.id !== cat.id));
+      const idx = D.categories.findIndex(c => c.id === cat.id);
+      if (idx > -1) D.categories.splice(idx, 1);
+      if (onCategoryUpdate) onCategoryUpdate([...D.categories]);
+      return true;
+    } catch (e) {
+      alert("삭제 실패: " + (e.message || "다시 시도해주세요."));
+      return false;
+    }
   };
 
   const updateCat = async () => {
@@ -1442,6 +1448,12 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
               </div>
             </div>
             <div className="modal-ft">
+              {editing && (
+                <button className="btn btn-danger" disabled={saving}
+                  onClick={async () => { if (await remove(editing)) { setAdding(false); reset(); } }}>
+                  <Icon name="trash" size={14} /> 삭제
+                </button>
+              )}
               <button className="btn btn-secondary" onClick={() => { setAdding(false); reset(); }}>취소</button>
               <button className="btn btn-primary" onClick={editing ? updateCat : add} disabled={saving}>
                 {saving ? <span className="login-spinner" /> : <><Icon name="check" size={14} /> {editing ? "수정" : "추가"}</>}
