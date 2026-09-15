@@ -5,6 +5,8 @@
     { "src": "public/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/", "headers": { "cache-control": "no-cache, must-revalidate" }, "continue": true },
+    { "src": "/(.*\\.(?:js|jsx|css|html))", "headers": { "cache-control": "no-cache, must-revalidate" }, "continue": true },
     { "src": "/api/(.*)", "dest": "/index.js" },
     { "src": "/tools/safety-signs", "dest": "/public/tools/safety-signs.html" },
     { "src": "/", "dest": "/public/index.html" },
