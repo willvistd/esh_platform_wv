@@ -284,6 +284,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [components, setComponents] = React.useState([]);   // MSDS 3절 구성성분
   const [judgeRes,   setJudgeRes]   = React.useState(null); // 판정 결과
   const [judging,    setJudging]    = React.useState(false);
+  const [reviewHint, setReviewHint] = React.useState(false);  // 추출 직후 그림문자·보호구 확인 강조
 
   const fileRef = React.useRef(null);
   const cardRef = React.useRef(null);
@@ -295,10 +296,11 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   }, [previewTab, form, ghsSel, ppeSel]);
 
   const sf = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const toggleGhs = id => setGhsSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
-  const togglePpe = id => setPpeSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+  const toggleGhs = id => { setReviewHint(false); setGhsSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
+  const togglePpe = id => { setReviewHint(false); setPpeSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
 
   const applyData = d => {
+    setReviewHint(true);   // 추출 직후 그림문자·보호구 확인 유도 (자동 추출 누락 잦음)
     setForm(f => ({
       ...f,
       productName:     d.productName      || f.productName,
@@ -911,7 +913,8 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         <hr className="msds-hr" />
 
         <div className="msds-sec-label">그림문자 선택 <span className="msds-chip msds-chip-o">클릭</span></div>
-        <div className="msds-img-panel">
+        <div className="msds-img-panel" style={reviewHint ? { borderColor: '#e05252', boxShadow: '0 0 0 3px rgba(224,82,82,.18)' } : undefined}>
+          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#c0392b', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요 — 그림문자를 확인 후 저장하세요</div>}
           <div className="msds-img-grid">
             {GHS_LIST.map(g => (
               <MsdsGhsItem key={g.id} item={g} selected={ghsSel.includes(g.id)} onToggle={toggleGhs} />
@@ -922,7 +925,8 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         <hr className="msds-hr" />
 
         <div className="msds-sec-label">보호구 선택 <span className="msds-chip msds-chip-o">클릭</span></div>
-        <div className="msds-img-panel">
+        <div className="msds-img-panel" style={reviewHint ? { borderColor: '#2f6fe0', boxShadow: '0 0 0 3px rgba(47,111,224,.18)' } : undefined}>
+          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요 — 보호구를 확인 후 저장하세요</div>}
           <div className="msds-img-grid">
             {PPE_LIST.map(p => (
               <MsdsPpeItem key={p.id} item={p} selected={ppeSel.includes(p.id)} onToggle={togglePpe} />
