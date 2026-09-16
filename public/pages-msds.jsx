@@ -764,7 +764,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         .msds-R { background:var(--bg); overflow-y:auto; padding:20px 32px 40px; }
         .msds-print-area { max-width:860px; }
         .msds-R-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-        .msds-otabs { display:flex; gap:8px; margin-bottom:14px; }
+        .msds-otabs { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
         .msds-otab { padding:6px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--line); background:white; color:var(--fg-3); transition:all .2s; font-family:inherit; }
         .msds-otab.on { background:var(--primary); border-color:var(--primary); color:white; }
         .msds-a4w { background:#fff3cd; border:1.5px solid #e0a800; border-radius:8px; padding:9px 13px; margin-bottom:12px; font-size:12px; color:#856404; display:flex; align-items:center; gap:8px; max-width:860px; box-sizing:border-box; }
@@ -997,13 +997,6 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       <div className="msds-R">
         <div className="msds-R-hdr">
           <div style={{ fontSize: 15, fontWeight: 700 }}>칸에 마우스를 올리면 수정 버튼이 나타납니다!</div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-primary no-print" onClick={openSave}
-              style={{ background: '#16a34a', borderColor: '#16a34a' }}>
-              <Icon name="check" size={14} /> 관리대장 저장
-            </button>
-            <PrintButton onClick={handlePrint} />
-          </div>
         </div>
 
         {/* ── 관리대장 저장 다이얼로그 ── */}
@@ -1053,6 +1046,14 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>
           <button className={`msds-otab${previewTab === 1 ? ' on' : ''}`} onClick={() => setPreviewTab(1)}>경고표지</button>
           <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정 특수검진 판정{components.length ? ` (${components.length})` : ''}</button>
+          {/* 저장·출력 버튼 — 탭과 같은 줄 오른쪽 끝 */}
+          <div className="msds-otabs-actions no-print" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary btn-sm no-print" onClick={openSave}
+              style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+              <Icon name="check" size={13} /> 관리대장 저장
+            </button>
+            <PrintButton onClick={handlePrint} className="btn-sm" />
+          </div>
         </div>
 
         {/* ── 작업환경측정 특수검진 판정 ── */}
