@@ -764,7 +764,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         .msds-R { background:var(--bg); overflow-y:auto; padding:20px 32px 40px; }
         .msds-print-area { max-width:860px; }
         .msds-R-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-        .msds-otabs { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+        .msds-otabs { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; max-width:860px; }
         .msds-otab { padding:6px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--line); background:white; color:var(--fg-3); transition:all .2s; font-family:inherit; }
         .msds-otab.on { background:var(--primary); border-color:var(--primary); color:white; }
         .msds-a4w { background:#fff3cd; border:1.5px solid #e0a800; border-radius:8px; padding:9px 13px; margin-bottom:12px; font-size:12px; color:#856404; display:flex; align-items:center; gap:8px; max-width:860px; box-sizing:border-box; }
