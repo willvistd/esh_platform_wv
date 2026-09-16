@@ -1270,6 +1270,9 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
 
   const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
   const filtered = visible.filter(it => siteFilter === '전체' || it['사업장명'] === siteFilter);
+  // 사업장 컬럼은 '전체'로 여러 사업장을 볼 때만. 사업장 계정(1곳)이나 특정 사업장 필터 시엔 제목 아래 사업장명만 표기.
+  const showSiteCol = siteFilter === '전체' && siteNames.length > 1;
+  const soleSite = siteFilter !== '전체' ? siteFilter : (siteNames.length === 1 ? siteNames[0] : '');
 
   const canDelete = (it) => role === 'admin' || role === 'safety' || it['작성자'] === (currentUser && currentUser.name);
   const handleDelete = async (it) => {
@@ -1341,13 +1344,13 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
         <div className="card ledger-print" style={{ overflowX: 'auto' }}>
           <div style={{ padding: '14px 16px 4px' }}>
             <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장</div>
-            {siteFilter !== '전체' && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{siteFilter}</div>}
+            {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
             <thead>
               <tr>
                 <th style={{ ...th, width: 34 }}>구분</th>
-                {siteFilter === '전체' && <th style={th}>사업장</th>}
+                {showSiteCol && <th style={th}>사업장</th>}
                 <th style={th}>제품명</th>
                 <th style={th}>제조회사</th>
                 <th style={th}>사용용도</th>
@@ -1366,7 +1369,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 return (
                   <tr key={it.id}>
                     <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
-                    {siteFilter === '전체' && <td style={td}>{it['사업장명']}</td>}
+                    {showSiteCol && <td style={td}>{it['사업장명']}</td>}
                     <td style={{ ...td, fontWeight: 600 }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
                     <td style={td}>{it['제조회사'] || '—'}</td>
                     <td style={td}>{it['사용용도'] || '—'}</td>
