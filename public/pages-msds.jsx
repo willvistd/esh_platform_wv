@@ -285,6 +285,15 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [judgeRes,   setJudgeRes]   = React.useState(null); // 판정 결과
   const [judging,    setJudging]    = React.useState(false);
   const [reviewHint, setReviewHint] = React.useState(false);  // 추출 직후 그림문자·보호구 확인 강조
+  // ── 관리대장 저장 ──
+  const [sites,        setSites]        = React.useState([]);
+  const [showSave,     setShowSave]     = React.useState(false);
+  const [saveSite,     setSaveSite]     = React.useState('');
+  const [saveUsage,    setSaveUsage]    = React.useState('');
+  const [saveFreq,     setSaveFreq]     = React.useState('');
+  const [saveNote,     setSaveNote]     = React.useState('');
+  const [savingLedger, setSavingLedger] = React.useState(false);
+  const [ledgerMsg,    setLedgerMsg]    = React.useState('');
 
   const fileRef = React.useRef(null);
   const cardRef = React.useRef(null);
@@ -294,6 +303,55 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     const over = cardRef.current.scrollHeight > A4H;
     setA4Over(p => p === over ? p : over);
   }, [previewTab, form, ghsSel, ppeSel]);
+
+  // 사업장 목록 로드 (관리대장 저장 시 사업장 선택용)
+  React.useEffect(() => {
+    if (window.WV_API && window.WV_API.getSites) {
+      window.WV_API.getSites().then(list => {
+        setSites(Array.isArray(list) ? list : (list && list.sites) || []);
+      }).catch(() => {});
+    }
+  }, []);
+
+  // 저장 가능한 사업장: admin/safety는 전체, 그 외는 본인 담당 사업장만
+  const allowedSites = React.useMemo(() => {
+    if (role === 'admin' || role === 'safety') return sites;
+    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+    return sites.filter(s => myIds.includes(String(s.id)));
+  }, [sites, role, currentUser]);
+
+  const openSave = () => {
+    setLedgerMsg('');
+    setSaveSite(prev => prev || (allowedSites.length === 1 ? String(allowedSites[0].id) : ''));
+    setShowSave(true);
+  };
+
+  const handleSaveLedger = async () => {
+    if (!form.productName) { setLedgerMsg('제품명을 먼저 입력/추출하세요.'); return; }
+    const site = allowedSites.find(s => String(s.id) === String(saveSite));
+    if (!site) { setLedgerMsg('사업장을 선택하세요.'); return; }
+    setSavingLedger(true); setLedgerMsg('');
+    try {
+      const wemT = judgeRes ? judgeRes.components.filter(c => c.wem.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
+      const sheT = judgeRes ? judgeRes.components.filter(c => c.she.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
+      await window.WV_API.addMsdsLedger({
+        siteId: site.id, 사업장명: site.name,
+        제품명: form.productName, 제조회사: form.companyName, 개정일자: form.revisionDate,
+        사용용도: saveUsage, 사용빈도: saveFreq, 비고: saveNote,
+        신호어: form.signalWord, ghsIds: ghsSel.join(','), ppeIds: ppeSel.join(','),
+        측정대상: wemT, 특검대상: sheT,
+        특별관리물질: !!(judgeRes && judgeRes.summary && judgeRes.summary.special_substance),
+        성분: JSON.stringify(components || []),
+        작성자: (currentUser && currentUser.name) || '',
+      });
+      setLedgerMsg('✓ 저장 완료! 관리대장에서 확인할 수 있어요.');
+      setSaveUsage(''); setSaveFreq(''); setSaveNote('');
+      setTimeout(() => setShowSave(false), 1000);
+    } catch (e) {
+      setLedgerMsg('저장 실패: ' + (e.message || '다시 시도해주세요.'));
+    }
+    setSavingLedger(false);
+  };
 
   const sf = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const toggleGhs = id => { setReviewHint(false); setGhsSel(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
@@ -939,8 +997,58 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       <div className="msds-R">
         <div className="msds-R-hdr">
           <div style={{ fontSize: 15, fontWeight: 700 }}>칸에 마우스를 올리면 수정 버튼이 나타납니다!</div>
-          <PrintButton onClick={handlePrint} />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary no-print" onClick={openSave}
+              style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+              <Icon name="check" size={14} /> 관리대장 저장
+            </button>
+            <PrintButton onClick={handlePrint} />
+          </div>
         </div>
+
+        {/* ── 관리대장 저장 다이얼로그 ── */}
+        {showSave && (
+          <div className="modal-overlay no-print" onClick={() => setShowSave(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: 'var(--bg, #fff)', borderRadius: 12, width: '100%', maxWidth: 460, padding: '20px 22px', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+              <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>MSDS 관리대장에 저장</div>
+              <div style={{ fontSize: 12.5, color: 'var(--fg-3, #667085)', marginBottom: 16 }}>
+                <b>{form.productName || '(제품명 미입력)'}</b> 을(를) 선택한 사업장의 관리대장에 추가합니다.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ fontSize: 12.5, fontWeight: 700 }}>사업장 *
+                  <select className="field-select" value={saveSite} onChange={e => setSaveSite(e.target.value)}
+                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13 }}>
+                    <option value="">사업장 선택…</option>
+                    {allowedSites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  {allowedSites.length === 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>담당 사업장이 없습니다. 관리자에게 문의하세요.</span>}
+                </label>
+                <label style={{ fontSize: 12.5, fontWeight: 700 }}>사용용도
+                  <input className="field-input" value={saveUsage} onChange={e => setSaveUsage(e.target.value)} placeholder="예: 바닥 전용 세척제"
+                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
+                </label>
+                <label style={{ fontSize: 12.5, fontWeight: 700 }}>사용빈도
+                  <input className="field-input" value={saveFreq} onChange={e => setSaveFreq(e.target.value)} placeholder="예: 주 1회 / 일 15분"
+                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
+                </label>
+                <label style={{ fontSize: 12.5, fontWeight: 700 }}>비고
+                  <input className="field-input" value={saveNote} onChange={e => setSaveNote(e.target.value)} placeholder="예: 화장품 / 안전확인대상생활화학제품"
+                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
+                </label>
+              </div>
+              {ledgerMsg && <div style={{ marginTop: 12, fontSize: 12.5, fontWeight: 600, color: ledgerMsg.startsWith('✓') ? '#16a34a' : '#c0392b' }}>{ledgerMsg}</div>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+                <button className="btn btn-secondary" onClick={() => setShowSave(false)}>취소</button>
+                <button className="btn btn-primary" onClick={handleSaveLedger} disabled={savingLedger}
+                  style={{ background: '#16a34a', borderColor: '#16a34a' }}>
+                  {savingLedger ? '저장 중…' : '저장'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="msds-otabs">
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>
           <button className={`msds-otab${previewTab === 1 ? ' on' : ''}`} onClick={() => setPreviewTab(1)}>경고표지</button>
@@ -1130,4 +1238,153 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   );
 };
 
-Object.assign(window, { MsdsGeneratorView });
+// ── MSDS 관리대장 (사업장별 물질 목록) ──
+const MsdsLedgerView = ({ onNav, currentUser, role }) => {
+  const [items, setItems]     = React.useState([]);
+  const [sites, setSites]     = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [siteFilter, setSiteFilter] = React.useState('전체');
+
+  const reload = React.useCallback(() => {
+    setLoading(true);
+    Promise.all([
+      window.WV_API.getMsdsLedger(),
+      window.WV_API.getSites ? window.WV_API.getSites() : Promise.resolve([]),
+    ]).then(([data, siteData]) => {
+      setItems(Array.isArray(data) ? data : []);
+      setSites(Array.isArray(siteData) ? siteData : (siteData && siteData.sites) || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+  React.useEffect(() => { reload(); }, [reload]);
+
+  // 권한별 가시성: admin/safety 전체, 그 외 본인 담당 사업장 + 본인 작성분
+  const visible = React.useMemo(() => {
+    if (role === 'admin' || role === 'safety') return items;
+    const allowed = new Set();
+    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+    sites.forEach(s => { if (myIds.includes(String(s.id))) allowed.add(String(s.id)); });
+    return items.filter(it => (it['작성자'] === (currentUser && currentUser.name)) || allowed.has(String(it.siteId)));
+  }, [items, sites, role, currentUser]);
+
+  const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
+  const filtered = visible.filter(it => siteFilter === '전체' || it['사업장명'] === siteFilter);
+
+  const canDelete = (it) => role === 'admin' || role === 'safety' || it['작성자'] === (currentUser && currentUser.name);
+  const handleDelete = async (it) => {
+    if (!window.confirm(`"${it['제품명']}" 항목을 관리대장에서 삭제하시겠습니까?`)) return;
+    try { await window.WV_API.deleteMsdsLedger(it.id); reload(); }
+    catch (e) { alert('삭제 실패: ' + (e.message || e)); }
+  };
+
+  // 개정일자 3년 초과 → 갱신 필요(붉은색). 다양한 표기(2021.03.15 등) 대응.
+  const staleYears = (d) => {
+    if (!d) return null;
+    const t = Date.parse(String(d).replace(/[.]/g, '-').replace(/[^0-9-]/g, '').replace(/-+$/, ''));
+    if (isNaN(t)) return null;
+    return (Date.now() - t) / (365.25 * 24 * 3600 * 1000);
+  };
+
+  const th = { padding: '9px 10px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--fg-3)', borderBottom: '2px solid var(--line)', whiteSpace: 'nowrap' };
+  const td = { padding: '9px 10px', fontSize: 12.5, borderBottom: '1px solid var(--line-2)', verticalAlign: 'top' };
+
+  return (
+    <div className="content" style={{ maxWidth: 1040 }}>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .ledger-print, .ledger-print * { visibility: visible; }
+          .ledger-print { position: absolute; top: 0; left: 0; width: 100%; }
+          .ledger-no-print { display: none !important; }
+        }
+      `}</style>
+
+      <div className="ledger-no-print" style={{ marginBottom: 12 }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-generate' })}>
+          <Icon name="arrow-left" size={14} /> MSDS 서식 생성으로
+        </button>
+      </div>
+
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">MSDS 관리대장</h1>
+          <div className="content-sub">사업장에서 사용 중인 MSDS 물질 목록입니다. 개정일자가 3년 넘은 물질은 붉게 표시됩니다.</div>
+        </div>
+        <div className="ledger-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {siteNames.length > 1 && (
+            <select className="field-select" value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 7, fontSize: 13 }}>
+              <option>전체</option>
+              {siteNames.map(n => <option key={n}>{n}</option>)}
+            </select>
+          )}
+          <PrintButton />
+        </div>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--fg-3)' }}>불러오는 중…</div>
+      ) : filtered.length === 0 ? (
+        <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--fg-3)' }}>
+          <Icon name="flask" size={30} />
+          <div style={{ marginTop: 12 }}>저장된 MSDS 물질이 없습니다.</div>
+          <div style={{ fontSize: 12.5, marginTop: 6 }}>MSDS 서식 생성 화면에서 <b>관리대장 저장</b> 버튼으로 추가하세요.</div>
+          <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => onNav({ name: 'msds-generate' })}>MSDS 서식 생성으로</button>
+        </div>
+      ) : (
+        <div className="card ledger-print" style={{ overflowX: 'auto' }}>
+          <div style={{ padding: '14px 16px 4px' }}>
+            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장</div>
+            {siteFilter !== '전체' && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{siteFilter}</div>}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, width: 34 }}>구분</th>
+                {siteFilter === '전체' && <th style={th}>사업장</th>}
+                <th style={th}>제품명</th>
+                <th style={th}>제조회사</th>
+                <th style={th}>사용용도</th>
+                <th style={th}>사용빈도</th>
+                <th style={{ ...th, width: 100 }}>개정일자</th>
+                <th style={th}>작측/특검 대상</th>
+                <th style={th}>비고</th>
+                <th style={{ ...th, width: 40 }} className="ledger-no-print"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((it, i) => {
+                const yrs = staleYears(it['개정일자']);
+                const stale = yrs != null && yrs > 3;
+                const targets = [it['측정대상'] && `측정: ${it['측정대상']}`, it['특검대상'] && `특검: ${it['특검대상']}`].filter(Boolean).join(' / ');
+                return (
+                  <tr key={it.id}>
+                    <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
+                    {siteFilter === '전체' && <td style={td}>{it['사업장명']}</td>}
+                    <td style={{ ...td, fontWeight: 600 }}>{it['제품명']}{it['특별관리물질'] && <span style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
+                    <td style={td}>{it['제조회사'] || '—'}</td>
+                    <td style={td}>{it['사용용도'] || '—'}</td>
+                    <td style={td}>{it['사용빈도'] || '—'}</td>
+                    <td style={{ ...td, whiteSpace: 'nowrap', color: stale ? '#c0392b' : undefined, fontWeight: stale ? 700 : undefined }}>
+                      {it['개정일자'] || '—'}{stale && <span title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
+                    </td>
+                    <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{targets || '—'}</td>
+                    <td style={{ ...td, fontSize: 11.5 }}>{it['비고'] || '—'}</td>
+                    <td style={{ ...td }} className="ledger-no-print">
+                      {canDelete(it) && <button className="btn btn-ghost btn-sm" title="삭제" onClick={() => handleDelete(it)} style={{ color: '#dc2626' }}><Icon name="trash" size={12} /></button>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ padding: '10px 16px', fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.6 }}>
+            ※ 같은 종류의 제품이라도 색상별·제조사별로 MSDS 자료를 각각 별도 보관.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+Object.assign(window, { MsdsGeneratorView, MsdsLedgerView });

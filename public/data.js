@@ -128,6 +128,7 @@ window.WV_SUBMENUS = [
   { key: "field-insp",    catId: "risk-assessment", defaultLabel: "현장점검 보고서",       nav: { name: "field-inspection" }, actNames: ["field-inspection"] },
   { key: "edu-log",       catId: "training",        defaultLabel: "교육일지 작성/조회",    nav: { name: "education-log" }, actNames: ["education-log", "education-log-new", "education-log-list"] },
   { key: "msds-gen",      catId: "msds",            defaultLabel: "MSDS 서식 생성",         nav: { name: "msds-generate" }, actNames: ["msds-generate"] },
+  { key: "msds-ledger",   catId: "msds",            defaultLabel: "MSDS 관리대장",          nav: { name: "msds-ledger" }, actNames: ["msds-ledger"] },
   { key: "safety-signs",  catId: "signage", catName: "안전보건표지", defaultLabel: "출입문 표지 생성", nav: { name: "tool-safety-signs" }, actNames: ["tool-safety-signs"] },
 ];
 

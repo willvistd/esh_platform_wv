@@ -332,6 +332,31 @@ async function initDB() {
     );
   `);
 
+  // MSDS 관리대장 — 사업장별로 저장한 MSDS 물질 목록
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS msds_ledger (
+      id SERIAL PRIMARY KEY,
+      "siteId" INTEGER,
+      "사업장명" TEXT,
+      "제품명" TEXT,
+      "제조회사" TEXT,
+      "개정일자" TEXT,
+      "사용용도" TEXT,
+      "사용빈도" TEXT,
+      "비고" TEXT,
+      "신호어" TEXT,
+      "ghsIds" TEXT,
+      "ppeIds" TEXT,
+      "측정대상" TEXT,
+      "특검대상" TEXT,
+      "특별관리물질" BOOLEAN DEFAULT false,
+      "성분" TEXT,
+      "작성자" TEXT,
+      "작성일" TEXT,
+      "createdAt" TEXT DEFAULT NOW()::TEXT
+    );
+  `);
+
   // 기존 테이블에 approval 컬럼 없을 경우 추가
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS approval BOOLEAN DEFAULT false;`);
 
@@ -2048,6 +2073,51 @@ app.post('/api/substances/judge', (req, res) => {
 // ── GET /api/substances/meta — 데이터 기준일·출처 ──
 app.get('/api/substances/meta', (req, res) => {
   res.json(judge.meta());
+});
+
+// ── MSDS 관리대장 (사업장별 물질 목록) ──
+app.get('/api/msds-ledger', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM msds_ledger ORDER BY "사업장명" ASC, id DESC');
+    res.json({ items: result.rows });
+  } catch (e) {
+    console.error('GET /api/msds-ledger 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/msds-ledger', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const result = await pool.query(
+      `INSERT INTO msds_ledger (
+        "siteId","사업장명","제품명","제조회사","개정일자","사용용도","사용빈도","비고",
+        "신호어","ghsIds","ppeIds","측정대상","특검대상","특별관리물질","성분","작성자","작성일","createdAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW()::TEXT) RETURNING *`,
+      [
+        b['siteId'] ? parseInt(b['siteId']) : null,
+        b['사업장명'] || '', b['제품명'] || '', b['제조회사'] || '', b['개정일자'] || '',
+        b['사용용도'] || '', b['사용빈도'] || '', b['비고'] || '',
+        b['신호어'] || '', b['ghsIds'] || '', b['ppeIds'] || '',
+        b['측정대상'] || '', b['특검대상'] || '', !!b['특별관리물질'],
+        b['성분'] || '', b['작성자'] || '', b['작성일'] || new Date().toISOString(),
+      ]
+    );
+    res.json({ success: true, item: result.rows[0] });
+  } catch (e) {
+    console.error('POST /api/msds-ledger 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/msds-ledger/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM msds_ledger WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('DELETE /api/msds-ledger 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ── POST /api/inspection/analyze — 현장점검 사진 AI 분석 ──
