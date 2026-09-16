@@ -1297,6 +1297,11 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
           .ledger-print, .ledger-print * { visibility: visible; }
           .ledger-print { position: absolute; top: 0; left: 0; width: 100%; }
           .ledger-no-print { display: none !important; }
+          /* 인쇄는 반드시 검정색 — 화면용 붉은 경고색·⚠ 표지는 인쇄 시 제거 */
+          .ledger-print, .ledger-print * { color: #000 !important; }
+          .ledger-print td, .ledger-print th { border-color: #000 !important; }
+          .ledger-warn { display: none !important; }
+          .ledger-badge { background: transparent !important; color: #000 !important; border-color: #000 !important; }
         }
       `}</style>
 
@@ -1362,12 +1367,12 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                   <tr key={it.id}>
                     <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
                     {siteFilter === '전체' && <td style={td}>{it['사업장명']}</td>}
-                    <td style={{ ...td, fontWeight: 600 }}>{it['제품명']}{it['특별관리물질'] && <span style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
+                    <td style={{ ...td, fontWeight: 600 }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
                     <td style={td}>{it['제조회사'] || '—'}</td>
                     <td style={td}>{it['사용용도'] || '—'}</td>
                     <td style={td}>{it['사용빈도'] || '—'}</td>
                     <td style={{ ...td, whiteSpace: 'nowrap', color: stale ? '#c0392b' : undefined, fontWeight: stale ? 700 : undefined }}>
-                      {it['개정일자'] || '—'}{stale && <span title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
+                      {it['개정일자'] || '—'}{stale && <span className="ledger-warn" title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
                     </td>
                     <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{targets || '—'}</td>
                     <td style={{ ...td, fontSize: 11.5 }}>{it['비고'] || '—'}</td>
