@@ -36,6 +36,7 @@ const ENDPOINTS = {
   workerFeedback: API_BASE + "/worker-feedback",
   compliance: API_BASE + "/compliance-submissions",
   orgCharts:  API_BASE + "/org-charts",
+  msdsLedger: API_BASE + "/msds-ledger",
 };
 
 const api = {
@@ -146,6 +147,32 @@ const api = {
     const res = await fetch(`${ENDPOINTS.eduLogs}/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `교육일지 삭제 실패 (${res.status})`);
+    return data;
+  },
+  async getMsdsLedger() {
+    try {
+      const res = await fetch(ENDPOINTS.msdsLedger);
+      const data = await res.json();
+      return data.items || [];
+    } catch (e) {
+      console.error('getMsdsLedger 실패:', e);
+      return [];
+    }
+  },
+  async addMsdsLedger(item) {
+    const res = await fetch(ENDPOINTS.msdsLedger, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `MSDS 관리대장 저장 실패 (${res.status})`);
+    return data;
+  },
+  async deleteMsdsLedger(id) {
+    const res = await fetch(`${ENDPOINTS.msdsLedger}/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `MSDS 관리대장 삭제 실패 (${res.status})`);
     return data;
   },
   async deleteEduAttendeesByEdu(educationId) {
@@ -1032,6 +1059,8 @@ function App() {
           <ApprovalDetail onNav={onNav} docId={route.id} currentUser={currentUser} />
         ) : route.name === "msds-generate" ? (
           <MsdsGeneratorView onNav={onNav} currentUser={currentUser} role={role} />
+        ) : route.name === "msds-ledger" ? (
+          <MsdsLedgerView onNav={onNav} currentUser={currentUser} role={role} />
         ) : route.name === "tool-safety-signs" ? (
           <SafetySignsView onNav={onNav} />
         ) : route.name === "tool-org-chart" ? (
