@@ -149,8 +149,18 @@ window.WV_SUB = {
       ...tools.map((t) => ({ uid: t.key, kind: "tool", toolKey: t.key, label: t.defaultLabel, enabled: true })),
     ];
   },
-  // 저장된 설정(배열) 있으면 그것, 없으면 기본 목록
-  listFor: (c, cfg) => (Array.isArray(cfg && cfg[c.id]) ? cfg[c.id] : window.WV_SUB.defaultList(c)),
+  // 저장된 설정(배열) 있으면 그것, 없으면 기본 목록.
+  //   단, 저장된 설정에 아직 없는 '신규 고정 기능'(코드에 추가된 카탈로그)은 뒤에 자동 추가 →
+  //   새 기능 배포 후에도 하위메뉴에서 사라지지 않도록 함.
+  listFor: (c, cfg) => {
+    const stored = Array.isArray(cfg && cfg[c.id]) ? cfg[c.id] : null;
+    if (!stored) return window.WV_SUB.defaultList(c);
+    const haveKeys = new Set(stored.filter((x) => x.kind === "tool").map((x) => x.toolKey));
+    const missing = window.WV_SUB.toolsForCat(c)
+      .filter((t) => !haveKeys.has(t.key))
+      .map((t) => ({ uid: t.key, kind: "tool", toolKey: t.key, label: t.defaultLabel, enabled: true }));
+    return missing.length ? [...stored, ...missing] : stored;
+  },
   // 항목 → { label, nav, act } (사이드바 렌더용)
   //   cats: 현재(라이브) 카테고리 목록 — 다른 카테고리 게시판 링크의 이름을 항상 최신으로 보이게 함
   resolve: (item, c, cats) => {
