@@ -1356,7 +1356,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 <th style={th}>사용용도</th>
                 <th style={th}>사용빈도</th>
                 <th style={{ ...th, width: 100 }}>개정일자</th>
-                <th style={th}>작측/특검 대상</th>
+                <th style={th}>작업환경측정 / 특수건강진단 대상</th>
                 <th style={th}>비고</th>
                 <th style={{ ...th, width: 40 }} className="ledger-no-print"></th>
               </tr>
@@ -1365,7 +1365,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
               {filtered.map((it, i) => {
                 const yrs = staleYears(it['개정일자']);
                 const stale = yrs != null && yrs > 3;
-                const targets = [it['측정대상'] && `측정: ${it['측정대상']}`, it['특검대상'] && `특검: ${it['특검대상']}`].filter(Boolean).join(' / ');
+                const targets = [it['측정대상'] && `작업환경측정: ${it['측정대상']}`, it['특검대상'] && `특수건강진단: ${it['특검대상']}`].filter(Boolean).join(' / ');
                 return (
                   <tr key={it.id}>
                     <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
