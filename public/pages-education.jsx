@@ -385,6 +385,15 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
   }, [editData?.id]);
 
   const update = (k, v) => setForm(s => ({ ...s, [k]: v }));
+  // 시간 값을 가장 가까운 10분 단위로 보정 (예: 09:37 → 09:40)
+  const snapTo10 = (t) => {
+    if (!t) return t;
+    const [h, m] = String(t).split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return t;
+    let mm = Math.round(m / 10) * 10, hh = h;
+    if (mm === 60) { mm = 0; hh = (h + 1) % 24; }
+    return String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+  };
   const updateAttendee = (i, k, v) => setAttendees(a => a.map((r, idx) => idx === i ? { ...r, [k]: v } : r));
 
   // MSDS 교육 실시 사유 체크 상태 (form.실시사유 = "1,3" 형태)
@@ -722,10 +731,12 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
               <td colSpan={3}>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <input type="time" step={600} value={form.시작시간} style={{ width: 90 }}
-                    onChange={e => update("시작시간", e.target.value)} readOnly={isView} />
+                    onChange={e => update("시작시간", e.target.value)}
+                    onBlur={e => update("시작시간", snapTo10(e.target.value))} readOnly={isView} />
                   <span>~</span>
                   <input type="time" step={600} value={form.종료시간} style={{ width: 90 }}
-                    onChange={e => update("종료시간", e.target.value)} readOnly={isView} />
+                    onChange={e => update("종료시간", e.target.value)}
+                    onBlur={e => update("종료시간", snapTo10(e.target.value))} readOnly={isView} />
                   <span style={{ color: "#666" }}>({currentEduType.hours})</span>
                 </div>
               </td>
