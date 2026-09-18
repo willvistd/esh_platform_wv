@@ -2165,6 +2165,11 @@ app.get('/api/risk-store', async (req, res) => {
   try {
     const owner = String(req.query.owner || '');
     if (!owner) return res.json({ items: [] });
+    const key = String(req.query.key || '');
+    if (key) {
+      const r1 = await pool.query('SELECT v FROM risk_store WHERE owner=$1 AND k=$2', [owner, key]);
+      return res.json({ value: r1.rows[0] ? r1.rows[0].v : null });
+    }
     const r = await pool.query('SELECT k, v FROM risk_store WHERE owner = $1', [owner]);
     res.json({ items: r.rows });
   } catch (e) {
