@@ -695,6 +695,16 @@ function App() {
     } catch { return null; }
   });
   const [route, setRoute] = React.useState({ name: "dashboard" });
+  // 위험성평가 데이터 계정별 서버 동기화: 로그인 시 서버→로컬 하이드레이션 후 재렌더
+  const [riskSynced, setRiskSynced] = React.useState(0);
+  React.useEffect(() => {
+    const uid = currentUserData && currentUserData.id;
+    if (uid == null) return;
+    if (window.__setRiskOwner) window.__setRiskOwner(uid);
+    if (window.__hydrateRiskStore) {
+      window.__hydrateRiskStore(uid).then(() => setRiskSynced(s => s + 1)).catch(() => {});
+    }
+  }, [currentUserData && currentUserData.id]);
   const prevRouteNameRef = React.useRef(null);   // 직전 화면 추적 (위험성평가 허브 진입 판별용)
   const [composing, setComposing] = React.useState(null);
   // search state: TopBar 내부에서 query state 관리 (글로벌 state 불필요)

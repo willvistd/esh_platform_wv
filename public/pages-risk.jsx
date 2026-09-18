@@ -144,7 +144,7 @@ const RISK_EVAL_LIST_KEY = "wv_risk_evalList";
 // 평가 컨텍스트 헬퍼
 const getEvalContext = () => riskLoad(RISK_EVAL_CTX_KEY);
 const setEvalContext = (ctx) => riskSave(RISK_EVAL_CTX_KEY, ctx);
-const clearEvalContext = () => { try { localStorage.removeItem(RISK_EVAL_CTX_KEY); } catch(e) {} };
+const clearEvalContext = () => { riskRemove(RISK_EVAL_CTX_KEY); };
 const getEvalList = () => riskLoad(RISK_EVAL_LIST_KEY) || [];
 const saveEvalList = (list) => riskSave(RISK_EVAL_LIST_KEY, list);
 
@@ -180,13 +180,13 @@ const getEvalSiteName = (evalContext) => {
 const deleteEvaluation = (evalId) => {
   const list = getEvalList().filter(e => e.evalId !== evalId);
   saveEvalList(list);
-  // 관련 키 모두 제거
+  // 관련 키 모두 제거 (서버 동기화 포함)
   ["cover", "site", "meeting", "photos", "training"].forEach(step => {
-    try { localStorage.removeItem(`wv_risk_${step}_${evalId}`); } catch(e) {}
+    riskRemove(`wv_risk_${step}_${evalId}`);
   });
   // 위험성평가표 (모든 공정)
   Object.values(RISK_COMPANIES).flat().forEach(tt => {
-    try { localStorage.removeItem(`wv_risk_table_${evalId}_${tt}`); } catch(e) {}
+    riskRemove(`wv_risk_table_${evalId}_${tt}`);
   });
 };
 
@@ -296,7 +296,7 @@ const submitRiskForApproval = (ctx) => {
     status: "검토대기",
     targetRoles: ["safety", "admin"],
   });
-  localStorage.setItem(RISK_PENDING_KEY, JSON.stringify(pending));
+  riskSave(RISK_PENDING_KEY, pending);
   return { ok: true, at };
 };
 
@@ -1458,12 +1458,60 @@ const weekdayKo = (dateStr) => {
   return `(${WEEKDAY_KO[d.getDay()]})`;
 };
 
-// ── 저장/불러오기 유틸 ──
+// ── 저장/불러오기 유틸 (localStorage + 계정별 서버 동기화) ──
+// 계정으로 로그인하면 어느 기기에서든 같은 데이터가 보이도록, 아래 '동기화 대상' 키는
+// 저장 시 서버(risk_store)에도 write-through 하고, 로그인 시 서버→로컬로 하이드레이션한다.
+let RISK_OWNER = "";
+try { const _u = JSON.parse(localStorage.getItem("wv_user") || "null"); RISK_OWNER = _u && _u.id != null ? String(_u.id) : ""; } catch (e) {}
+window.__setRiskOwner = (id) => { RISK_OWNER = id != null ? String(id) : ""; };
+// 서버 동기화 대상 키 판별 (전역 프리퍼런스/전환용 키는 제외)
+const isSyncedRiskKey = (k) => !!k && (
+  k === "wv_risk_evalList" || k === "wv_risk_evalContext" || k === "wv_risk_pending_approvals" ||
+  /^wv_risk_(cover|site|meeting|photos|training)_/.test(k) || /^wv_risk_table_/.test(k)
+);
+const riskPushServer = (key, value) => {
+  if (!RISK_OWNER || !isSyncedRiskKey(key)) return;
+  try { fetch("/api/risk-store", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: RISK_OWNER, key, value }) }).catch(() => {}); } catch (e) {}
+};
 const riskSave = (key, data) => {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+  const json = JSON.stringify(data);
+  try { localStorage.setItem(key, json); } catch(e) {}
+  riskPushServer(key, json);
 };
 const riskLoad = (key) => {
   try { const d = localStorage.getItem(key); return d ? JSON.parse(d) : null; } catch { return null; }
+};
+const riskRemove = (key) => {
+  try { localStorage.removeItem(key); } catch(e) {}
+  if (RISK_OWNER && isSyncedRiskKey(key)) {
+    try { fetch("/api/risk-store", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: RISK_OWNER, key }) }).catch(() => {}); } catch (e) {}
+  }
+};
+// 로그인 후 서버 → 로컬 하이드레이션. 서버에 데이터가 있으면 로컬 동기화키를 서버 기준으로 재구성,
+// 비어있으면(계정 첫 사용) 현재 로컬 데이터를 서버로 초기 업로드.
+window.__hydrateRiskStore = async (ownerId) => {
+  const owner = ownerId != null ? String(ownerId) : RISK_OWNER;
+  if (!owner) return false;
+  RISK_OWNER = owner;
+  try {
+    const res = await fetch("/api/risk-store?owner=" + encodeURIComponent(owner));
+    if (!res.ok) return false;
+    const d = await res.json();
+    const items = (d && d.items) || [];
+    if (items.length > 0) {
+      // 로컬의 동기화 대상 키만 제거 후 서버값으로 교체 (회사선택 등 프리퍼런스는 보존)
+      const toRemove = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) toRemove.push(k); }
+      toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+      items.forEach(it => { try { localStorage.setItem(it.k, it.v); } catch (e) {} });
+    } else {
+      // 서버 비어있음 → 현재 로컬 동기화 데이터를 서버로 올림(최초 1회 이관)
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) keys.push(k); }
+      keys.forEach(k => riskPushServer(k, localStorage.getItem(k)));
+    }
+    return true;
+  } catch (e) { return false; }
 };
 const riskSavedAt = (key) => riskLoad(key)?._savedAt || "";
 

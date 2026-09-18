@@ -357,6 +357,17 @@ async function initDB() {
     );
   `);
 
+  // 위험성평가 저장소 — 계정별 key-value (기기 무관 동기화용)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS risk_store (
+      owner TEXT NOT NULL,
+      k TEXT NOT NULL,
+      v TEXT,
+      "updatedAt" TEXT DEFAULT NOW()::TEXT,
+      PRIMARY KEY (owner, k)
+    );
+  `);
+
   // 기존 테이블에 approval 컬럼 없을 경우 추가
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS approval BOOLEAN DEFAULT false;`);
 
@@ -2145,6 +2156,49 @@ app.delete('/api/msds-ledger/:id', async (req, res) => {
     res.json({ success: true });
   } catch (e) {
     console.error('DELETE /api/msds-ledger 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 위험성평가 저장소 (계정별 key-value, 기기 무관 동기화) ──
+app.get('/api/risk-store', async (req, res) => {
+  try {
+    const owner = String(req.query.owner || '');
+    if (!owner) return res.json({ items: [] });
+    const r = await pool.query('SELECT k, v FROM risk_store WHERE owner = $1', [owner]);
+    res.json({ items: r.rows });
+  } catch (e) {
+    console.error('GET /api/risk-store 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/risk-store', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const owner = String(b.owner || ''), key = String(b.key || '');
+    if (!owner || !key) return res.status(400).json({ error: 'owner/key 필요' });
+    await pool.query(
+      `INSERT INTO risk_store (owner, k, v, "updatedAt") VALUES ($1,$2,$3,NOW()::TEXT)
+       ON CONFLICT (owner, k) DO UPDATE SET v = EXCLUDED.v, "updatedAt" = EXCLUDED."updatedAt"`,
+      [owner, key, b.value == null ? null : String(b.value)]
+    );
+    res.json({ success: true });
+  } catch (e) {
+    console.error('PUT /api/risk-store 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/risk-store', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const owner = String(b.owner || req.query.owner || ''), key = String(b.key || req.query.key || '');
+    if (!owner || !key) return res.status(400).json({ error: 'owner/key 필요' });
+    await pool.query('DELETE FROM risk_store WHERE owner = $1 AND k = $2', [owner, key]);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('DELETE /api/risk-store 오류:', e);
     res.status(500).json({ error: e.message });
   }
 });
