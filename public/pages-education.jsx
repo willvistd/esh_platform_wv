@@ -1151,6 +1151,8 @@ const EducationAttendeeSheet = ({ onNav, currentUser }) => {
 const EducationPhotoBoard = ({ onNav }) => {
   const SAVE_KEY = "wv_edu_photoboard";
   const _saved = (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY) || "null"); } catch { return null; } })();
+  // 계정(owner) — 로그인 시 기기 무관 동기화용
+  const OWNER = (() => { try { const u = JSON.parse(localStorage.getItem("wv_user") || "null"); return u && u.id != null ? String(u.id) : ""; } catch { return ""; } })();
 
   const [title, setTitle] = React.useState(_saved?.title || "안전보건교육");
   const [site,  setSite]  = React.useState(_saved?.site  || "");
@@ -1159,6 +1161,25 @@ const EducationPhotoBoard = ({ onNav }) => {
   const [savedAt, setSavedAt] = React.useState(_saved?._savedAt || "");
   const [draggingOver, setDraggingOver] = React.useState(false);
   const fileInputRef = React.useRef(null);
+
+  // 로그인 계정 기준 서버에서 사진대지 불러오기 (어느 기기서든 동일하게)
+  React.useEffect(() => {
+    if (!OWNER) return;
+    fetch("/api/risk-store?owner=" + encodeURIComponent(OWNER) + "&key=" + encodeURIComponent(SAVE_KEY))
+      .then(r => r.json())
+      .then(d => {
+        if (!d || !d.value) return;
+        let s; try { s = JSON.parse(d.value); } catch { return; }
+        if (!s) return;
+        setTitle(s.title || "안전보건교육");
+        setSite(s.site || "");
+        setDate(s.date || new Date().toISOString().slice(0, 10));
+        setPhotos(Array.isArray(s.photos) ? s.photos : []);
+        setSavedAt(s._savedAt || "");
+        try { localStorage.setItem(SAVE_KEY, d.value); } catch (e) {}
+      })
+      .catch(() => {});
+  }, []);
 
   const readFiles = (files) => {
     Array.from(files).forEach(file => {
@@ -1186,10 +1207,15 @@ const EducationPhotoBoard = ({ onNav }) => {
   };
   const handleSave = () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+    const json = JSON.stringify({ title, site, date, photos, _savedAt: at });
     try {
-      localStorage.setItem(SAVE_KEY, JSON.stringify({ title, site, date, photos, _savedAt: at }));
+      localStorage.setItem(SAVE_KEY, json);
       setSavedAt(at);
     } catch (e) { alert("저장 실패: " + e.message); }
+    // 서버에도 저장 (계정 로그인 시 어느 기기서든 동일하게)
+    if (OWNER) {
+      fetch("/api/risk-store", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: OWNER, key: SAVE_KEY, value: json }) }).catch(() => {});
+    }
   };
 
   return (
