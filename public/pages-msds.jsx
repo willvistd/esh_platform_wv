@@ -1249,6 +1249,10 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const [sites, setSites]     = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [siteFilter, setSiteFilter] = React.useState('전체');
+  const [editItem, setEditItem] = React.useState(null);   // 목록에서 직접 수정 중인 행
+  const [editForm, setEditForm] = React.useState({});
+  const [savingEdit, setSavingEdit] = React.useState(false);
+  const [editMsg, setEditMsg] = React.useState('');
 
   const reload = React.useCallback(() => {
     setLoading(true);
@@ -1278,11 +1282,41 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const showSiteCol = siteFilter === '전체' && siteNames.length > 1;
   const soleSite = siteFilter !== '전체' ? siteFilter : (siteNames.length === 1 ? siteNames[0] : '');
 
-  const canDelete = (it) => role === 'admin' || role === 'safety' || it['작성자'] === (currentUser && currentUser.name);
+  // 담당 사업장 집합 (본인 사업장 항목은 작성자가 관리자여도 관리 가능)
+  const myAllowedSiteIds = React.useMemo(() => {
+    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+    const set = new Set();
+    sites.forEach(s => { if (myIds.includes(String(s.id))) set.add(String(s.id)); });
+    return set;
+  }, [sites, currentUser]);
+  const canDelete = (it) => role === 'admin' || role === 'safety' || it['작성자'] === (currentUser && currentUser.name) || myAllowedSiteIds.has(String(it.siteId));
   const handleDelete = async (it) => {
     if (!window.confirm(`"${it['제품명']}" 항목을 관리대장에서 삭제하시겠습니까?`)) return;
     try { await window.WV_API.deleteMsdsLedger(it.id); reload(); }
     catch (e) { alert('삭제 실패: ' + (e.message || e)); }
+  };
+
+  // 목록에서 직접 수정 (연필 → 팝업)
+  const openEdit = (it) => {
+    setEditItem(it);
+    setEditForm({
+      제품명: it['제품명'] || '', 제조회사: it['제조회사'] || '', 개정일자: it['개정일자'] || '',
+      사용용도: it['사용용도'] || '', 사용빈도: it['사용빈도'] || '',
+      측정대상: it['측정대상'] || '', 특검대상: it['특검대상'] || '',
+      비고: it['비고'] || '', 특별관리물질: !!it['특별관리물질'],
+    });
+    setEditMsg('');
+  };
+  const ef = (k, v) => setEditForm(p => ({ ...p, [k]: v }));
+  const saveEdit = async () => {
+    if (!editItem) return;
+    setSavingEdit(true); setEditMsg('');
+    try {
+      await window.WV_API.updateMsdsLedger(editItem.id, editForm);
+      setSavingEdit(false); setEditItem(null); reload();
+    } catch (e) {
+      setSavingEdit(false); setEditMsg('수정 실패: ' + (e.message || e));
+    }
   };
 
   // 개정일자 3년 초과 → 갱신 필요(붉은색). 다양한 표기(2021.03.15 등) 대응.
@@ -1362,7 +1396,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 <th style={{ ...th, width: 100 }}>개정일자</th>
                 <th style={th}>작업환경측정 / 특수건강진단 대상</th>
                 <th style={th}>비고</th>
-                <th style={{ ...th, width: 40 }} className="ledger-no-print"></th>
+                <th style={{ ...th, width: 72 }} className="ledger-no-print"></th>
               </tr>
             </thead>
             <tbody>
@@ -1384,7 +1418,10 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                     <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{targets || '—'}</td>
                     <td style={{ ...td, fontSize: 11.5 }}>{it['비고'] || '—'}</td>
                     <td style={{ ...td }} className="ledger-no-print">
-                      {canDelete(it) && <button className="btn btn-ghost btn-sm" title="삭제" onClick={() => handleDelete(it)} style={{ color: '#dc2626' }}><Icon name="trash" size={12} /></button>}
+                      <div style={{ display: 'flex', gap: 2 }}>
+                        {canDelete(it) && <button className="btn btn-ghost btn-sm" title="수정" onClick={() => openEdit(it)} style={{ color: '#2563eb' }}><Icon name="edit" size={12} /></button>}
+                        {canDelete(it) && <button className="btn btn-ghost btn-sm" title="삭제" onClick={() => handleDelete(it)} style={{ color: '#dc2626' }}><Icon name="trash" size={12} /></button>}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1396,6 +1433,51 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
           </div>
         </div>
       )}
+
+      {/* ── 관리대장 행 직접 수정 다이얼로그 ── */}
+      {editItem && (() => {
+        const inp = { width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box', background: 'var(--bg, #fff)', color: 'var(--fg, #111)' };
+        const lb = { fontSize: 12.5, fontWeight: 700 };
+        // 컴포넌트가 아니라 '함수 호출'로 렌더 → 매 입력마다 리마운트되어 포커스 잃는 문제 방지
+        const field = (k, ph) => (
+          <label style={lb} key={k}>{k}
+            <input className="field-input" value={editForm[k] || ''} onChange={e => ef(k, e.target.value)} placeholder={ph || ''} style={inp} />
+          </label>
+        );
+        return (
+          <div className="modal-overlay ledger-no-print" onClick={() => setEditItem(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: 'var(--bg, #fff)', borderRadius: 12, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto', padding: '20px 22px', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+              <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 4 }}>관리대장 항목 수정</div>
+              <div style={{ fontSize: 12.5, color: 'var(--fg-3, #667085)', marginBottom: 16 }}>
+                이 사업장 관리대장에 저장된 내용을 직접 수정합니다.
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ gridColumn: '1 / -1' }}>{field('제품명', '예: 무광 마감제')}</div>
+                {field('제조회사')}
+                {field('개정일자', '예: 2023.05.01')}
+                {field('사용용도', '예: 바닥 전용 세척제')}
+                {field('사용빈도', '예: 주 1회 / 일 15분')}
+                {field('측정대상', '예: 톨루엔 등')}
+                {field('특검대상', '예: 유기화합물')}
+                <div style={{ gridColumn: '1 / -1' }}>{field('비고', '예: 안전확인대상생활화학제품')}</div>
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14, fontSize: 13, fontWeight: 700 }}>
+                <input type="checkbox" checked={!!editForm['특별관리물질']} onChange={e => ef('특별관리물질', e.target.checked)} />
+                특별관리물질 포함
+              </label>
+              {editMsg && <div style={{ marginTop: 12, fontSize: 12.5, fontWeight: 600, color: '#c0392b' }}>{editMsg}</div>}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 18 }}>
+                <button className="btn btn-secondary" onClick={() => setEditItem(null)}>취소</button>
+                <button className="btn btn-primary" onClick={saveEdit} disabled={savingEdit}>
+                  {savingEdit ? '저장 중…' : '저장'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

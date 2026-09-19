@@ -2150,6 +2150,33 @@ app.post('/api/msds-ledger', async (req, res) => {
   }
 });
 
+// 관리대장 행 직접 수정 (목록 화면 연필 → 수정 팝업)
+app.put('/api/msds-ledger/:id', async (req, res) => {
+  try {
+    const b = req.body || {};
+    const cols = ['제품명', '제조회사', '개정일자', '사용용도', '사용빈도', '비고', '측정대상', '특검대상', '특별관리물질'];
+    const sets = [];
+    const vals = [];
+    let n = 1;
+    for (const c of cols) {
+      if (Object.prototype.hasOwnProperty.call(b, c)) {
+        sets.push(`"${c}" = $${n++}`);
+        vals.push(c === '특별관리물질' ? !!b[c] : (b[c] == null ? '' : b[c]));
+      }
+    }
+    if (sets.length === 0) return res.json({ success: true, item: null });
+    vals.push(req.params.id);
+    const result = await pool.query(
+      `UPDATE msds_ledger SET ${sets.join(', ')} WHERE id = $${n} RETURNING *`,
+      vals
+    );
+    res.json({ success: true, item: result.rows[0] });
+  } catch (e) {
+    console.error('PUT /api/msds-ledger 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.delete('/api/msds-ledger/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM msds_ledger WHERE id = $1', [req.params.id]);

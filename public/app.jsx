@@ -169,6 +169,16 @@ const api = {
     if (!res.ok) throw new Error(data.error || `MSDS 관리대장 저장 실패 (${res.status})`);
     return data;
   },
+  async updateMsdsLedger(id, patch) {
+    const res = await fetch(`${ENDPOINTS.msdsLedger}/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `MSDS 관리대장 수정 실패 (${res.status})`);
+    return data;
+  },
   async deleteMsdsLedger(id) {
     const res = await fetch(`${ENDPOINTS.msdsLedger}/${id}`, { method: 'DELETE' });
     const data = await res.json();
