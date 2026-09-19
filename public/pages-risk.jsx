@@ -3735,6 +3735,10 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
   const [taskSuggestRow, setTaskSuggestRow] = React.useState(-1);
   // 원인 목록 드롭다운
   const [causeSuggestRow, setCauseSuggestRow] = React.useState(-1);
+  // 위험분류 목록 드롭다운 (커스텀 파란 테두리)
+  const [hazcatMenuRow, setHazcatMenuRow] = React.useState(-1);
+  // 예상재해 목록 드롭다운 (커스텀 파란 테두리)
+  const [accidentMenuRow, setAccidentMenuRow] = React.useState(-1);
 
   // 공정 태그 ↔ tableType 매핑 (특정 공정에만 보여야 하는 추천 문구 필터)
   // 태그가 [사무실], [사무행정], [고객상담], [사무·콜센터] 인 경우 해당 공정에서만 표시
@@ -3742,16 +3746,18 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
   // (제거됨) 공정 태그 필터 — 매핑표를 (세부작업+원인)별로 재구성하며 태그 체계 폐지
   // 클릭 바깥 영역 누르면 닫기
   React.useEffect(() => {
-    if (envSuggestRow < 0 && measureSuggestRow < 0 && taskSuggestRow < 0 && causeSuggestRow < 0) return;
+    if (envSuggestRow < 0 && measureSuggestRow < 0 && taskSuggestRow < 0 && causeSuggestRow < 0 && hazcatMenuRow < 0 && accidentMenuRow < 0) return;
     const close = (e) => {
       if (envSuggestRow >= 0 && !e.target.closest(".env-suggest-wrap")) setEnvSuggestRow(-1);
       if (measureSuggestRow >= 0 && !e.target.closest(".measure-suggest-wrap")) setMeasureSuggestRow(-1);
       if (taskSuggestRow >= 0 && !e.target.closest(".task-suggest-wrap")) setTaskSuggestRow(-1);
       if (causeSuggestRow >= 0 && !e.target.closest(".cause-suggest-wrap")) setCauseSuggestRow(-1);
+      if (hazcatMenuRow >= 0 && !e.target.closest(".hazcat-suggest-wrap")) setHazcatMenuRow(-1);
+      if (accidentMenuRow >= 0 && !e.target.closest(".accident-suggest-wrap")) setAccidentMenuRow(-1);
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
-  }, [envSuggestRow, measureSuggestRow, taskSuggestRow, causeSuggestRow]);
+  }, [envSuggestRow, measureSuggestRow, taskSuggestRow, causeSuggestRow, hazcatMenuRow, accidentMenuRow]);
 
   // 현재 tableType에 맞는 세부작업 목록
   const taskList = (WORK_TASKS[tableType] || []);
@@ -4326,17 +4332,38 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                         })()}
                       </div>
                     </TD>
-                    {/* 위험분류 — appearance:none으로 지워진 네이티브 화살표 대신 ▾ 표식 오버레이 (클릭은 select로 통과) */}
+                    {/* 위험분류 — 커스텀 파란 테두리 드롭다운 (네이티브 회색 팝업 대체, 목록 제한 선택) */}
                     <TD>
-                      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
-                        <select value={row.위험분류} onChange={e => updRow(i, "위험분류", e.target.value)} style={{ ...inSel, paddingRight: 22 }}
-                          title={row.세부작업 && TASK_HAZARD_CATEGORIES[row.세부작업] ? `「${row.세부작업}」에 해당하는 분류만 표시됨` : ""}>
-                          <option value="">{row.세부작업 ? "선택..." : "세부작업 먼저"}</option>
-                          {getAllowedHazardCats(row.세부작업).map(c => <option key={c}>{c}</option>)}
-                        </select>
+                      <div className="hazcat-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
+                        <div className="no-print"
+                          onClick={() => { if (row.세부작업) setHazcatMenuRow(hazcatMenuRow === i ? -1 : i); }}
+                          title={row.세부작업 && TASK_HAZARD_CATEGORIES[row.세부작업] ? `「${row.세부작업}」에 해당하는 분류만 표시됨` : ""}
+                          style={{ ...inSel, paddingRight: 22, cursor: row.세부작업 ? "pointer" : "default", color: row.위험분류 ? "#000" : "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {row.위험분류 || (row.세부작업 ? "선택..." : "세부작업 먼저")}
+                        </div>
                         <span className="no-print" title="목록 열기"
-                          onClick={(e) => { const s = e.currentTarget.parentElement.querySelector("select"); if (s) { try { s.showPicker(); } catch { s.focus(); } } }}
-                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", cursor: "pointer" }}>▾</span>
+                          onClick={() => { if (row.세부작업) setHazcatMenuRow(hazcatMenuRow === i ? -1 : i); }}
+                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: hazcatMenuRow === i ? "#dbeafe" : "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: row.세부작업 ? "#1d4ed8" : "#9ca3af", cursor: row.세부작업 ? "pointer" : "default" }}>▾</span>
+                        <div className="tx-mirror" style={{ textAlign: "center" }}>{row.위험분류}</div>
+                        {hazcatMenuRow === i && (
+                          <div className="no-print"
+                            style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 200, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                            <div onClick={() => { updRow(i, "위험분류", ""); setHazcatMenuRow(-1); }}
+                              style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, color: "#9ca3af" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
+                              onMouseLeave={e => e.currentTarget.style.background = ""}>
+                              선택...
+                            </div>
+                            {getAllowedHazardCats(row.세부작업).map(c => (
+                              <div key={c} onClick={() => { updRow(i, "위험분류", c); setHazcatMenuRow(-1); }}
+                                style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, background: row.위험분류 === c ? "#eff6ff" : "" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
+                                onMouseLeave={e => e.currentTarget.style.background = row.위험분류 === c ? "#eff6ff" : ""}>
+                                {c}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </TD>
                     {/* 원인: textarea + 추천 드롭다운 */}
@@ -4440,17 +4467,38 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                         })()}
                       </div>
                     </TD>
-                    {/* 예상재해 — 화면=select, 인쇄=tx-mirror(전체 텍스트 줄바꿈 표시, 한 줄 잘림 방지) */}
+                    {/* 예상재해 — 커스텀 파란 테두리 드롭다운 (네이티브 회색 팝업 대체), 인쇄=tx-mirror(전체 텍스트 줄바꿈 표시) */}
                     <TD>
-                      <div style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
-                        <select className="sel-mirror" value={row.예상재해} onChange={e => updRow(i, "예상재해", e.target.value)} style={{ ...inSel, paddingRight: 22 }} title={row.예상재해 || ""}>
-                          <option value="">선택...</option>
-                          {ACCIDENT_TYPES.map(a => <option key={a}>{a}</option>)}
-                        </select>
+                      <div className="accident-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
+                        <div className="no-print"
+                          onClick={() => setAccidentMenuRow(accidentMenuRow === i ? -1 : i)}
+                          title={row.예상재해 || ""}
+                          style={{ ...inSel, paddingRight: 22, cursor: "pointer", color: row.예상재해 ? "#000" : "#9ca3af", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {row.예상재해 || "선택..."}
+                        </div>
                         <span className="no-print" title="목록 열기"
-                          onClick={(e) => { const s = e.currentTarget.parentElement.querySelector("select"); if (s) { try { s.showPicker(); } catch { s.focus(); } } }}
-                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", cursor: "pointer" }}>▾</span>
+                          onClick={() => setAccidentMenuRow(accidentMenuRow === i ? -1 : i)}
+                          style={{ position: "absolute", top: 0, bottom: 0, right: 2, margin: "auto 0", height: 18, width: 18, border: "1px solid #cbd5e1", borderRadius: 4, background: accidentMenuRow === i ? "#dbeafe" : "#fff", fontSize: 11, lineHeight: "16px", textAlign: "center", color: "#1d4ed8", cursor: "pointer" }}>▾</span>
                         <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
+                        {accidentMenuRow === i && (
+                          <div className="no-print"
+                            style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 260, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                            <div onClick={() => { updRow(i, "예상재해", ""); setAccidentMenuRow(-1); }}
+                              style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, color: "#9ca3af" }}
+                              onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
+                              onMouseLeave={e => e.currentTarget.style.background = ""}>
+                              선택...
+                            </div>
+                            {ACCIDENT_TYPES.map(a => (
+                              <div key={a} onClick={() => { updRow(i, "예상재해", a); setAccidentMenuRow(-1); }}
+                                style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, background: row.예상재해 === a ? "#eff6ff" : "" }}
+                                onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
+                                onMouseLeave={e => e.currentTarget.style.background = row.예상재해 === a ? "#eff6ff" : ""}>
+                                {a}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </TD>
                     {/* 현재안전조치: 추천 드롭다운 + 자유 입력 */}
