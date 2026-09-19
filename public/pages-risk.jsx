@@ -3773,6 +3773,22 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
     el.style.height = 'auto';
     el.style.height = (el.scrollHeight + 2) + 'px';
   };
+
+  // 추천/목록 팝업 위치(시안 B): 기본은 입력창 '위쪽'에 표시 → 입력 내용을 가리지 않음.
+  // 위 공간이 부족한 첫 행 등에서는 자동으로 셀 '아래쪽'으로 전환. (ref 콜백으로 마운트 시 배치)
+  const placePopup = (el) => {
+    if (!el || !el.parentElement) return;
+    // 기본: 위쪽
+    el.style.top = "auto";
+    el.style.bottom = "calc(100% + 4px)";
+    const wrapTop = el.parentElement.getBoundingClientRect().top;
+    const popH = el.offsetHeight;
+    if (wrapTop < popH + 8) {
+      // 위 공간 부족 → 셀 아래로 (여기서도 입력창은 가리지 않음)
+      el.style.top = "calc(100% + 4px)";
+      el.style.bottom = "auto";
+    }
+  };
   // 테이블 레이아웃(컬럼 너비)이 확정된 뒤에 높이를 측정해야 정확하므로
   // useLayoutEffect 대신 이중 requestAnimationFrame으로 지연 실행
   React.useEffect(() => {
@@ -4310,13 +4326,13 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                               </button>
                               {open && !has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
                                   이 평가표 유형에는 공정 목록이 없습니다. 직접 입력하세요.
                                 </div>
                               )}
                               {open && has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   {taskList.map((t, ti) => (
                                     <div key={ti} onClick={() => { updRow(i, "세부작업", t); setTaskSuggestRow(-1); }}
                                       style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5 }}
@@ -4347,7 +4363,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                         <div className="tx-mirror" style={{ textAlign: "center" }}>{row.위험분류}</div>
                         {hazcatMenuRow === i && (
                           <div className="no-print"
-                            style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 200, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                            ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 200, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                             <div onClick={() => { updRow(i, "위험분류", ""); setHazcatMenuRow(-1); }}
                               style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, color: "#9ca3af" }}
                               onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
@@ -4389,13 +4405,13 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                               </button>
                               {open && !has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
                                   왼쪽 <b>위험분류</b>를 먼저 선택하면 원인 목록이 표시됩니다.
                                 </div>
                               )}
                               {open && has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 280, maxHeight: 240, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   {causeOpts.map((o, oi) => (
                                     <div key={oi} onClick={() => { updRow(i, "원인", o); setCauseSuggestRow(-1); }}
                                       style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5 }}
@@ -4435,13 +4451,13 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                               </button>
                               {open && !has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
                                   <b>원인</b>을 먼저 선택하면 추천 문구가 표시됩니다.
                                 </div>
                               )}
                               {open && has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #f59e0b", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #f59e0b", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#a16207", padding: "4px 8px", borderBottom: "1px solid #fde68a", marginBottom: 4, fontWeight: 700, background: "#fef9c3" }}>
                                     💡 「{row.원인}」 추천 문구
                                   </div>
@@ -4482,7 +4498,7 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                         <div className="tx-mirror" style={{ textAlign: "center" }}>{row.예상재해}</div>
                         {accidentMenuRow === i && (
                           <div className="no-print"
-                            style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 260, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                            ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 260, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                             <div onClick={() => { updRow(i, "예상재해", ""); setAccidentMenuRow(-1); }}
                               style={{ padding: "5px 8px", cursor: "pointer", borderRadius: 4, fontSize: 11, lineHeight: 1.5, color: "#9ca3af" }}
                               onMouseEnter={e => e.currentTarget.style.background = "#eff6ff"}
@@ -4533,13 +4549,13 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                               </button>
                               {open && !has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
                                   <b>원인</b>을 먼저 선택하면 추천 안전조치가 표시됩니다.
                                 </div>
                               )}
                               {open && has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 320, maxHeight: 260, overflowY: "auto", background: "#fff", border: "1.5px solid #3b82f6", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#1e40af", padding: "4px 8px", borderBottom: "1px solid #bfdbfe", marginBottom: 4, fontWeight: 700, background: "#dbeafe" }}>
                                     💡 「{row.원인}」 현재 시행 중인 안전조치 추천
                                   </div>
@@ -4612,13 +4628,13 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                               </button>
                               {open && !has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 240, background: "#fff", border: "1.5px solid #cbd5e1", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: "10px 12px", fontSize: 11, color: "#6b7280", lineHeight: 1.5 }}>
                                   <b>원인</b>을 먼저 선택하면 추천 감소대책이 표시됩니다.
                                 </div>
                               )}
                               {open && has && (
                                 <div className="no-print"
-                                  style={{ position: "absolute", top: 22, left: 0, zIndex: 50, width: 340, maxHeight: 300, overflowY: "auto", background: "#fff", border: "1.5px solid #16a34a", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
+                                  ref={placePopup} style={{ position: "absolute", left: 0, zIndex: 50, width: 340, maxHeight: 300, overflowY: "auto", background: "#fff", border: "1.5px solid #16a34a", borderRadius: 6, boxShadow: "0 4px 14px rgba(0,0,0,0.18)", padding: 6 }}>
                                   <div style={{ fontSize: 10, color: "#166534", padding: "4px 8px", borderBottom: "1px solid #bbf7d0", marginBottom: 4, fontWeight: 700, background: "#dcfce7" }}>
                                     ✓ 「{row.원인}」 추천 감소대책
                                   </div>
