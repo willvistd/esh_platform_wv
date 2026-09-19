@@ -167,7 +167,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
       <div style={{ borderBottom: '2px solid #e5e9ef', paddingBottom: 10, marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#98a2b3', letterSpacing: 0.4 }}>물질명 / 제품명</div>
         <div style={{ fontSize: 18, fontWeight: 800, color: '#101828', marginTop: 2 }}>
-          {productName || <span style={{ fontSize: 14, fontWeight: 600, color: '#c0c6d0' }}>제품명 미입력 — 좌측에서 제품명을 입력하세요</span>}
+          {productName || <span style={{ fontSize: 14, fontWeight: 600, color: '#c0c6d0' }}>제품명 미입력. 좌측에서 제품명을 입력하세요</span>}
         </div>
         {manufacturer && <div style={{ fontSize: 12, color: '#667085', marginTop: 2 }}>제조사·공급자: {manufacturer}</div>}
       </div>
@@ -190,7 +190,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
         </div>
         {(judgeRes.summary.special_substance || judgeRes.summary.permit_substance) && (
           <div style={{ padding: '8px 12px', background: '#fef3f2', border: '1px solid #f3c0bd', borderRadius: 8, color: '#b42318', fontSize: 13, marginBottom: 12 }}>
-            ⚠ {judgeRes.summary.special_substance && '특별관리물질 포함'} {judgeRes.summary.permit_substance && '· 허가대상물질 포함'} — 별도 관리·기록 의무가 있습니다.
+            ⚠ {judgeRes.summary.special_substance && '특별관리물질 포함'} {judgeRes.summary.permit_substance && '· 허가대상물질 포함'}. 별도 관리·기록 의무가 있습니다.
           </div>
         )}
         <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
@@ -972,7 +972,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
 
         <div className="msds-sec-label">그림문자 선택 <span className="msds-chip msds-chip-o">클릭</span></div>
         <div className="msds-img-panel" style={reviewHint ? { borderColor: '#e05252', boxShadow: '0 0 0 3px rgba(224,82,82,.18)' } : undefined}>
-          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#c0392b', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요 — 그림문자를 확인 후 저장하세요</div>}
+          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#c0392b', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요. 그림문자를 확인 후 저장하세요</div>}
           <div className="msds-img-grid">
             {GHS_LIST.map(g => (
               <MsdsGhsItem key={g.id} item={g} selected={ghsSel.includes(g.id)} onToggle={toggleGhs} />
@@ -984,7 +984,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
 
         <div className="msds-sec-label">보호구 선택 <span className="msds-chip msds-chip-o">클릭</span></div>
         <div className="msds-img-panel" style={reviewHint ? { borderColor: '#2f6fe0', boxShadow: '0 0 0 3px rgba(47,111,224,.18)' } : undefined}>
-          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요 — 보호구를 확인 후 저장하세요</div>}
+          {reviewHint && <div style={{ fontSize: 11, fontWeight: 600, color: '#1d4ed8', marginBottom: 7 }}>⚠ 자동 추출이 누락됐을 수 있어요. 보호구를 확인 후 저장하세요</div>}
           <div className="msds-img-grid">
             {PPE_LIST.map(p => (
               <MsdsPpeItem key={p.id} item={p} selected={ppeSel.includes(p.id)} onToggle={togglePpe} />
@@ -1066,7 +1066,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         {previewTab === 0 && a4Over && (
           <div className="msds-a4w">
             <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
-            <div><strong>A4 한 장 초과 예상</strong> — 내용이 길면 인쇄 시 2장이 될 수 있습니다.</div>
+            <div><strong>A4 한 장 초과 예상</strong>. 내용이 길면 인쇄 시 2장이 될 수 있습니다.</div>
           </div>
         )}
 
