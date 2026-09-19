@@ -1048,6 +1048,10 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
           <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정 특수검진 판정{components.length ? ` (${components.length})` : ''}</button>
           {/* 저장·출력 버튼 — 탭과 같은 줄 오른쪽 끝 */}
           <div className="msds-otabs-actions no-print" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn btn-ghost btn-sm no-print" onClick={() => onNav({ name: 'msds-ledger' })}
+              title="이 계정(사업장)의 MSDS 관리대장 목록으로 이동">
+              <Icon name="list" size={13} /> 관리대장 목록
+            </button>
             <button className="btn btn-primary btn-sm no-print" onClick={openSave}
               style={{ background: '#16a34a', borderColor: '#16a34a' }}>
               <Icon name="check" size={13} /> 관리대장 저장
