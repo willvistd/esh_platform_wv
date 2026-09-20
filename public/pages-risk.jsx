@@ -2004,8 +2004,10 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   const accessibleSiteIds = React.useMemo(
     () => new Set((window.WV_PERMS?.getAccessibleSiteIds(currentUser, allSites, allHQs) || []).map(String)),
     [currentUser, allSites, allHQs]);
+  // 사업장명 매칭은 공백·대소문자 차이로 연결이 끊기지 않게 정규화해서 비교
+  const normSite = (v) => String(v || "").replace(/\s+/g, "").toLowerCase();
   const accessibleSiteNames = React.useMemo(
-    () => new Set(allSites.filter(s => accessibleSiteIds.has(String(s.id))).map(s => s.사업장명 || s.name).filter(Boolean)),
+    () => new Set(allSites.filter(s => accessibleSiteIds.has(String(s.id))).map(s => normSite(s.사업장명 || s.name)).filter(Boolean)),
     [allSites, accessibleSiteIds]);
   // 선택한 본부(company)에 속한 등록 사업장 목록 (새 평가 사업장명 자동완성용)
   const companySites = React.useMemo(() => {
@@ -2068,7 +2070,7 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
       alert("수시 평가 사유를 1개 이상 선택해주세요."); return;
     }
     // 입력한 사업장명이 등록 사업장과 일치하면 siteId 연결(사업장 계정 연동 정확도↑)
-    const matchedSite = companySites.find(s => (s.사업장명 || s.name) === newSiteName.trim());
+    const matchedSite = companySites.find(s => normSite(s.사업장명 || s.name) === normSite(newSiteName));
     const ctx = addEvaluation({
       type: selectedType.id,
       company: selectedCompany,
@@ -2100,7 +2102,7 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
     .filter(e => {
       if (isCrossHQ || !isSiteRole) return true;
       if (e.siteId && accessibleSiteIds.has(String(e.siteId))) return true;
-      if (e.사업장명 && accessibleSiteNames.has(e.사업장명)) return true;
+      if (e.사업장명 && accessibleSiteNames.has(normSite(e.사업장명))) return true;
       return false;
     })
     .filter(e => !selectedCompany || e.company === selectedCompany)
@@ -2316,7 +2318,7 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
               <datalist id="risk-site-options">
                 {companySites.map(s => <option key={s.id} value={s.사업장명 || s.name} />)}
               </datalist>
-              {newSiteName.trim() && !companySites.some(s => (s.사업장명 || s.name) === newSiteName.trim()) && companySites.length > 0 && (
+              {newSiteName.trim() && !companySites.some(s => normSite(s.사업장명 || s.name) === normSite(newSiteName)) && companySites.length > 0 && (
                 <div style={{ fontSize: 11, color: "#b45309", marginTop: 5 }}>
                   ⚠ 등록된 사업장명과 정확히 일치해야 해당 사업장 계정에서 보입니다. 목록에서 선택하세요.
                 </div>
@@ -4849,7 +4851,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
 };
 
 // ── STEP 5: 개선결과 사진대지 ──
-const RiskPhotosView = ({ onNav }) => {
+const RiskPhotosView = ({ onNav, inPrintAll }) => {
   const info = RISK_STEPS[4];
   const ctx = getEvalContext();
   const company = ctx?.company || localStorage.getItem(RISK_COMPANY_KEY) || "";
@@ -5037,6 +5039,9 @@ const RiskPhotosView = ({ onNav }) => {
            다른 STEP의 무명 @page와 충돌 회피 (위험성평가표와 동일 패턴) */
         @page wv-photos-landscape { size: A4 landscape !important; margin: 6mm !important; }
         .photos-print-area { page: wv-photos-landscape; }
+        /* 개별 출력: 인쇄영역이 position:absolute라 named-page(page:)가 무시되어
+           세로로 나오는 문제 → 기본 @page 자체를 가로로. 전체출력에서는 미적용. */
+        ${inPrintAll ? '' : '@page { size: A4 landscape !important; margin: 6mm !important; }'}
         @media print {
           .photos-print-area, .photos-print-area > div {
             overflow: visible !important;
@@ -5641,7 +5646,7 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
         {(tableTypes.length ? tableTypes : [undefined]).map((t, i) => (
           <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} inPrintAll /></div>
         ))}
-        <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} /></div>
+        <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} inPrintAll /></div>
         {/* 전파교육 = 일지 + 사진대지(사진 있을 때) 2장 — RiskTrainingView 내부에서 처리 */}
         <div className="step-page"><RiskTrainingView onNav={dummyNav} currentUser={currentUser} /></div>
       </div>
