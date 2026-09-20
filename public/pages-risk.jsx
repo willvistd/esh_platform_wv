@@ -158,9 +158,9 @@ const generateEvalId = (type, company, year, date, 사업장명) => {
 };
 
 // 새 평가 등록 + 컨텍스트 설정
-const addEvaluation = ({ type, company, year, date, 사유, 사업장명 }) => {
+const addEvaluation = ({ type, company, year, date, 사유, 사업장명, siteId }) => {
   const evalId = generateEvalId(type, company, year, date, 사업장명);
-  const ctx = { evalId, type, company, year, date, 사유: 사유 || "", 사업장명: 사업장명 || "", createdAt: new Date().toISOString() };
+  const ctx = { evalId, type, company, year, date, 사유: 사유 || "", 사업장명: 사업장명 || "", siteId: siteId || "", createdAt: new Date().toISOString() };
   const list = getEvalList();
   if (!list.find(e => e.evalId === evalId)) list.push(ctx);
   saveEvalList(list);
@@ -1461,12 +1461,17 @@ const weekdayKo = (dateStr) => {
 // ── 저장/불러오기 유틸 (localStorage + 계정별 서버 동기화) ──
 // 계정으로 로그인하면 어느 기기에서든 같은 데이터가 보이도록, 아래 '동기화 대상' 키는
 // 저장 시 서버(risk_store)에도 write-through 하고, 로그인 시 서버→로컬로 하이드레이션한다.
-let RISK_OWNER = "";
-try { const _u = JSON.parse(localStorage.getItem("wv_user") || "null"); RISK_OWNER = _u && _u.id != null ? String(_u.id) : ""; } catch (e) {}
-window.__setRiskOwner = (id) => { RISK_OWNER = id != null ? String(id) : ""; };
-// 서버 동기화 대상 키 판별 (전역 프리퍼런스/전환용 키는 제외)
+// 위험성평가는 '조직 전체 공유' 저장소를 사용한다. 관리자가 만든 평가를 사업장 계정에서도
+// 볼 수 있도록(본부/사업장 단위 연동) 모든 계정이 같은 공유 오너로 read/write 한다.
+// (누가 무엇을 보는지는 목록 화면에서 권한별로 필터링한다.)
+const RISK_SHARED_OWNER = "org_shared_v1";
+let RISK_OWNER = RISK_SHARED_OWNER;
+let RISK_USER_ID = "";   // 레거시(계정별) 데이터 이관용으로만 기록
+try { const _u = JSON.parse(localStorage.getItem("wv_user") || "null"); RISK_USER_ID = _u && _u.id != null ? String(_u.id) : ""; } catch (e) {}
+window.__setRiskOwner = (id) => { RISK_USER_ID = id != null ? String(id) : ""; };  // 공유 오너 고정, 레거시 id만 기록
+// 서버 동기화 대상 키 판별 (evalContext=현재 선택 상태는 기기별 로컬 유지 → 공유 제외)
 const isSyncedRiskKey = (k) => !!k && (
-  k === "wv_risk_evalList" || k === "wv_risk_evalContext" || k === "wv_risk_pending_approvals" ||
+  k === "wv_risk_evalList" || k === "wv_risk_pending_approvals" ||
   /^wv_risk_(cover|site|meeting|photos|training)_/.test(k) || /^wv_risk_table_/.test(k)
 );
 const riskPushServer = (key, value) => {
@@ -1489,26 +1494,51 @@ const riskRemove = (key) => {
 };
 // 로그인 후 서버 → 로컬 하이드레이션. 서버에 데이터가 있으면 로컬 동기화키를 서버 기준으로 재구성,
 // 비어있으면(계정 첫 사용) 현재 로컬 데이터를 서버로 초기 업로드.
-window.__hydrateRiskStore = async (ownerId) => {
-  const owner = ownerId != null ? String(ownerId) : RISK_OWNER;
-  if (!owner) return false;
-  RISK_OWNER = owner;
+window.__hydrateRiskStore = async (userId) => {
+  RISK_OWNER = RISK_SHARED_OWNER;
+  const legacyOwner = userId != null ? String(userId) : RISK_USER_ID;
+  const fetchOwner = async (o) => {
+    try { const r = await fetch("/api/risk-store?owner=" + encodeURIComponent(o)); if (!r.ok) return []; const d = await r.json(); return (d && d.items) || []; }
+    catch (e) { return []; }
+  };
+  const parseList = (v) => { try { return JSON.parse(v) || []; } catch { return []; } };
   try {
-    const res = await fetch("/api/risk-store?owner=" + encodeURIComponent(owner));
-    if (!res.ok) return false;
-    const d = await res.json();
-    const items = (d && d.items) || [];
-    if (items.length > 0) {
-      // 로컬의 동기화 대상 키만 제거 후 서버값으로 교체 (회사선택 등 프리퍼런스는 보존)
-      const toRemove = [];
-      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) toRemove.push(k); }
-      toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
-      items.forEach(it => { try { localStorage.setItem(it.k, it.v); } catch (e) {} });
-    } else {
-      // 서버 비어있음 → 현재 로컬 동기화 데이터를 서버로 올림(최초 1회 이관)
-      const keys = [];
-      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) keys.push(k); }
-      keys.forEach(k => riskPushServer(k, localStorage.getItem(k)));
+    // 공유 저장소 + (이관용) 레거시 계정별 저장소 로드
+    const sharedItems = await fetchOwner(RISK_SHARED_OWNER);
+    const legacyItems = (legacyOwner && legacyOwner !== RISK_SHARED_OWNER) ? await fetchOwner(legacyOwner) : [];
+    // 병합: 공유 우선, 레거시는 보조. evalList는 evalId 기준 합집합.
+    const merged = {};
+    legacyItems.forEach(it => { merged[it.k] = it.v; });
+    sharedItems.forEach(it => { merged[it.k] = it.v; });
+    const legacyList = legacyItems.find(it => it.k === "wv_risk_evalList");
+    const sharedList = sharedItems.find(it => it.k === "wv_risk_evalList");
+    if (legacyList || sharedList) {
+      const map = new Map();
+      [...parseList(legacyList && legacyList.v), ...parseList(sharedList && sharedList.v)].forEach(e => {
+        if (e && e.evalId) map.set(e.evalId, { ...(map.get(e.evalId) || {}), ...e });
+      });
+      merged["wv_risk_evalList"] = JSON.stringify([...map.values()]);
+    }
+    // 로컬 재구성 (동기화 키만 서버 기준으로 교체, 프리퍼런스·현재선택은 보존)
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) toRemove.push(k); }
+    toRemove.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+    Object.keys(merged).forEach(k => { if (isSyncedRiskKey(k)) { try { localStorage.setItem(k, merged[k]); } catch (e) {} } });
+    // 승격(이관): 레거시에만 있던 키 + 합쳐진 evalList를 공유 저장소로 올림
+    const sharedKeys = new Set(sharedItems.map(it => it.k));
+    Object.keys(merged).forEach(k => {
+      if (!isSyncedRiskKey(k)) return;
+      if (!sharedKeys.has(k) || (k === "wv_risk_evalList" && legacyList)) riskPushServer(k, merged[k]);
+    });
+    // 레거시 데이터는 공유로 이관 후 삭제 (재로그인 때 재병합되어 '삭제된 평가가 되살아나는' 문제 방지)
+    if (legacyItems.length > 0 && legacyOwner && legacyOwner !== RISK_SHARED_OWNER) {
+      legacyItems.forEach(it => {
+        try { fetch("/api/risk-store", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: legacyOwner, key: it.k }) }).catch(() => {}); } catch (e) {}
+      });
+    }
+    // 공유·레거시 모두 비었으면 현재 로컬 데이터를 공유로 초기 업로드
+    if (sharedItems.length === 0 && legacyItems.length === 0) {
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (isSyncedRiskKey(k)) riskPushServer(k, localStorage.getItem(k)); }
     }
     return true;
   } catch (e) { return false; }
@@ -1957,13 +1987,33 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   const [cloneFromId, setCloneFromId] = React.useState("");
   const [evalList, setEvalList] = React.useState(() => getEvalList());
   const [allHQs, setAllHQs] = React.useState([]);
+  const [allSites, setAllSites] = React.useState([]);
 
-  // ⚡ 사용자 권한별 접근 가능한 본부 목록 로드
+  // ⚡ 사용자 권한별 접근 가능한 본부/사업장 목록 로드
   React.useEffect(() => {
     if (window.WV_API?.getHQs) {
       window.WV_API.getHQs().then(data => setAllHQs(Array.isArray(data) ? data : [])).catch(() => {});
     }
+    if (window.WV_API?.getSites) {
+      window.WV_API.getSites().then(data => setAllSites(Array.isArray(data) ? data : ((data && data.sites) || []))).catch(() => {});
+    }
   }, []);
+
+  // 사업장 계정(site_manager/site_staff)은 본부 안에서도 '자기 사업장' 평가만 보이게 한다.
+  const isSiteRole = !!currentUser && (currentUser.role === "site_manager" || currentUser.role === "site_staff");
+  const accessibleSiteIds = React.useMemo(
+    () => new Set((window.WV_PERMS?.getAccessibleSiteIds(currentUser, allSites, allHQs) || []).map(String)),
+    [currentUser, allSites, allHQs]);
+  const accessibleSiteNames = React.useMemo(
+    () => new Set(allSites.filter(s => accessibleSiteIds.has(String(s.id))).map(s => s.사업장명 || s.name).filter(Boolean)),
+    [allSites, accessibleSiteIds]);
+  // 선택한 본부(company)에 속한 등록 사업장 목록 (새 평가 사업장명 자동완성용)
+  const companySites = React.useMemo(() => {
+    if (!selectedCompany) return [];
+    const hq = allHQs.find(h => h.name === selectedCompany);
+    if (!hq) return [];
+    return allSites.filter(s => String(s.hqId) === String(hq.id));
+  }, [selectedCompany, allHQs, allSites]);
 
   // 본인이 볼 수 있는 본부만 (admin/safety는 전체)
   const accessibleCompanies = React.useMemo(() => {
@@ -2017,6 +2067,8 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
     if (selectedType.id === "occasional" && !composedReason.trim()) {
       alert("수시 평가 사유를 1개 이상 선택해주세요."); return;
     }
+    // 입력한 사업장명이 등록 사업장과 일치하면 siteId 연결(사업장 계정 연동 정확도↑)
+    const matchedSite = companySites.find(s => (s.사업장명 || s.name) === newSiteName.trim());
     const ctx = addEvaluation({
       type: selectedType.id,
       company: selectedCompany,
@@ -2024,6 +2076,7 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
       date: newDate,
       사유: selectedType.id === "occasional" ? composedReason.trim() : "",
       사업장명: newSiteName.trim(),
+      siteId: matchedSite ? String(matchedSite.id) : "",
     });
     if (cloneFromId) cloneEvaluation(cloneFromId, ctx);
     setShowNewModal(false);
@@ -2041,8 +2094,15 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
   // 필터링된 평가 목록 (선택한 종류·본부에 해당하는 것)
   const filteredList = evalList
     .filter(e => selectedType && e.type === selectedType.id)
-    // ⚡ 본인 권한 본부만 (전사 권한 admin/safety 외에는 본인 본부 평가만 보임)
+    // ⚡ 본부 단위: 본인 권한 본부만 (전사 권한 admin/safety는 전체)
     .filter(e => isCrossHQ || accessibleCompanies.includes(e.company))
+    // ⚡ 사업장 단위: 사업장 계정은 본부 안에서도 자기 사업장 평가만 (siteId 우선, 없으면 사업장명 매칭)
+    .filter(e => {
+      if (isCrossHQ || !isSiteRole) return true;
+      if (e.siteId && accessibleSiteIds.has(String(e.siteId))) return true;
+      if (e.사업장명 && accessibleSiteNames.has(e.사업장명)) return true;
+      return false;
+    })
     .filter(e => !selectedCompany || e.company === selectedCompany)
     .sort((a, b) => (b.year || 0) - (a.year || 0) || (b.date || "").localeCompare(a.date || ""));
 
@@ -2246,12 +2306,21 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
               <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
                 사업장명 <span style={{ color: "#dc2626" }}>*</span>
                 <span style={{ color: "var(--fg-3)", fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
-                  (예: SK C타워, 서울숲포휴, 107타워 등)
+                  (등록된 사업장은 목록에서 선택하면 사업장 계정과 자동 연동됩니다)
                 </span>
               </label>
               <input value={newSiteName} onChange={e => setNewSiteName(e.target.value)}
-                placeholder="평가 대상 사업장명 입력"
+                list="risk-site-options"
+                placeholder="평가 대상 사업장명 입력 또는 선택"
                 style={{ width: "100%", padding: "9px 12px", border: "1.5px solid var(--line)", borderRadius: 6, fontSize: 13, fontWeight: 600 }} />
+              <datalist id="risk-site-options">
+                {companySites.map(s => <option key={s.id} value={s.사업장명 || s.name} />)}
+              </datalist>
+              {newSiteName.trim() && !companySites.some(s => (s.사업장명 || s.name) === newSiteName.trim()) && companySites.length > 0 && (
+                <div style={{ fontSize: 11, color: "#b45309", marginTop: 5 }}>
+                  ⚠ 등록된 사업장명과 정확히 일치해야 해당 사업장 계정에서 보입니다. 목록에서 선택하세요.
+                </div>
+              )}
             </div>
 
             {selectedType.id === "occasional" ? (
