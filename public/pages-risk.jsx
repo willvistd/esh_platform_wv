@@ -3775,18 +3775,31 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
   };
 
   // 추천/목록 팝업 위치(시안 B): 기본은 입력창 '위쪽'에 표시 → 입력 내용을 가리지 않음.
-  // 위 공간이 부족한 첫 행 등에서는 자동으로 셀 '아래쪽'으로 전환. (ref 콜백으로 마운트 시 배치)
+  // 단, 표는 .risk-table-area(overflow:auto)로 상하가 잘리므로, 화면(viewport)이 아니라
+  // '스크롤 컨테이너' 기준으로 위/아래 여유를 재서 잘리지 않는 쪽으로 자동 전환. (ref 콜백)
   const placePopup = (el) => {
     if (!el || !el.parentElement) return;
-    // 기본: 위쪽
-    el.style.top = "auto";
-    el.style.bottom = "calc(100% + 4px)";
-    const wrapTop = el.parentElement.getBoundingClientRect().top;
+    // 잘림이 발생하는 가장 가까운 스크롤/overflow 컨테이너 탐색
+    let clip = el.parentElement;
+    while (clip && clip !== document.body) {
+      const cs = getComputedStyle(clip);
+      if (/(auto|scroll|hidden|clip)/.test(cs.overflowX + cs.overflowY)) break;
+      clip = clip.parentElement;
+    }
+    const clipRect = (clip && clip !== document.body)
+      ? clip.getBoundingClientRect()
+      : { top: 0, bottom: window.innerHeight };
+    const wrapRect = el.parentElement.getBoundingClientRect();
     const popH = el.offsetHeight;
-    if (wrapTop < popH + 8) {
-      // 위 공간 부족 → 셀 아래로 (여기서도 입력창은 가리지 않음)
+    const spaceAbove = wrapRect.top - clipRect.top;      // 컨테이너 안, 셀 위쪽 여유
+    const spaceBelow = clipRect.bottom - wrapRect.bottom; // 컨테이너 안, 셀 아래쪽 여유
+    // 기본은 위쪽. 위가 부족하고 아래가 더 넓으면 아래로 전환.
+    if (spaceAbove < popH + 8 && spaceBelow > spaceAbove) {
       el.style.top = "calc(100% + 4px)";
       el.style.bottom = "auto";
+    } else {
+      el.style.top = "auto";
+      el.style.bottom = "calc(100% + 4px)";
     }
   };
   // 테이블 레이아웃(컬럼 너비)이 확정된 뒤에 높이를 측정해야 정확하므로
