@@ -3576,7 +3576,7 @@ const TD = ({ children, bg, center, bold, color, w, className }) => (
   </td>
 );
 
-const RiskTableView = ({ onNav, currentUser, area }) => {
+const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
   const info = RISK_STEPS[3];
   const ctx = getEvalContext();
   const company = ctx?.company || localStorage.getItem(RISK_COMPANY_KEY) || "";
@@ -3828,6 +3828,10 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
       <style>{`
         @page wv-rt-landscape { size: A4 landscape !important; margin: 6mm !important; }
         .risk-print-area-table { page: wv-rt-landscape; }
+        /* 개별 출력(위험성평가표만 인쇄)일 때: 인쇄영역이 position:absolute라
+           named-page(page:)가 무시되어 세로로 나오는 문제 → 기본 @page 자체를 가로로.
+           전체출력(inPrintAll)에서는 다른 STEP까지 가로가 되면 안 되므로 넣지 않음. */
+        ${inPrintAll ? '' : '@page { size: A4 landscape !important; margin: 6mm !important; }'}
         @media print {
           /* 스크롤 박스 해제 + 본문 폭에 표 강제 맞춤 */
           .risk-print-area-table, .risk-print-area-table > div {
@@ -5566,7 +5570,7 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
         {/* 회의록 = 일지 + 사진대지(사진 있을 때) 2장 — RiskMeetingView 내부에서 처리 */}
         <div className="step-page"><RiskMeetingView onNav={dummyNav} currentUser={currentUser} /></div>
         {(tableTypes.length ? tableTypes : [undefined]).map((t, i) => (
-          <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} /></div>
+          <div className={"step-page table-step" + (i > 0 ? " tbl-break" : "")} key={"tbl-" + (t || i)}><RiskTableView onNav={dummyNav} currentUser={currentUser} area={t} inPrintAll /></div>
         ))}
         <div className="step-page photos-step"><RiskPhotosView onNav={dummyNav} currentUser={currentUser} /></div>
         {/* 전파교육 = 일지 + 사진대지(사진 있을 때) 2장 — RiskTrainingView 내부에서 처리 */}
