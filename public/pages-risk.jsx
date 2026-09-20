@@ -4617,8 +4617,8 @@ const RiskTableView = ({ onNav, currentUser, area }) => {
                           onChange={e => { updRow(i, "감소대책", e.target.value); autoGrow(e.target); }}
                           onFocus={() => setMeasureSuggestRow(i)}
                           ref={autoGrow}
-                          style={{ ...inTA, paddingRight: 22 }} />
-                        <div className="tx-mirror">{row.감소대책}</div>
+                          style={{ ...inTA, paddingRight: 22, textAlign: "left" }} />
+                        <div className="tx-mirror" style={{ textAlign: "left" }}>{row.감소대책}</div>
                         {(() => {
                           // 세부작업+원인 매핑(매핑표 자동생성)에서 감소대책 추천 문구
                           const sugs = TASK_CAUSE_MEASURE_SUGGESTIONS[row.세부작업]?.[row.원인] || [];
