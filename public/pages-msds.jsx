@@ -1346,9 +1346,12 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
         }
       `}</style>
 
-      <div className="ledger-no-print" style={{ marginBottom: 12 }}>
+      <div className="ledger-no-print" style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-generate' })}>
           <Icon name="arrow-left" size={14} /> MSDS 서식 생성으로
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-hazard-list' })}>
+          <Icon name="list" size={14} /> 유해인자 목록표
         </button>
       </div>
 
@@ -1482,4 +1485,176 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   );
 };
 
-Object.assign(window, { MsdsGeneratorView, MsdsLedgerView });
+// ── 유해인자(작업환경측정·특수건강진단 대상물질) 목록표 — 사업장 기준 집계 ──
+// MSDS 관리대장에 저장된 측정대상/특검대상/성분을 사업장별로 모아 유해인자 종류를 한눈에 표시.
+const MsdsHazardListView = ({ onNav, currentUser, role }) => {
+  const [items, setItems]     = React.useState([]);
+  const [sites, setSites]     = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [siteFilter, setSiteFilter] = React.useState('전체');
+
+  React.useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      window.WV_API.getMsdsLedger(),
+      window.WV_API.getSites ? window.WV_API.getSites() : Promise.resolve([]),
+    ]).then(([data, siteData]) => {
+      setItems(Array.isArray(data) ? data : []);
+      setSites(Array.isArray(siteData) ? siteData : (siteData && siteData.sites) || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  // 권한별 가시성: 관리대장과 동일 (admin/safety 전체, 그 외 담당 사업장 + 본인 작성분)
+  const visible = React.useMemo(() => {
+    if (role === 'admin' || role === 'safety') return items;
+    const allowed = new Set();
+    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+    sites.forEach(s => { if (myIds.includes(String(s.id))) allowed.add(String(s.id)); });
+    return items.filter(it => (it['작성자'] === (currentUser && currentUser.name)) || allowed.has(String(it.siteId)));
+  }, [items, sites, role, currentUser]);
+
+  const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
+  const filtered = visible.filter(it => siteFilter === '전체' || it['사업장명'] === siteFilter);
+  const showSiteCol = siteFilter === '전체' && siteNames.length > 1;
+  const soleSite = siteFilter !== '전체' ? siteFilter : (siteNames.length === 1 ? siteNames[0] : '');
+
+  // 사업장×물질 단위로 집계 (측정대상/특검대상 문자열 파싱 + 성분 JSON에서 CAS 보강)
+  const rows = React.useMemo(() => {
+    const norm = (v) => String(v || '').replace(/\s+/g, '').toLowerCase();
+    const map = new Map();
+    filtered.forEach(it => {
+      const site = it['사업장명'] || '(미지정)';
+      let comps = [];
+      try { comps = JSON.parse(it['성분'] || '[]'); } catch (e) {}
+      const casOf = (nm) => {
+        const c = comps.find(c => [c.name_ko, c.name, c.name_en].some(x => x && norm(x) === norm(nm)));
+        return c ? (c.cas || c.cas_raw || '') : '';
+      };
+      const add = (nm, which) => {
+        const n = String(nm || '').trim(); if (!n) return;
+        const key = site + '||' + norm(n);
+        if (!map.has(key)) map.set(key, { site, name: n, wem: false, she: false, cas: '', products: new Set() });
+        const r = map.get(key);
+        r[which] = true;
+        if (it['제품명']) r.products.add(it['제품명']);
+        if (!r.cas) r.cas = casOf(n);
+      };
+      (it['측정대상'] || '').split(/[,、·/]/).forEach(n => add(n, 'wem'));
+      (it['특검대상'] || '').split(/[,、·/]/).forEach(n => add(n, 'she'));
+    });
+    return [...map.values()].sort((a, b) => a.site.localeCompare(b.site) || a.name.localeCompare(b.name));
+  }, [filtered]);
+
+  const wemCount = rows.filter(r => r.wem).length;
+  const sheCount = rows.filter(r => r.she).length;
+
+  const th = { padding: '9px 10px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--fg-3)', borderBottom: '2px solid var(--line)', whiteSpace: 'nowrap' };
+  const td = { padding: '9px 10px', fontSize: 12.5, borderBottom: '1px solid var(--line-2)', verticalAlign: 'top' };
+  const chip = (on, label, color) => (
+    <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 9px', borderRadius: 6,
+      background: on ? (color === 'red' ? '#fdeeee' : '#eafaf0') : 'transparent',
+      color: on ? (color === 'red' ? '#b42318' : '#087443') : '#cbd2dc',
+      border: `1px solid ${on ? (color === 'red' ? '#f3c0bd' : '#bce8cf') : 'transparent'}` }}>{on ? '○' : '—'}</span>
+  );
+
+  return (
+    <div className="content" style={{ maxWidth: 1040 }}>
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          .hz-print, .hz-print * { visibility: visible; }
+          .hz-print { position: absolute; top: 0; left: 0; width: 100%; }
+          .hz-no-print { display: none !important; }
+          /* 인쇄는 검정색 통일 */
+          .hz-print, .hz-print * { color: #000 !important; }
+          .hz-print td, .hz-print th { border-color: #000 !important; }
+          .hz-badge { background: transparent !important; color: #000 !important; border-color: #000 !important; }
+        }
+      `}</style>
+
+      <div className="hz-no-print" style={{ marginBottom: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-ledger' })}>
+          <Icon name="arrow-left" size={14} /> MSDS 관리대장
+        </button>
+        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-generate' })}>
+          <Icon name="edit" size={14} /> MSDS 서식 생성
+        </button>
+      </div>
+
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">유해인자 목록표</h1>
+          <div className="content-sub">MSDS 관리대장에 저장된 물질 중 <b>작업환경측정·특수건강진단 대상 유해인자</b>를 사업장별로 모았습니다.</div>
+        </div>
+        <div className="hz-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {siteNames.length > 1 && (
+            <select className="field-select" value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 7, fontSize: 13 }}>
+              <option>전체</option>
+              {siteNames.map(n => <option key={n}>{n}</option>)}
+            </select>
+          )}
+          <PrintButton />
+        </div>
+      </div>
+
+      {/* 요약 */}
+      {!loading && rows.length > 0 && (
+        <div className="hz-no-print" style={{ display: 'flex', gap: 10, margin: '4px 0 14px', flexWrap: 'wrap' }}>
+          <div style={{ padding: '6px 12px', background: 'var(--bg-sunk)', borderRadius: 8, fontSize: 12.5 }}>유해인자 <b>{rows.length}</b>종</div>
+          <div style={{ padding: '6px 12px', background: '#fdeeee', color: '#b42318', borderRadius: 8, fontSize: 12.5, fontWeight: 600 }}>작업환경측정 대상 {wemCount}</div>
+          <div style={{ padding: '6px 12px', background: '#eafaf0', color: '#087443', borderRadius: 8, fontSize: 12.5, fontWeight: 600 }}>특수건강진단 대상 {sheCount}</div>
+        </div>
+      )}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60, color: 'var(--fg-3)' }}>불러오는 중…</div>
+      ) : rows.length === 0 ? (
+        <div className="card" style={{ padding: 48, textAlign: 'center', color: 'var(--fg-3)' }}>
+          <Icon name="flask" size={30} />
+          <div style={{ marginTop: 12 }}>작업환경측정·특수건강진단 대상 유해인자가 없습니다.</div>
+          <div style={{ fontSize: 12.5, marginTop: 6 }}>MSDS 서식 생성에서 성분을 판정하고 <b>관리대장 저장</b> 하면 자동으로 집계됩니다.</div>
+        </div>
+      ) : (
+        <div className="card hz-print" style={{ overflowX: 'auto' }}>
+          <div style={{ padding: '14px 16px 4px' }}>
+            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>작업환경측정·특수건강진단 대상 유해인자 목록표</div>
+            {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+            <thead>
+              <tr>
+                <th style={{ ...th, width: 34 }}>연번</th>
+                {showSiteCol && <th style={th}>사업장</th>}
+                <th style={th}>유해인자(물질명)</th>
+                <th style={{ ...th, width: 130 }}>CAS No.</th>
+                <th style={{ ...th, width: 96, textAlign: 'center' }}>작업환경측정</th>
+                <th style={{ ...th, width: 96, textAlign: 'center' }}>특수건강진단</th>
+                <th style={th}>관련 MSDS(제품)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={r.site + '||' + r.name}>
+                  <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
+                  {showSiteCol && <td style={td}>{r.site}</td>}
+                  <td style={{ ...td, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas || '—'}</td>
+                  <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.wem, '작측', 'red')}</span></td>
+                  <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.she, '특검', 'green')}</span></td>
+                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{[...r.products].join(', ') || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ padding: '10px 16px', fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.6 }}>
+            ※ MSDS 관리대장의 성분 판정 결과(작업환경측정·특수건강진단 대상)를 사업장 기준으로 자동 집계한 표입니다. 원본 수정은 관리대장에서 하세요.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+Object.assign(window, { MsdsGeneratorView, MsdsLedgerView, MsdsHazardListView });

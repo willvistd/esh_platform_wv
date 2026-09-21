@@ -1081,6 +1081,8 @@ function App() {
           <MsdsGeneratorView onNav={onNav} currentUser={currentUser} role={role} />
         ) : route.name === "msds-ledger" ? (
           <MsdsLedgerView onNav={onNav} currentUser={currentUser} role={role} />
+        ) : route.name === "msds-hazard-list" ? (
+          <MsdsHazardListView onNav={onNav} currentUser={currentUser} role={role} />
         ) : route.name === "tool-safety-signs" ? (
           <SafetySignsView onNav={onNav} />
         ) : route.name === "tool-org-chart" ? (
