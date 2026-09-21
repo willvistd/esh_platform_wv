@@ -1182,7 +1182,9 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
     fetch("/api/settings/submenus").then((r) => r.json())
       .then((d) => { if (d && d.value) setSubCfg(d.value); }).catch(() => {});
   }, []);
-  const subListFor = (c) => (Array.isArray(subCfg[c.id]) ? subCfg[c.id] : window.WV_SUB.defaultList(c));
+  // 저장된 설정 + 코드에 새로 추가된 카탈로그 도구(예: 유해인자 목록표) 자동 병합 →
+  // 관리자 카테고리 편집 화면에도 신규 고정 기능이 항상 보이게 함 (사이드바 listFor와 동일 규칙)
+  const subListFor = (c) => window.WV_SUB.listFor(c, subCfg);
   const setSubList = (catId, newList) => { setSubMsg(""); setSubCfg((p) => ({ ...p, [catId]: newList })); };
   const saveSubs = async () => {
     setSubSaving(true); setSubMsg("");
