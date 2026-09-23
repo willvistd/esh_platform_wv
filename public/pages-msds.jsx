@@ -1648,7 +1648,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
               ))}
             </tbody>
           </table>
-          <div style={{ padding: '10px 16px', fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.6 }}>
+          <div className="hz-no-print" style={{ padding: '10px 16px', fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.6 }}>
             ※ MSDS 관리대장의 성분 판정 결과(작업환경측정·특수건강진단 대상)를 사업장 기준으로 자동 집계한 표입니다. 원본 수정은 관리대장에서 하세요.
           </div>
         </div>
