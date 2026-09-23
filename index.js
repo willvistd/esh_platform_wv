@@ -17,8 +17,8 @@ const SESSION_SECRET = process.env.SESSION_SECRET ||
   crypto.createHash('sha256').update('wv-session|' + (process.env.PGPASSWORD || 'dev')).digest('hex');
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7일
 const b64u = (buf) => Buffer.from(buf).toString('base64url');
-const signSession = (user) => {
-  const payload = b64u(JSON.stringify({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS }));
+const signSession = (user, sid) => {
+  const payload = b64u(JSON.stringify({ uid: user.id, role: user.role, sid: sid || '', exp: Date.now() + SESSION_TTL_MS }));
   const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payload).digest('base64url');
   return payload + '.' + sig;
 };
@@ -119,10 +119,22 @@ const AUTH_EXEMPT = [
   { method: 'GET',  re: /^\/meta$/ },
   { method: 'GET',  re: /^\/hq$/ },
 ];
-app.use('/api', (req, res, next) => {
+app.use('/api', async (req, res, next) => {
   if (AUTH_EXEMPT.some(r => r.method === req.method && r.re.test(req.path))) return next();
   const sess = verifySession(getCookie(req, 'wv_sess'));
   if (!sess) return res.status(401).json({ error: '로그인이 필요합니다.' });
+  // 동시접속 차단(1계정 1세션): 쿠키의 sid가 서버에 저장된 현재 세션과 다르면
+  //   = 다른 곳에서 로그인해 밀려난 세션 → 차단. (sid 없는 옛 쿠키는 재로그인 전까지 허용)
+  if (sess.sid) {
+    try {
+      const r = await pool.query('SELECT "sessionToken" FROM users WHERE id=$1', [sess.uid]);
+      const cur = r.rows[0] && r.rows[0].sessionToken;
+      if (cur && cur !== sess.sid) {
+        res.set('X-Session-Superseded', '1');
+        return res.status(401).json({ error: '다른 기기/브라우저에서 로그인되어 로그아웃되었습니다.', superseded: true });
+      }
+    } catch (e) { /* 조회 실패 시 통과(가용성 우선) */ }
+  }
   req.session = sess;
   next();
 });
@@ -393,7 +405,22 @@ async function initDB() {
   // 최근 로그인 시각 / 비밀번호 마지막 변경 시각 (계정 목록 관리에서 표시)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "lastLoginAt" TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "lastLoginIp" TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "sessionToken" TEXT;`);  // 동시접속 차단(1계정 1세션)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "pwChangedAt" TEXT;`);
+  // 접속 이력(감사 로그) — 로그인마다 시간·IP·기기 기록, 이상 접속 표시
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS login_log (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER,
+      name TEXT,
+      email TEXT,
+      ip TEXT,
+      "userAgent" TEXT,
+      anomaly BOOLEAN DEFAULT false,
+      at TEXT DEFAULT NOW()::TEXT
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_login_log_user ON login_log ("userId", id DESC);`);
   // 담당 사업장 ID 목록 (CSV) — site_manager/site_staff는 자기 사업장, 본사 staff는 담당 사업장
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "siteIds" TEXT;`);
   // ── 역할 통합 마이그레이션: 팀장(manager) → 팀 공용(staff) ──
@@ -703,7 +730,7 @@ async function initDB() {
 app.get('/api/users', async (req, res) => {
   const result = await pool.query('SELECT * FROM users ORDER BY id');
   // 비밀번호는 절대 내보내지 않음 (해시라도 노출 금지)
-  const users = result.rows.map(({ password, ...rest }) => rest);
+  const users = result.rows.map(({ password, sessionToken, ...rest }) => rest);
   res.json({ users });
 });
 
@@ -896,7 +923,14 @@ app.get('/api/meta', (req, res) => {
 });
 
 // ── 로그아웃 (세션 쿠키 제거) ──
-app.post('/api/logout', (req, res) => {
+app.post('/api/logout', async (req, res) => {
+  // 본인 세션 토큰 무효화 (있으면) — 로그아웃 후 남은 쿠키 재사용 방지
+  try {
+    const sess = verifySession(getCookie(req, 'wv_sess'));
+    if (sess && sess.uid && sess.sid) {
+      await pool.query('UPDATE users SET "sessionToken"=NULL WHERE id=$1 AND "sessionToken"=$2', [sess.uid, sess.sid]);
+    }
+  } catch (e) {}
   res.clearCookie('wv_sess', { path: '/' });
   res.json({ success: true });
 });
@@ -954,23 +988,57 @@ app.post('/api/login', async (req, res) => {
     // 최근 접속 시각 + 접속 IP 기록 (프록시 뒤이므로 X-Forwarded-For의 첫 IP가 실제 클라이언트)
     const nowIso = new Date().toISOString();
     const clientIp = (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())
-      || (req.ip || (req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
-    try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2 WHERE id=$3', [nowIso, clientIp, u.id]); } catch (e) {}
+      || String((req.ip || (req.socket && req.socket.remoteAddress) || '')).replace(/^::ffff:/, '');
+    const userAgent = String(req.headers['user-agent'] || '').slice(0, 300);
+    // 이상 접속 판정: 이 계정이 평소 쓰던 IP 대역(/24)과 다른 곳에서 처음 접속하면 표시(차단은 안 함)
+    const ipPrefix = (ip) => { const s = String(ip || ''); return s.indexOf('.') > -1 ? s.split('.').slice(0, 3).join('.') : s; };
+    let anomaly = false;
+    try {
+      const hist = await pool.query('SELECT ip FROM login_log WHERE "userId"=$1 ORDER BY id DESC LIMIT 100', [u.id]);
+      const seen = new Set((hist.rows || []).map(r => ipPrefix(r.ip)).filter(Boolean));
+      if (seen.size > 0 && clientIp && !seen.has(ipPrefix(clientIp))) anomaly = true;
+    } catch (e) {}
+    // 동시접속 차단용 세션 토큰(sid) 발급 → 새 로그인이 이전 세션을 밀어냄
+    const sid = crypto.randomBytes(16).toString('hex');
+    try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2, "sessionToken"=$3 WHERE id=$4', [nowIso, clientIp, sid, u.id]); } catch (e) {}
+    try { await pool.query('INSERT INTO login_log ("userId", name, email, ip, "userAgent", anomaly, at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [u.id, u.name || '', u.email || '', clientIp, userAgent, anomaly, nowIso]); } catch (e) {}
     u.lastLoginAt = nowIso;
     u.lastLoginIp = clientIp;
     // 세션 쿠키 발급 (httpOnly — JS로 탈취 불가, 이후 모든 API 요청에 자동 첨부)
-    res.cookie('wv_sess', signSession(u), {
+    res.cookie('wv_sess', signSession(u, sid), {
       httpOnly: true,
       sameSite: 'lax',
       secure: (req.headers['x-forwarded-proto'] === 'https') || req.secure,
       maxAge: SESSION_TTL_MS,
       path: '/',
     });
-    const { password, ...safe } = u;
+    const { password, sessionToken, ...safe } = u;
     res.json({ success: true, user: safe });
   } catch (e) {
     console.error('POST /api/login 오류:', e);
     res.status(500).json({ success: false, message: '로그인 처리 중 오류가 발생했습니다.' });
+  }
+});
+
+// ── 접속 이력(감사 로그) 조회 — 관리자/안전관리자만 ──
+app.get('/api/login-log', async (req, res) => {
+  try {
+    if (!req.session || !['admin', 'safety'].includes(req.session.role)) {
+      return res.status(403).json({ error: '권한이 없습니다.' });
+    }
+    const limit = Math.min(parseInt(req.query.limit) || 200, 1000);
+    const userId = req.query.userId ? parseInt(req.query.userId) : null;
+    const onlyAnomaly = String(req.query.anomaly || '') === '1';
+    const where = [];
+    const vals = [];
+    if (userId) { vals.push(userId); where.push(`"userId" = $${vals.length}`); }
+    if (onlyAnomaly) { where.push('anomaly = true'); }
+    const sql = `SELECT * FROM login_log ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY id DESC LIMIT ${limit}`;
+    const result = await pool.query(sql, vals);
+    res.json({ items: result.rows });
+  } catch (e) {
+    console.error('GET /api/login-log 오류:', e);
+    res.status(500).json({ error: e.message });
   }
 });
 
