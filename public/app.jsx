@@ -821,16 +821,18 @@ function App() {
           });
           // 이 목록은 DB에서 온 '진짜' 목록 → 캐시 저장 허용 (아래 effect가 개수까지 포함해 저장)
           catAuthoritativeRef.current = true;
-        } else if (attempt < 3) {
-          setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
+        } else if (attempt < 8) {
+          // 콜드스타트(수십 초)까지 견디도록 더 오래 재시도 (지수 백오프, 최대 3초 간격)
+          setTimeout(() => load(attempt + 1), Math.min(800 * (attempt + 1), 3000));
         } else {
-          // 끝까지 빈응답이면 mock fallback (초기 셋업용 안전망) — 이건 캐시에 저장하지 않음
+          // 끝까지 빈응답 — 캐시/현재 목록이 있으면 그대로 유지(옛 mock 씨앗으로 덮으면
+          //   '과거 카테고리'가 되살아남). 목록이 아예 없을 때만 mock 안전망 사용.
           catAuthoritativeRef.current = false;
-          setLiveCategories(window.WV_DATA.categories || []);
+          setLiveCategories(prev => (Array.isArray(prev) && prev.length > 0) ? prev : (window.WV_DATA.categories || []));
         }
       }).catch(() => {
-        // 오류 시 재시도 (콜드스타트 대비). 최종 실패는 초기 seed 유지.
-        if (!cancelled && attempt < 3) setTimeout(() => load(attempt + 1), 800 * (attempt + 1));
+        // 오류 시 재시도 (콜드스타트 대비). 최종 실패해도 캐시/현재 목록은 건드리지 않음.
+        if (!cancelled && attempt < 8) setTimeout(() => load(attempt + 1), Math.min(800 * (attempt + 1), 3000));
       });
     };
     load();

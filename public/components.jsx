@@ -71,12 +71,25 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
 
   // ─── 카테고리별 하위메뉴 (호버 시 오른쪽 플라이아웃) — 카탈로그+관리자 설정(DB) ───
   //   설정: { [카테고리id]: [항목...] } (게시판 보기 포함, 순서=배열 순). 없으면 기본 목록.
-  const [subCfg, setSubCfg] = React.useState({});
+  // 하위메뉴 설정: 마지막으로 받은 값을 캐시에 저장해 첫 화면에서 '기본값 → 실제값' 깜빡임 제거.
+  const SUBCFG_CACHE = "wv_submenu_cfg";
+  const [subCfg, setSubCfg] = React.useState(() => {
+    try { const c = JSON.parse(localStorage.getItem(SUBCFG_CACHE) || "null"); if (c && typeof c === "object") return c; } catch (e) {}
+    return {};
+  });
   React.useEffect(() => {
-    fetch("/api/settings/submenus")
-      .then((r) => r.json())
-      .then((d) => { if (d && d.value) setSubCfg(d.value); })
-      .catch(() => {});
+    let cancelled = false;
+    const load = (attempt = 0) => {
+      fetch("/api/settings/submenus")
+        .then((r) => r.json())
+        .then((d) => {
+          if (cancelled) return;
+          if (d && d.value) { setSubCfg(d.value); try { localStorage.setItem(SUBCFG_CACHE, JSON.stringify(d.value)); } catch (e) {} }
+        })
+        .catch(() => { if (!cancelled && attempt < 5) setTimeout(() => load(attempt + 1), Math.min(800 * (attempt + 1), 3000)); });
+    };
+    load();
+    return () => { cancelled = true; };
   }, []);
   const getSubs = (c) => {
     const list = window.WV_SUB.listFor(c, subCfg);
