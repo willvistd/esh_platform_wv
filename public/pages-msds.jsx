@@ -1628,16 +1628,16 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
             <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>작업환경측정·특수건강진단 대상 유해인자 목록표</div>
             {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 940 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, tableLayout: 'auto' }}>
             <thead>
               <tr>
                 <th style={{ ...th, width: 34 }}>연번</th>
                 {showSiteCol && <th style={th}>사업장</th>}
                 <th style={th}>유해인자(물질명)</th>
-                <th style={{ ...th, width: 130 }}>CAS No.</th>
-                <th style={{ ...th, width: 96, textAlign: 'center' }}>작업환경측정</th>
-                <th style={{ ...th, width: 96, textAlign: 'center' }}>특수건강진단</th>
-                <th style={{ ...th, width: 120 }}>사용빈도</th>
+                <th style={{ ...th, width: 110 }}>CAS No.</th>
+                <th style={{ ...th, width: 88, textAlign: 'center' }}>작업환경측정</th>
+                <th style={{ ...th, width: 88, textAlign: 'center' }}>특수건강진단</th>
+                <th style={{ ...th, width: 100 }}>사용빈도</th>
                 <th style={th}>관련 MSDS(제품)</th>
               </tr>
             </thead>
@@ -1646,12 +1646,12 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
                 <tr key={r.site + '||' + r.name}>
                   <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
                   {showSiteCol && <td style={td}>{r.site}</td>}
-                  <td style={{ ...td, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ ...td, fontWeight: 600, wordBreak: 'break-word' }}>{r.name}</td>
                   <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas || '—'}</td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.wem, '작측', 'red')}</span></td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.she, '특검', 'green')}</span></td>
-                  <td style={{ ...td, fontSize: 11.5 }}>{[...r.freqs].join(' / ') || '—'}</td>
-                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{[...r.products].join(', ') || '—'}</td>
+                  <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{[...r.freqs].join(' / ') || '—'}</td>
+                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{[...r.products].join(', ') || '—'}</td>
                 </tr>
               ))}
             </tbody>
