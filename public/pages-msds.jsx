@@ -1048,8 +1048,9 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
           <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정/특수검진 유해인자 분석{components.length ? ` (${components.length})` : ''}</button>
           {/* 저장·출력 버튼 — 탭과 같은 줄 오른쪽 끝 */}
           <div className="msds-otabs-actions no-print" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-ghost btn-sm no-print" onClick={() => onNav({ name: 'msds-ledger' })}
-              title="이 계정(사업장)의 MSDS 관리대장 목록으로 이동">
+            <button className="no-print" onClick={() => onNav({ name: 'msds-ledger' })}
+              title="이 계정(사업장)의 MSDS 관리대장 목록으로 이동"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
               <Icon name="list" size={13} /> 관리대장 목록
             </button>
             <button className="btn btn-primary btn-sm no-print" onClick={openSave}
@@ -1330,7 +1331,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const th = { padding: '9px 10px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--fg-3)', borderBottom: '2px solid var(--line)', whiteSpace: 'nowrap' };
   const td = { padding: '9px 10px', fontSize: 12.5, borderBottom: '1px solid var(--line-2)', verticalAlign: 'top' };
   // 이동(바로가기) 버튼 — 타원형(알약) 모양으로 클릭 가능함을 명확히 (뒤로가기 버튼 제외)
-  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 15px', borderRadius: 999, border: '1.5px solid var(--primary)', background: 'var(--primary-soft)', color: 'var(--primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
+  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
 
   return (
     <div className="content" style={{ maxWidth: 1040 }}>
@@ -1561,7 +1562,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
       border: `1px solid ${on ? (color === 'red' ? '#f3c0bd' : '#bce8cf') : 'transparent'}` }}>{on ? '○' : '—'}</span>
   );
   // 이동(바로가기) 버튼 — 타원형(알약) 모양으로 클릭 가능함을 명확히 (뒤로가기 버튼 제외)
-  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 15px', borderRadius: 999, border: '1.5px solid var(--primary)', background: 'var(--primary-soft)', color: 'var(--primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
+  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
 
   return (
     <div className="content" style={{ maxWidth: 1040 }}>
