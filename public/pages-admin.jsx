@@ -1530,6 +1530,26 @@ const ManageUsersView = ({ currentUser }) => {
   const [typeFilter, setTypeFilter] = React.useState("all");
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [tab, setTab] = React.useState("accounts");
+  // 접속 이력(감사 로그)
+  const [logRows, setLogRows] = React.useState(null);
+  const [logLoading, setLogLoading] = React.useState(false);
+  const [logAnomalyOnly, setLogAnomalyOnly] = React.useState(false);
+  React.useEffect(() => {
+    if (tab !== "audit") return;
+    setLogLoading(true);
+    window.WV_API.getLoginLog({ anomaly: logAnomalyOnly, limit: 300 })
+      .then(rows => setLogRows(Array.isArray(rows) ? rows : []))
+      .catch(() => setLogRows([]))
+      .finally(() => setLogLoading(false));
+  }, [tab, logAnomalyOnly]);
+  const auTh = { padding: "9px 10px", textAlign: "left", fontSize: 12, fontWeight: 700, color: "var(--fg-3)", borderBottom: "2px solid var(--line)", whiteSpace: "nowrap" };
+  const auTd = { padding: "9px 10px", fontSize: 12.5, borderBottom: "1px solid var(--line-2)", verticalAlign: "top" };
+  const uaShort = (ua) => {
+    const s = String(ua || ""); if (!s) return "—";
+    const os = /Windows/.test(s) ? "Windows" : /iPhone|iPad|iOS/.test(s) ? "iOS" : /Android/.test(s) ? "Android" : /Mac OS X|Macintosh/.test(s) ? "Mac" : /Linux/.test(s) ? "Linux" : "";
+    const br = /Edg\//.test(s) ? "Edge" : /Chrome\//.test(s) ? "Chrome" : /Firefox\//.test(s) ? "Firefox" : /Safari\//.test(s) ? "Safari" : "";
+    return [os, br].filter(Boolean).join(" · ") || s.slice(0, 40);
+  };
 
   // 사용자 삭제 — 확인 후 백엔드 호출
   const handleDeleteUser = async (u) => {
@@ -1706,6 +1726,9 @@ const ManageUsersView = ({ currentUser }) => {
         </button>
         <button className={tab === "matrix" ? "active" : ""} onClick={() => setTab("matrix")}>
           <Icon name="shield" size={14} /> 권한 매트릭스
+        </button>
+        <button className={tab === "audit" ? "active" : ""} onClick={() => setTab("audit")}>
+          <Icon name="inbox" size={14} /> 접속 이력
         </button>
       </div>
 
@@ -1911,6 +1934,49 @@ const ManageUsersView = ({ currentUser }) => {
                 ))}
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {tab === "audit" && (
+        <>
+          <SectionHd title="접속 이력 (감사 로그)" sub="로그인마다 시간·IP·기기를 기록합니다. 평소와 다른 IP 대역에서 접속하면 '이상'으로 표시됩니다." />
+          <div style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+              <input type="checkbox" checked={logAnomalyOnly} onChange={e => setLogAnomalyOnly(e.target.checked)} /> 이상 접속만 보기
+            </label>
+            {logRows && <span className="meta" style={{ fontSize: 12 }}>총 {logRows.length}건{!logAnomalyOnly && ` · 이상 ${logRows.filter(r => r.anomaly).length}건`}</span>}
+          </div>
+          <div className="card" style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
+              <thead>
+                <tr>
+                  <th style={auTh}>접속 시간</th>
+                  <th style={auTh}>계정</th>
+                  <th style={auTh}>IP</th>
+                  <th style={auTh}>기기</th>
+                  <th style={{ ...auTh, textAlign: "center", width: 80 }}>상태</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logLoading ? (
+                  <tr><td colSpan={5} style={{ ...auTd, textAlign: "center", color: "var(--fg-3)", padding: 40 }}>불러오는 중…</td></tr>
+                ) : (!logRows || logRows.length === 0) ? (
+                  <tr><td colSpan={5} style={{ ...auTd, textAlign: "center", color: "var(--fg-3)", padding: 40 }}>접속 이력이 없습니다.</td></tr>
+                ) : logRows.map(r => (
+                  <tr key={r.id} style={{ background: r.anomaly ? "#fff5f5" : undefined }}>
+                    <td style={{ ...auTd, whiteSpace: "nowrap" }}>{fmtDateTime(r.at)}</td>
+                    <td style={auTd}><b>{r.name || "—"}</b> <span className="meta" style={{ fontSize: 11 }}>{r.email || ""}</span></td>
+                    <td style={{ ...auTd, fontFamily: "monospace", fontSize: 12 }}>{r.ip || "—"}</td>
+                    <td style={{ ...auTd, fontSize: 11.5, color: "var(--fg-3)", wordBreak: "break-word" }}>{uaShort(r.userAgent)}</td>
+                    <td style={{ ...auTd, textAlign: "center" }}>{r.anomaly ? <span style={{ color: "#b42318", fontWeight: 700, fontSize: 12 }}>⚠ 이상</span> : <span style={{ color: "#087443", fontSize: 12 }}>정상</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 10, lineHeight: 1.6 }}>
+            ※ '이상'은 그 계정이 평소 쓰던 IP 대역과 다른 곳에서 접속했다는 표시이며 자동 차단은 하지 않습니다(전국 현장 특성상 정상 접속도 IP가 다양함). 계정 공유가 의심되면 해당 계정의 비밀번호를 변경하세요.
           </div>
         </>
       )}

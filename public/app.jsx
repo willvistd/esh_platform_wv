@@ -12,6 +12,8 @@
       // 로그인돼 있다고 여기는 상태(wv_user 존재)에서만 세션만료 처리 → 리로드.
       // 로그인 화면(wv_user 없음)에선 401 나도 아무것도 안 함(무한 새로고침 방지).
       if (res.status === 401 && url.startsWith("/api") && !url.startsWith("/api/login") && !url.startsWith("/api/logout") && localStorage.getItem("wv_user")) {
+        // 동시접속 차단으로 밀려난 경우: 로그인 화면에 안내 메시지 표시
+        try { if (res.headers.get("X-Session-Superseded") === "1") localStorage.setItem("wv_kick_msg", "다른 기기 또는 브라우저에서 로그인되어 로그아웃되었습니다."); } catch (e) {}
         localStorage.removeItem("wv_auth_v1");
         localStorage.removeItem("wv_user");
         if (!window.__wvReloading) { window.__wvReloading = true; window.location.reload(); }
@@ -44,6 +46,16 @@ const api = {
     const res = await fetch(ENDPOINTS.users);
     const data = await res.json();
     return data.users || [];
+  },
+  async getLoginLog({ userId, anomaly, limit } = {}) {
+    const p = new URLSearchParams();
+    if (userId) p.set("userId", userId);
+    if (anomaly) p.set("anomaly", "1");
+    if (limit) p.set("limit", limit);
+    const res = await fetch(API_BASE + "/login-log" + (p.toString() ? "?" + p.toString() : ""));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `접속 이력 조회 실패 (${res.status})`);
+    return data.items || [];
   },
   async getPosts(categoryId) {
     // categoryId 지정 시 해당 카테고리만(썸네일 포함) — 전체 로드 시 base64 썸네일 제외되어 가벼움

@@ -21,6 +21,10 @@ const LoginScreen = ({ onLogin }) => {
   React.useEffect(() => {
     fetch("/api/meta").then(r => r.json()).then(m => setDemo(!!(m && m.demo))).catch(() => {});
   }, []);
+  // 동시접속 차단으로 밀려나 로그아웃된 경우 안내
+  React.useEffect(() => {
+    try { const m = localStorage.getItem("wv_kick_msg"); if (m) { setWarn(m); localStorage.removeItem("wv_kick_msg"); } } catch (e) {}
+  }, []);
   const fillDemo = () => { setEmail("demo@demo.com"); setPassword("demo1234"); };
 
   // 가입 화면이면 RegisterScreen만 렌더링
