@@ -855,6 +855,44 @@ function App() {
     document.documentElement.style.setProperty("--primary-soft-2", t.primaryColor + "2e");
   }, [t.primaryColor]);
 
+  // 인쇄(PDF 저장) 시 파일명이 되는 document.title을 현재 화면에 맞춰 자동 설정.
+  //   (기본 브라우저 탭 제목 '윌앤비전 통합 안전보건 플랫폼'이 모든 PDF에 붙던 문제 해결)
+  //   위험성평가는 종류(최초/정기/수시)·사업장·시기를 붙임. MSDS 서식생성은 자체 팝업 창에서
+  //   제품명으로 저장하므로 여기서 제외, 위험성평가 전체출력도 자체 파일명 사용.
+  React.useEffect(() => {
+    const RISK_TYPE_KO = { initial: "최초", regular: "정기", occasional: "수시" };
+    const sanitize = (s) => String(s || "").replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+    const titleForRoute = (r) => {
+      const n = r && r.name;
+      if (!n || n === "risk-print-all") return null;
+      if (n.indexOf("risk-") === 0) {
+        let c = null; try { c = JSON.parse(localStorage.getItem("wv_risk_evalContext") || "null"); } catch (e) {}
+        const type = c && RISK_TYPE_KO[c.type] ? RISK_TYPE_KO[c.type] : "";
+        const site = c ? sanitize(c["사업장명"] || c.company) : "";
+        const when = c ? (c.type === "occasional" ? sanitize(c.date) : (c.year ? c.year + "년" : "")) : "";
+        return ["위험성평가", type, site, when].filter(Boolean).join("_") || "위험성평가";
+      }
+      const MAP = {
+        "msds-ledger": "MSDS관리대장",
+        "msds-hazard-list": "작업환경측정_특수건강진단_유해인자목록표",
+        "education-log": "교육일지", "education-log-list": "교육일지", "education-log-new": "교육일지",
+        "education-attendee-sheet": "교육_참석자명단", "education-photo-board": "교육_사진대지",
+        "field-inspection": "현장점검보고서",
+        "tool-worker-survey": "근무환경조사표",
+        "tool-safety-signs": "안전보건표지",
+        "tool-org-chart": "안전보건관리조직도",
+        "legal-checker": "법규진단결과",
+      };
+      return MAP[n] || null;
+    };
+    let saved = null;
+    const onBefore = () => { const tt = titleForRoute(route); if (tt) { saved = document.title; document.title = tt; } };
+    const onAfter = () => { if (saved != null) { document.title = saved; saved = null; } };
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+    return () => { window.removeEventListener("beforeprint", onBefore); window.removeEventListener("afterprint", onAfter); };
+  }, [route]);
+
   const refreshPosts = () => {
     window.WV_API.getPosts().then(data => {
       if (data) {

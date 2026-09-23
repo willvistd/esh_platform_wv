@@ -5586,8 +5586,9 @@ const RiskPrintAllView = ({ onNav, currentUser }) => {
             onClick={() => {
               // 방법2: 브라우저 인쇄 → "PDF로 저장" (서버 Puppeteer 불필요, 클라이언트에서 생성)
               const sitename = (ctx.사업장명 || ctx.company || "위험성평가").replace(/[\\/:*?"<>|]/g, "_");
+              const typeKo = ({ initial: "최초", regular: "정기", occasional: "수시" })[ctx.type] || "";
               const prevTitle = document.title;
-              document.title = `위험성평가_${sitename}_${new Date().toISOString().slice(0, 10)}`;
+              document.title = ["위험성평가", typeKo, sitename, new Date().toISOString().slice(0, 10)].filter(Boolean).join("_");
               const restore = () => { document.title = prevTitle; window.removeEventListener("afterprint", restore); };
               window.addEventListener("afterprint", restore);
               window.print();
