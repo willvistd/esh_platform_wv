@@ -114,6 +114,8 @@ app.get('/tools/safety-signs', (req, res) => {
 //  - /api/hq (GET): 회원가입 화면의 본부 선택 드롭다운 (로그인 전 호출)
 const AUTH_EXEMPT = [
   { method: 'POST', re: /^\/login$/ },
+  { method: 'POST', re: /^\/login\/verify-otp$/ },
+  { method: 'POST', re: /^\/login\/resend-otp$/ },
   { method: 'POST', re: /^\/logout$/ },
   { method: 'POST', re: /^\/register$/ },
   { method: 'GET',  re: /^\/meta$/ },
@@ -421,6 +423,29 @@ async function initDB() {
     );
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_login_log_user ON login_log ("userId", id DESC);`);
+  // 새 기기 이메일 OTP(2차 인증) — 대기 코드 + 신뢰 기기
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS email_otp (
+      "pendingId" TEXT PRIMARY KEY,
+      "userId" INTEGER,
+      "codeHash" TEXT,
+      email TEXT,
+      "expiresAt" BIGINT,
+      attempts INTEGER DEFAULT 0,
+      "createdAt" TEXT DEFAULT NOW()::TEXT
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS trusted_devices (
+      id SERIAL PRIMARY KEY,
+      "userId" INTEGER,
+      token TEXT,
+      ua TEXT,
+      "createdAt" TEXT DEFAULT NOW()::TEXT,
+      "lastSeenAt" TEXT
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_trusted_dev ON trusted_devices ("userId", token);`);
   // 담당 사업장 ID 목록 (CSV) — site_manager/site_staff는 자기 사업장, 본사 staff는 담당 사업장
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "siteIds" TEXT;`);
   // ── 역할 통합 마이그레이션: 팀장(manager) → 팀 공용(staff) ──
@@ -935,6 +960,68 @@ app.post('/api/logout', async (req, res) => {
   res.json({ success: true });
 });
 
+// ── 새 기기 이메일 OTP(2차 인증) 헬퍼 ──
+const OTP_TTL_MS = 10 * 60 * 1000;                 // 코드 유효 10분
+const DEVICE_TTL_MS = 90 * 24 * 60 * 60 * 1000;    // 신뢰 기기 90일
+const otpEnabled = () => !!(process.env.RESEND_API_KEY && process.env.MAIL_FROM); // 키 없으면 기능 자동 비활성(안전)
+const hashCode = (code) => crypto.createHmac('sha256', SESSION_SECRET).update(String(code)).digest('hex');
+const maskEmail = (e) => {
+  const s = String(e || ''); const at = s.indexOf('@'); if (at < 1) return s;
+  const id = s.slice(0, at), dom = s.slice(at);
+  return (id.length <= 2 ? id[0] + '*' : id.slice(0, 2) + '*'.repeat(Math.min(id.length - 2, 4))) + dom;
+};
+const isTrustedDevice = async (userId, token) => {
+  if (!token) return false;
+  try {
+    const r = await pool.query('SELECT id FROM trusted_devices WHERE "userId"=$1 AND token=$2 LIMIT 1', [userId, token]);
+    if (r.rows[0]) { pool.query('UPDATE trusted_devices SET "lastSeenAt"=$1 WHERE id=$2', [new Date().toISOString(), r.rows[0].id]).catch(() => {}); return true; }
+  } catch (e) {}
+  return false;
+};
+const sendOtpEmail = async (to, code) => {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: process.env.MAIL_FROM,
+      to: [to],
+      subject: `[윌앤비전 통합 안전보건 플랫폼] 로그인 인증코드 ${code}`,
+      html: `<div style="font-family:sans-serif;max-width:440px;margin:0 auto;padding:24px">
+        <h2 style="margin:0 0 8px">로그인 인증코드</h2>
+        <p style="color:#555;font-size:14px;margin:0 0 16px">새 기기(또는 브라우저)에서 로그인 시도가 있었습니다. 아래 코드를 입력하세요.</p>
+        <div style="font-size:32px;font-weight:800;letter-spacing:8px;background:#f3f5f8;border-radius:10px;padding:16px;text-align:center">${code}</div>
+        <p style="color:#888;font-size:12px;margin:16px 0 0">유효시간 10분. 본인이 요청하지 않았다면 즉시 비밀번호를 변경하세요.</p>
+      </div>`,
+    }),
+  });
+  if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error('메일 발송 실패: ' + res.status + ' ' + t.slice(0, 200)); }
+};
+// 로그인 확정(세션·이력·쿠키) — 일반 로그인/OTP 통과 공통
+const finalizeLogin = async (req, res, u) => {
+  const nowIso = new Date().toISOString();
+  const clientIp = (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())
+    || String((req.ip || (req.socket && req.socket.remoteAddress) || '')).replace(/^::ffff:/, '');
+  const userAgent = String(req.headers['user-agent'] || '').slice(0, 300);
+  const ipPrefix = (ip) => { const s = String(ip || ''); return s.indexOf('.') > -1 ? s.split('.').slice(0, 3).join('.') : s; };
+  let anomaly = false;
+  try {
+    const hist = await pool.query('SELECT ip FROM login_log WHERE "userId"=$1 ORDER BY id DESC LIMIT 100', [u.id]);
+    const seen = new Set((hist.rows || []).map(r => ipPrefix(r.ip)).filter(Boolean));
+    if (seen.size > 0 && clientIp && !seen.has(ipPrefix(clientIp))) anomaly = true;
+  } catch (e) {}
+  const sid = crypto.randomBytes(16).toString('hex');
+  try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2, "sessionToken"=$3 WHERE id=$4', [nowIso, clientIp, sid, u.id]); } catch (e) {}
+  try { await pool.query('INSERT INTO login_log ("userId", name, email, ip, "userAgent", anomaly, at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [u.id, u.name || '', u.email || '', clientIp, userAgent, anomaly, nowIso]); } catch (e) {}
+  u.lastLoginAt = nowIso; u.lastLoginIp = clientIp;
+  res.cookie('wv_sess', signSession(u, sid), {
+    httpOnly: true, sameSite: 'lax',
+    secure: (req.headers['x-forwarded-proto'] === 'https') || req.secure,
+    maxAge: SESSION_TTL_MS, path: '/',
+  });
+  const { password, sessionToken, ...safe } = u;
+  return res.json({ success: true, user: safe });
+};
+
 // ── 서버 로그인 (비번 검증을 서버에서 — 비번이 프론트로 안 나감) ──
 app.post('/api/login', async (req, res) => {
   try {
@@ -985,38 +1072,77 @@ app.post('/api/login', async (req, res) => {
     if (!isHashed(u.password)) {
       try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
     }
-    // 최근 접속 시각 + 접속 IP 기록 (프록시 뒤이므로 X-Forwarded-For의 첫 IP가 실제 클라이언트)
-    const nowIso = new Date().toISOString();
-    const clientIp = (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())
-      || String((req.ip || (req.socket && req.socket.remoteAddress) || '')).replace(/^::ffff:/, '');
-    const userAgent = String(req.headers['user-agent'] || '').slice(0, 300);
-    // 이상 접속 판정: 이 계정이 평소 쓰던 IP 대역(/24)과 다른 곳에서 처음 접속하면 표시(차단은 안 함)
-    const ipPrefix = (ip) => { const s = String(ip || ''); return s.indexOf('.') > -1 ? s.split('.').slice(0, 3).join('.') : s; };
-    let anomaly = false;
-    try {
-      const hist = await pool.query('SELECT ip FROM login_log WHERE "userId"=$1 ORDER BY id DESC LIMIT 100', [u.id]);
-      const seen = new Set((hist.rows || []).map(r => ipPrefix(r.ip)).filter(Boolean));
-      if (seen.size > 0 && clientIp && !seen.has(ipPrefix(clientIp))) anomaly = true;
-    } catch (e) {}
-    // 동시접속 차단용 세션 토큰(sid) 발급 → 새 로그인이 이전 세션을 밀어냄
-    const sid = crypto.randomBytes(16).toString('hex');
-    try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2, "sessionToken"=$3 WHERE id=$4', [nowIso, clientIp, sid, u.id]); } catch (e) {}
-    try { await pool.query('INSERT INTO login_log ("userId", name, email, ip, "userAgent", anomaly, at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [u.id, u.name || '', u.email || '', clientIp, userAgent, anomaly, nowIso]); } catch (e) {}
-    u.lastLoginAt = nowIso;
-    u.lastLoginIp = clientIp;
-    // 세션 쿠키 발급 (httpOnly — JS로 탈취 불가, 이후 모든 API 요청에 자동 첨부)
-    res.cookie('wv_sess', signSession(u, sid), {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: (req.headers['x-forwarded-proto'] === 'https') || req.secure,
-      maxAge: SESSION_TTL_MS,
-      path: '/',
-    });
-    const { password, sessionToken, ...safe } = u;
-    res.json({ success: true, user: safe });
+    // ── 새 기기 이메일 OTP ── (기능 켜져 있고, 신뢰 기기가 아니면 코드 입력 요구)
+    if (otpEnabled() && !(await isTrustedDevice(u.id, getCookie(req, 'wv_device')))) {
+      if (!u.email) return res.json({ success: false, message: '이 계정에 이메일이 없어 인증코드를 보낼 수 없습니다. 관리자에게 문의하세요.' });
+      try {
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const pendingId = crypto.randomBytes(18).toString('hex');
+        await pool.query('DELETE FROM email_otp WHERE "userId"=$1', [u.id]);
+        await pool.query('INSERT INTO email_otp ("pendingId","userId","codeHash",email,"expiresAt",attempts,"createdAt") VALUES ($1,$2,$3,$4,$5,0,$6)',
+          [pendingId, u.id, hashCode(code), u.email, Date.now() + OTP_TTL_MS, new Date().toISOString()]);
+        await sendOtpEmail(u.email, code);
+        return res.json({ success: false, otpRequired: true, pendingId, emailMasked: maskEmail(u.email) });
+      } catch (e) {
+        console.error('OTP 발송 오류:', e);
+        return res.json({ success: false, message: '인증코드 발송에 실패했습니다. 잠시 후 다시 시도하거나 관리자에게 문의하세요.' });
+      }
+    }
+    return finalizeLogin(req, res, u);
   } catch (e) {
     console.error('POST /api/login 오류:', e);
     res.status(500).json({ success: false, message: '로그인 처리 중 오류가 발생했습니다.' });
+  }
+});
+
+// ── 새 기기 OTP 검증 → 통과 시 이 기기를 신뢰 기기로 등록 + 로그인 확정 ──
+app.post('/api/login/verify-otp', async (req, res) => {
+  try {
+    const pendingId = String(req.body.pendingId || '');
+    const code = String(req.body.code || '').trim();
+    if (!pendingId || !code) return res.json({ success: false, message: '인증코드를 입력하세요.' });
+    const r = await pool.query('SELECT * FROM email_otp WHERE "pendingId"=$1 LIMIT 1', [pendingId]);
+    const row = r.rows[0];
+    if (!row) return res.json({ success: false, message: '인증 요청이 만료되었습니다. 다시 로그인해 주세요.' });
+    if (Number(row.expiresAt) < Date.now()) { await pool.query('DELETE FROM email_otp WHERE "pendingId"=$1', [pendingId]); return res.json({ success: false, message: '인증코드가 만료되었습니다. 다시 로그인해 주세요.' }); }
+    if (Number(row.attempts) >= 5) { await pool.query('DELETE FROM email_otp WHERE "pendingId"=$1', [pendingId]); return res.json({ success: false, message: '입력 횟수를 초과했습니다. 다시 로그인해 주세요.' }); }
+    if (row.codeHash !== hashCode(code)) {
+      await pool.query('UPDATE email_otp SET attempts=attempts+1 WHERE "pendingId"=$1', [pendingId]);
+      return res.json({ success: false, message: '인증코드가 올바르지 않습니다.' });
+    }
+    // 통과 — 코드 폐기, 사용자 로드, 신뢰 기기 등록
+    await pool.query('DELETE FROM email_otp WHERE "pendingId"=$1', [pendingId]);
+    const ur = await pool.query('SELECT * FROM users WHERE id=$1 LIMIT 1', [row.userId]);
+    const u = ur.rows[0];
+    if (!u) return res.json({ success: false, message: '계정을 찾을 수 없습니다.' });
+    const devToken = crypto.randomBytes(24).toString('hex');
+    try { await pool.query('INSERT INTO trusted_devices ("userId", token, ua, "createdAt", "lastSeenAt") VALUES ($1,$2,$3,$4,$4)', [u.id, devToken, String(req.headers['user-agent'] || '').slice(0, 300), new Date().toISOString()]); } catch (e) {}
+    res.cookie('wv_device', devToken, {
+      httpOnly: true, sameSite: 'lax',
+      secure: (req.headers['x-forwarded-proto'] === 'https') || req.secure,
+      maxAge: DEVICE_TTL_MS, path: '/',
+    });
+    return finalizeLogin(req, res, u);
+  } catch (e) {
+    console.error('POST /api/login/verify-otp 오류:', e);
+    res.status(500).json({ success: false, message: '인증 처리 중 오류가 발생했습니다.' });
+  }
+});
+
+// ── OTP 재발송 ──
+app.post('/api/login/resend-otp', async (req, res) => {
+  try {
+    const pendingId = String(req.body.pendingId || '');
+    const r = await pool.query('SELECT * FROM email_otp WHERE "pendingId"=$1 LIMIT 1', [pendingId]);
+    const row = r.rows[0];
+    if (!row) return res.json({ success: false, message: '인증 요청이 만료되었습니다. 다시 로그인해 주세요.' });
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    await pool.query('UPDATE email_otp SET "codeHash"=$1, "expiresAt"=$2, attempts=0 WHERE "pendingId"=$3', [hashCode(code), Date.now() + OTP_TTL_MS, pendingId]);
+    await sendOtpEmail(row.email, code);
+    return res.json({ success: true, emailMasked: maskEmail(row.email) });
+  } catch (e) {
+    console.error('POST /api/login/resend-otp 오류:', e);
+    return res.json({ success: false, message: '재발송에 실패했습니다. 잠시 후 다시 시도하세요.' });
   }
 });
 
