@@ -683,7 +683,7 @@ const RegisterScreen = ({ onBack }) => {
           <img src="assets/logo-will-vision2.png" alt="윌앤비전 로고" style={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }} />
           <div>
             <div className="reg-top-name">Will&amp;Vision</div>
-            <div className="reg-top-sub">안전보건관리 시스템</div>
+            <div className="reg-top-sub">통합 안전보건 플랫폼</div>
           </div>
         </div>
         <main className="reg-stage">
@@ -789,7 +789,7 @@ const RegisterScreen = ({ onBack }) => {
         <img src="assets/logo-will-vision2.png" alt="윌앤비전 로고" style={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }} />
         <div>
           <div className="reg-top-name">Will&amp;Vision</div>
-          <div className="reg-top-sub">안전보건관리 시스템</div>
+          <div className="reg-top-sub">통합 안전보건 플랫폼</div>
         </div>
       </div>
 

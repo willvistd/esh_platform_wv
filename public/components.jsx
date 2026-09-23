@@ -116,7 +116,7 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
         <img src="assets/logo-will-vision2.png" alt="윌앤비전 로고" style={{ width: 28, height: 28, objectFit: "contain", flexShrink: 0 }} />
         <div className="sb-brand-text">
           <span className="sb-brand-name">Will&Vision</span>
-          <span className="sb-brand-sub">안전보건관리</span>
+          <span className="sb-brand-sub">통합 안전보건 플랫폼</span>
         </div>
       </div>
 
