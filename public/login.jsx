@@ -16,6 +16,9 @@ const LoginScreen = ({ onLogin }) => {
   const [forgotOpen, setForgotOpen] = React.useState(false);
   const [policyOpen, setPolicyOpen] = React.useState(false);
   const [demo, setDemo] = React.useState(false);
+  const [otp, setOtp] = React.useState(null);       // { pendingId, emailMasked }
+  const [otpCode, setOtpCode] = React.useState("");
+  const [otpMsg, setOtpMsg] = React.useState("");
 
   // 데모 모드 여부 확인 (데모 배포에서만 true)
   React.useEffect(() => {
@@ -46,6 +49,11 @@ const LoginScreen = ({ onLogin }) => {
       if (result.success) {
         setLoading(false);
         onLogin(result.user);
+      } else if (result.otpRequired) {
+        // 새 기기 — 이메일 인증코드 입력 단계로
+        setLoading(false); setError(""); setWarn("");
+        setOtp({ pendingId: result.pendingId, emailMasked: result.emailMasked });
+        setOtpCode(""); setOtpMsg("");
       } else {
         const next = tries + 1;
         const a = { ...attempts, [email]: next };
@@ -67,7 +75,67 @@ const LoginScreen = ({ onLogin }) => {
     }
   };
 
+  // 새 기기 이메일 인증코드 검증
+  const submitOtp = async (e) => {
+    e?.preventDefault?.();
+    if (!otp) return;
+    setOtpMsg(""); setLoading(true);
+    try {
+      const result = await window.WV_API.verifyOtp(otp.pendingId, otpCode);
+      if (result.success) { setLoading(false); onLogin(result.user); }
+      else { setLoading(false); setOtpMsg(result.message || "인증코드가 올바르지 않습니다."); }
+    } catch (err) { setLoading(false); setOtpMsg("서버 연결에 실패했습니다."); }
+  };
+  const resendOtp = async () => {
+    if (!otp) return;
+    setOtpMsg("");
+    const r = await window.WV_API.resendOtp(otp.pendingId);
+    setOtpMsg(r && r.success ? "인증코드를 다시 보냈습니다." : (r && r.message) || "재발송에 실패했습니다.");
+  };
 
+  // 새 기기 인증코드 입력 화면
+  if (otp) {
+    return (
+      <div className="login-page">
+        <aside className="login-brand">
+          <div className="login-brand-inner">
+            <div className="login-brand-mark">
+              <img src="assets/logo-will-vision2.png" alt="윌앤비전 로고" className="login-brand-logo" />
+              <div>
+                <div className="login-brand-name">Will&amp;Vision</div>
+                <div className="login-brand-sub">통합 안전보건 플랫폼</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+        <main className="login-form-panel">
+          <div className="login-form-wrap">
+            <h1 className="login-title">새 기기 인증</h1>
+            <p className="login-subtitle" style={{ marginBottom: 20 }}>
+              처음 접속하는 기기예요. <b>{otp.emailMasked}</b> 로 보낸<br />6자리 인증코드를 입력해 주세요. (유효 10분)
+            </p>
+            <form onSubmit={submitOtp}>
+              <div className="login-field">
+                <label className="login-label">인증코드</label>
+                <input className="login-input" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                  value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/[^0-9]/g, ""))}
+                  placeholder="숫자 6자리" autoFocus
+                  style={{ letterSpacing: 6, fontSize: 20, textAlign: "center", fontWeight: 700 }} />
+              </div>
+              {otpMsg && <div className={otpMsg.includes("보냈") ? "login-warn" : "login-error"} role="alert" style={{ marginTop: 6 }}><Icon name="alert" size={13} /> {otpMsg}</div>}
+              <button type="submit" className="login-btn" disabled={loading || otpCode.length < 6} style={{ marginTop: 16 }}>
+                {loading ? <span className="login-spinner" /> : "인증하고 로그인"}
+              </button>
+            </form>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, fontSize: 13 }}>
+              <button type="button" onClick={resendOtp} style={{ background: "none", border: "none", color: "var(--primary)", cursor: "pointer", fontWeight: 600, padding: 0 }}>코드 다시 받기</button>
+              <button type="button" onClick={() => { setOtp(null); setOtpCode(""); setOtpMsg(""); setPassword(""); }} style={{ background: "none", border: "none", color: "var(--fg-3)", cursor: "pointer", padding: 0 }}>← 다시 로그인</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">

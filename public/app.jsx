@@ -77,26 +77,40 @@ const api = {
     } catch (e) {
       return { success: false, message: "서버 연결 오류가 발생했습니다." };
     }
+    // 새 기기 이메일 OTP 필요 — 코드 입력 화면으로 넘김
+    if (result && result.otpRequired) {
+      return { success: false, otpRequired: true, pendingId: result.pendingId, emailMasked: result.emailMasked };
+    }
     if (!result || !result.success || !result.user) {
       return { success: false, message: (result && result.message) || "이메일 또는 비밀번호가 올바르지 않습니다." };
     }
-    const u = result.user;
-    fetch(ENDPOINTS.sessions, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: u.id, email: u.email, loginAt: new Date().toISOString() })
-    }).catch(() => {});
-    return {
-      success: true,
-      user: {
-        ...u,
-        id: String(u.id),
-        phone: u.phone || "",
-        position: u.position || "",
-        hqId: u.hqId || null,
-        siteIds: u.siteIds || "",
-      }
-    };
+    return { success: true, user: this._normalizeUser(result.user) };
+  },
+  _normalizeUser(u) {
+    return { ...u, id: String(u.id), phone: u.phone || "", position: u.position || "", hqId: u.hqId || null, siteIds: u.siteIds || "" };
+  },
+  async verifyOtp(pendingId, code) {
+    let result;
+    try {
+      const res = await fetch("/api/login/verify-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingId, code: String(code).trim() }),
+      });
+      result = await res.json();
+    } catch (e) { return { success: false, message: "서버 연결 오류가 발생했습니다." }; }
+    if (!result || !result.success || !result.user) {
+      return { success: false, message: (result && result.message) || "인증코드가 올바르지 않습니다." };
+    }
+    return { success: true, user: this._normalizeUser(result.user) };
+  },
+  async resendOtp(pendingId) {
+    try {
+      const res = await fetch("/api/login/resend-otp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pendingId }),
+      });
+      return await res.json();
+    } catch (e) { return { success: false, message: "재발송 실패" }; }
   },
   async incrementView(postId) {
     try {
