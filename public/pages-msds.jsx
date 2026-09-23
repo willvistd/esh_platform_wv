@@ -1045,7 +1045,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         <div className="msds-otabs">
           <button className={`msds-otab${previewTab === 0 ? ' on' : ''}`} onClick={() => setPreviewTab(0)}>관리요령</button>
           <button className={`msds-otab${previewTab === 1 ? ' on' : ''}`} onClick={() => setPreviewTab(1)}>경고표지</button>
-          <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정 특수검진 판정{components.length ? ` (${components.length})` : ''}</button>
+          <button className={`msds-otab${previewTab === 2 ? ' on' : ''}`} onClick={() => setPreviewTab(2)}>작업환경측정/특수검진 유해인자 분석{components.length ? ` (${components.length})` : ''}</button>
           {/* 저장·출력 버튼 — 탭과 같은 줄 오른쪽 끝 */}
           <div className="msds-otabs-actions no-print" style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn btn-ghost btn-sm no-print" onClick={() => onNav({ name: 'msds-ledger' })}
