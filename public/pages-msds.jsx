@@ -1390,7 +1390,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
             <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장</div>
             {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, tableLayout: 'auto' }}>
             <thead>
               <tr>
                 <th style={{ ...th, width: 34 }}>구분</th>
@@ -1399,10 +1399,10 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 <th style={th}>제조회사</th>
                 <th style={th}>사용용도</th>
                 <th style={th}>사용빈도</th>
-                <th style={{ ...th, width: 100 }}>개정일자</th>
-                <th style={th}>작업환경측정 / 특수건강진단 대상</th>
+                <th style={{ ...th, width: 90, whiteSpace: 'normal' }}>개정일자</th>
+                <th style={{ ...th, whiteSpace: 'normal' }}>작업환경측정 / 특수건강진단 대상</th>
                 <th style={th}>비고</th>
-                <th style={{ ...th, width: 72 }} className="ledger-no-print"></th>
+                <th style={{ ...th, width: 68 }} className="ledger-no-print"></th>
               </tr>
             </thead>
             <tbody>
@@ -1414,15 +1414,15 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                   <tr key={it.id}>
                     <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
                     {showSiteCol && <td style={td}>{it['사업장명']}</td>}
-                    <td style={{ ...td, fontWeight: 600 }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
-                    <td style={td}>{it['제조회사'] || '—'}</td>
-                    <td style={td}>{it['사용용도'] || '—'}</td>
-                    <td style={td}>{it['사용빈도'] || '—'}</td>
+                    <td style={{ ...td, fontWeight: 600, wordBreak: 'break-word' }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['제조회사'] || '—'}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용용도'] || '—'}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용빈도'] || '—'}</td>
                     <td style={{ ...td, whiteSpace: 'nowrap', color: stale ? '#c0392b' : undefined, fontWeight: stale ? 700 : undefined }}>
                       {it['개정일자'] || '—'}{stale && <span className="ledger-warn" title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
                     </td>
-                    <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{targets || '—'}</td>
-                    <td style={{ ...td, fontSize: 11.5 }}>{it['비고'] || '—'}</td>
+                    <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{targets || '—'}</td>
+                    <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{it['비고'] || '—'}</td>
                     <td style={{ ...td }} className="ledger-no-print">
                       <div style={{ display: 'flex', gap: 2 }}>
                         {canDelete(it) && <button className="btn btn-ghost btn-sm" title="수정" onClick={() => openEdit(it)} style={{ color: '#2563eb' }}><Icon name="edit" size={12} /></button>}
