@@ -1351,7 +1351,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
           <Icon name="arrow-left" size={14} /> MSDS 서식 생성으로
         </button>
         <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-hazard-list' })}>
-          <Icon name="list" size={14} /> 유해인자 목록표
+          <Icon name="list" size={14} /> 작업환경측정/특수검진 유해인자 목록표
         </button>
       </div>
 
@@ -1584,7 +1584,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
 
       <div className="content-hd">
         <div>
-          <h1 className="content-title">유해인자 목록표</h1>
+          <h1 className="content-title">작업환경측정/특수검진 유해인자 목록표</h1>
           <div className="content-sub">MSDS 관리대장에 저장된 물질 중 <b>작업환경측정·특수건강진단 대상 유해인자</b>를 사업장별로 모았습니다.</div>
         </div>
         <div className="hz-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
