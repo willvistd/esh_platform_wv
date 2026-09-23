@@ -1329,6 +1329,8 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
 
   const th = { padding: '9px 10px', textAlign: 'left', fontSize: 12, fontWeight: 700, color: 'var(--fg-3)', borderBottom: '2px solid var(--line)', whiteSpace: 'nowrap' };
   const td = { padding: '9px 10px', fontSize: 12.5, borderBottom: '1px solid var(--line-2)', verticalAlign: 'top' };
+  // 이동(바로가기) 버튼 — 타원형(알약) 모양으로 클릭 가능함을 명확히 (뒤로가기 버튼 제외)
+  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 15px', borderRadius: 999, border: '1.5px solid var(--primary)', background: 'var(--primary-soft)', color: 'var(--primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
 
   return (
     <div className="content" style={{ maxWidth: 1040 }}>
@@ -1350,7 +1352,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
         <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-generate' })}>
           <Icon name="arrow-left" size={14} /> MSDS 서식 생성으로
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-hazard-list' })}>
+        <button onClick={() => onNav({ name: 'msds-hazard-list' })} style={navPill}>
           <Icon name="list" size={14} /> 작업환경측정/특수검진 유해인자 목록표
         </button>
       </div>
@@ -1534,10 +1536,11 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
       const add = (nm, which) => {
         const n = String(nm || '').trim(); if (!n) return;
         const key = site + '||' + norm(n);
-        if (!map.has(key)) map.set(key, { site, name: n, wem: false, she: false, cas: '', products: new Set() });
+        if (!map.has(key)) map.set(key, { site, name: n, wem: false, she: false, cas: '', products: new Set(), freqs: new Set() });
         const r = map.get(key);
         r[which] = true;
         if (it['제품명']) r.products.add(it['제품명']);
+        if (it['사용빈도']) r.freqs.add(String(it['사용빈도']).trim());
         if (!r.cas) r.cas = casOf(n);
       };
       (it['측정대상'] || '').split(/[,、·/]/).forEach(n => add(n, 'wem'));
@@ -1557,6 +1560,8 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
       color: on ? (color === 'red' ? '#b42318' : '#087443') : '#cbd2dc',
       border: `1px solid ${on ? (color === 'red' ? '#f3c0bd' : '#bce8cf') : 'transparent'}` }}>{on ? '○' : '—'}</span>
   );
+  // 이동(바로가기) 버튼 — 타원형(알약) 모양으로 클릭 가능함을 명확히 (뒤로가기 버튼 제외)
+  const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 15px', borderRadius: 999, border: '1.5px solid var(--primary)', background: 'var(--primary-soft)', color: 'var(--primary)', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
 
   return (
     <div className="content" style={{ maxWidth: 1040 }}>
@@ -1577,7 +1582,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
         <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-ledger' })}>
           <Icon name="arrow-left" size={14} /> MSDS 관리대장
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={() => onNav({ name: 'msds-generate' })}>
+        <button onClick={() => onNav({ name: 'msds-generate' })} style={navPill}>
           <Icon name="edit" size={14} /> MSDS 서식 생성
         </button>
       </div>
@@ -1622,7 +1627,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
             <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>작업환경측정·특수건강진단 대상 유해인자 목록표</div>
             {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 820 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 940 }}>
             <thead>
               <tr>
                 <th style={{ ...th, width: 34 }}>연번</th>
@@ -1631,6 +1636,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
                 <th style={{ ...th, width: 130 }}>CAS No.</th>
                 <th style={{ ...th, width: 96, textAlign: 'center' }}>작업환경측정</th>
                 <th style={{ ...th, width: 96, textAlign: 'center' }}>특수건강진단</th>
+                <th style={{ ...th, width: 120 }}>사용빈도</th>
                 <th style={th}>관련 MSDS(제품)</th>
               </tr>
             </thead>
@@ -1643,6 +1649,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
                   <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas || '—'}</td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.wem, '작측', 'red')}</span></td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.she, '특검', 'green')}</span></td>
+                  <td style={{ ...td, fontSize: 11.5 }}>{[...r.freqs].join(' / ') || '—'}</td>
                   <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)' }}>{[...r.products].join(', ') || '—'}</td>
                 </tr>
               ))}
