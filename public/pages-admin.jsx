@@ -1776,7 +1776,7 @@ const ManageUsersView = ({ currentUser }) => {
                   </div>
                   <div style={{fontSize: 12.5, color: "var(--fg-2)"}}>{u.dept || <span style={{ color: "var(--fg-4)" }}>—</span>}</div>
                   <div className="mono" style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{u.email}</div>
-                  <div className="meta">{fmtDateTime(u.lastLoginAt)}</div>
+                  <div className="meta">{fmtDateTime(u.lastLoginAt)}{u.lastLoginIp && <div className="mono" style={{ fontSize: 10.5, color: "var(--fg-4)", marginTop: 1 }}>IP {u.lastLoginIp}</div>}</div>
                   <div><span className="meta">—</span></div>
                   <div>
                     {u.status === "active"   && <span className="chip chip-success"><span className="chip-dot" /> 활성</span>}
@@ -2331,6 +2331,7 @@ const AccountDetailModal = ({ user, onClose, onSetStatus, onExtend, onEditPerm, 
             <DetailRow label="연락처">{user.phone || "—"}</DetailRow>
             <DetailRow label="가입일">{fmtDate(user.joinedAt)}</DetailRow>
             <DetailRow label="최근 접속">{fmtDateTime(user.lastLoginAt)}</DetailRow>
+            <DetailRow label="접속 IP">{user.lastLoginIp ? <span className="mono">{user.lastLoginIp}</span> : "—"}</DetailRow>
             <DetailRow label="비밀번호 마지막 변경">{fmtDate(user.pwChangedAt)}</DetailRow>
             <DetailRow label="권한">{role?.name || "—"} {role?.desc && <span className="meta">— {role.desc}</span>}</DetailRow>
           </div>

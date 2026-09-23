@@ -392,6 +392,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "requestedAt" TEXT;`);
   // 최근 로그인 시각 / 비밀번호 마지막 변경 시각 (계정 목록 관리에서 표시)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "lastLoginAt" TEXT;`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "lastLoginIp" TEXT;`);
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "pwChangedAt" TEXT;`);
   // 담당 사업장 ID 목록 (CSV) — site_manager/site_staff는 자기 사업장, 본사 staff는 담당 사업장
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS "siteIds" TEXT;`);
@@ -950,10 +951,13 @@ app.post('/api/login', async (req, res) => {
     if (!isHashed(u.password)) {
       try { await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hashPw(pw), u.id]); } catch (e) {}
     }
-    // 최근 접속 시각 기록
+    // 최근 접속 시각 + 접속 IP 기록 (프록시 뒤이므로 X-Forwarded-For의 첫 IP가 실제 클라이언트)
     const nowIso = new Date().toISOString();
-    try { await pool.query('UPDATE users SET "lastLoginAt"=$1 WHERE id=$2', [nowIso, u.id]); } catch (e) {}
+    const clientIp = (String(req.headers['x-forwarded-for'] || '').split(',')[0].trim())
+      || (req.ip || (req.socket && req.socket.remoteAddress) || '').replace(/^::ffff:/, '');
+    try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2 WHERE id=$3', [nowIso, clientIp, u.id]); } catch (e) {}
     u.lastLoginAt = nowIso;
+    u.lastLoginIp = clientIp;
     // 세션 쿠키 발급 (httpOnly — JS로 탈취 불가, 이후 모든 API 요청에 자동 첨부)
     res.cookie('wv_sess', signSession(u), {
       httpOnly: true,
