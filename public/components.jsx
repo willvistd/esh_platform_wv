@@ -291,6 +291,9 @@ const KDate = ({ value, onChange, className = "", style = {}, block = false, ...
   return (
     <span className={"kdate-wrap" + (block ? " kdate-block" : "")}>
       <input type="date" value={value || ""} onChange={onChange} className={className}
+        // 좁은 칸에서 달력 아이콘을 화면에서도 숨기고(오버레이 텍스트와 겹침 방지),
+        // 칸을 클릭하면 달력이 열리도록 showPicker 호출(아이콘 없이도 날짜 선택 가능)
+        onClick={(e) => { const el = e.currentTarget; try { el.showPicker && el.showPicker(); } catch (_) {} }}
         style={{ ...style,
           color: value ? "transparent" : (style.color || undefined),
           // 일부 브라우저는 color:transparent를 무시하고 날짜 텍스트를 그대로 그림(오버레이와 겹쳐 보임)
