@@ -19,6 +19,8 @@ const LoginScreen = ({ onLogin }) => {
   const [otp, setOtp] = React.useState(null);       // { pendingId, emailMasked }
   const [otpCode, setOtpCode] = React.useState("");
   const [otpMsg, setOtpMsg] = React.useState("");
+  const [capsOn, setCapsOn] = React.useState(false); // 비밀번호 입력 시 Caps Lock 감지
+  const detectCaps = (e) => { try { if (e.getModifierState) setCapsOn(e.getModifierState("CapsLock")); } catch (err) {} };
 
   // 데모 모드 여부 확인 (데모 배포에서만 true)
   React.useEffect(() => {
@@ -200,11 +202,17 @@ const LoginScreen = ({ onLogin }) => {
               <div className="login-input-wrap">
                 <Icon name="lock" size={14} />
                 <input type={showPw ? "text" : "password"} autoComplete="current-password" placeholder="••••••••"
-                  value={password} onChange={e => setPassword(e.target.value)} />
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  onKeyDown={detectCaps} onKeyUp={detectCaps} onBlur={() => setCapsOn(false)} />
                 <button type="button" className="login-input-action" onClick={() => setShowPw(s => !s)}>
                   <Icon name="eye" size={14} />
                 </button>
               </div>
+              {capsOn && (
+                <div className="login-warn" role="alert" style={{ marginTop: 6 }}>
+                  <Icon name="alert" size={13} /> Caps Lock(대문자 잠금)이 켜져 있습니다.
+                </div>
+              )}
             </label>
 
             <div className="login-row-sm">
