@@ -4777,7 +4777,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                       <div style={{ position: "relative", width: "100%" }}>
                         <input type="date" value={row.개선예정일} onChange={e => updRow(i, "개선예정일", e.target.value)}
                           className="date-yy-input"
-                          style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.개선예정일 ? "transparent" : undefined, caretColor: "transparent" }} />
+                          style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.개선예정일 ? "transparent" : undefined, WebkitTextFillColor: row.개선예정일 ? "transparent" : undefined, caretColor: "transparent" }} />
                         {row.개선예정일 && (
                           <span className="date-yy-display"
                             style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", fontSize: 12, color: "#000" }}>
@@ -4790,7 +4790,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                       <div style={{ position: "relative", width: "100%" }}>
                         <input type="date" value={row.완료일} onChange={e => updRow(i, "완료일", e.target.value)}
                           className="date-yy-input"
-                          style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.완료일 ? "transparent" : undefined, caretColor: "transparent" }} />
+                          style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.완료일 ? "transparent" : undefined, WebkitTextFillColor: row.완료일 ? "transparent" : undefined, caretColor: "transparent" }} />
                         {row.완료일 && (
                           <span className="date-yy-display"
                             style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none", fontSize: 12, color: "#000" }}>
