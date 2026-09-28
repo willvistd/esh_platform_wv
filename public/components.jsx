@@ -291,7 +291,12 @@ const KDate = ({ value, onChange, className = "", style = {}, block = false, ...
   return (
     <span className={"kdate-wrap" + (block ? " kdate-block" : "")}>
       <input type="date" value={value || ""} onChange={onChange} className={className}
-        style={{ ...style, color: value ? "transparent" : (style.color || undefined) }} {...rest} />
+        style={{ ...style,
+          color: value ? "transparent" : (style.color || undefined),
+          // 일부 브라우저는 color:transparent를 무시하고 날짜 텍스트를 그대로 그림(오버레이와 겹쳐 보임)
+          //  → text-fill-color까지 투명 처리해 네이티브 값 텍스트를 확실히 숨김
+          WebkitTextFillColor: value ? "transparent" : undefined,
+        }} {...rest} />
       {value && <span className="kdate-ovl" aria-hidden="true"
         style={{ fontSize: style.fontSize, color: style.color || "var(--fg)", justifyContent: justify }}>{k}</span>}
     </span>
