@@ -3921,23 +3921,23 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
           /* 제목은 유지 (10% 축소 대상 아님) */
           .risk-print-area-table h2 { font-size: 14pt !important; }
           /* 컬럼 비율(%) 강제 — A4 가로 폭에 맞춰 17개 컬럼 분배 (합계 100%) */
-          .risk-print-area-table colgroup col:nth-child(1)  { width: 7%   !important; } /* 세부작업 */
-          .risk-print-area-table colgroup col:nth-child(2)  { width: 8%   !important; } /* 위험분류 */
-          .risk-print-area-table colgroup col:nth-child(3)  { width: 7.5% !important; } /* 원인 */
-          .risk-print-area-table colgroup col:nth-child(4)  { width: 11.5% !important; } /* 위험발생환경 */
-          .risk-print-area-table colgroup col:nth-child(5)  { width: 6%   !important; } /* 예상재해 */
-          .risk-print-area-table colgroup col:nth-child(6)  { width: 8%   !important; } /* 현재안전조치 */
-          .risk-print-area-table colgroup col:nth-child(7)  { width: 4.5% !important; } /* 가능성 */
-          .risk-print-area-table colgroup col:nth-child(8)  { width: 4.5% !important; } /* 중대성 */
-          .risk-print-area-table colgroup col:nth-child(9)  { width: 4%   !important; } /* 위험성 */
-          .risk-print-area-table colgroup col:nth-child(10) { width: 11.5% !important; } /* 감소대책 */
-          .risk-print-area-table colgroup col:nth-child(11) { width: 4.5% !important; } /* 후가능성 */
-          .risk-print-area-table colgroup col:nth-child(12) { width: 4.5% !important; } /* 후중대성 */
-          .risk-print-area-table colgroup col:nth-child(13) { width: 4%   !important; } /* 후위험성 */
-          .risk-print-area-table colgroup col:nth-child(14) { width: 5%   !important; } /* 개선예정일 */
-          .risk-print-area-table colgroup col:nth-child(15) { width: 5%   !important; } /* 완료일 */
-          .risk-print-area-table colgroup col:nth-child(16) { width: 4.5% !important; } /* 담당자 */
-          .risk-print-area-table colgroup col:nth-child(17) { width: 0    !important; display: none !important; } /* 삭제 */
+          .risk-print-area-table colgroup col:nth-child(1)  { width: 0    !important; display: none !important; } /* 삭제(맨 왼쪽·인쇄 제외) */
+          .risk-print-area-table colgroup col:nth-child(2)  { width: 7%   !important; } /* 세부작업 */
+          .risk-print-area-table colgroup col:nth-child(3)  { width: 8%   !important; } /* 위험분류 */
+          .risk-print-area-table colgroup col:nth-child(4)  { width: 7.5% !important; } /* 원인 */
+          .risk-print-area-table colgroup col:nth-child(5)  { width: 11.5% !important; } /* 위험발생환경 */
+          .risk-print-area-table colgroup col:nth-child(6)  { width: 6%   !important; } /* 예상재해 */
+          .risk-print-area-table colgroup col:nth-child(7)  { width: 8%   !important; } /* 현재안전조치 */
+          .risk-print-area-table colgroup col:nth-child(8)  { width: 4.5% !important; } /* 가능성 */
+          .risk-print-area-table colgroup col:nth-child(9)  { width: 4.5% !important; } /* 중대성 */
+          .risk-print-area-table colgroup col:nth-child(10) { width: 4%   !important; } /* 위험성 */
+          .risk-print-area-table colgroup col:nth-child(11) { width: 11.5% !important; } /* 감소대책 */
+          .risk-print-area-table colgroup col:nth-child(12) { width: 4.5% !important; } /* 후가능성 */
+          .risk-print-area-table colgroup col:nth-child(13) { width: 4.5% !important; } /* 후중대성 */
+          .risk-print-area-table colgroup col:nth-child(14) { width: 4%   !important; } /* 후위험성 */
+          .risk-print-area-table colgroup col:nth-child(15) { width: 5%   !important; } /* 개선예정일 */
+          .risk-print-area-table colgroup col:nth-child(16) { width: 5%   !important; } /* 완료일 */
+          .risk-print-area-table colgroup col:nth-child(17) { width: 4.5% !important; } /* 담당자 */
           /* 셀 내부 텍스트 줄바꿈 (세로 가운데만, 가로는 기본 좌측) */
           .risk-print-area-table td, .risk-print-area-table th {
             word-break: keep-all !important;
@@ -3985,11 +3985,11 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
              한 줄이면 가운데, 여러 줄로 넘치면 왼쪽 정렬.
              (display:table + width:auto + margin:auto → 내용이 짧으면 셀 폭보다 좁게 shrink되어
               가운데 배치, 내용이 길어 줄바꿈되면 셀 폭을 꽉 채워 왼쪽 정렬처럼 보이는 CSS 기법) */
-          .risk-print-area-table:not(.cover-page) tbody td:nth-child(1) .tx-mirror,
-          .risk-print-area-table:not(.cover-page) tbody td:nth-child(3) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(2) .tx-mirror,
           .risk-print-area-table:not(.cover-page) tbody td:nth-child(4) .tx-mirror,
-          .risk-print-area-table:not(.cover-page) tbody td:nth-child(6) .tx-mirror,
-          .risk-print-area-table:not(.cover-page) tbody td:nth-child(10) .tx-mirror {
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(5) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(7) .tx-mirror,
+          .risk-print-area-table:not(.cover-page) tbody td:nth-child(11) .tx-mirror {
             display: table !important;
             width: auto !important;
             max-width: 100% !important;
@@ -4020,30 +4020,30 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
             word-break: keep-all !important;
             overflow-wrap: break-word !important;
           }
-          /* 가능성·중대성·후가능성·후중대성 컬럼(7,8,11,12)의 select: 강제 한 줄 + 본문 폰트와 동일
+          /* 가능성·중대성·후가능성·후중대성 컬럼(8,9,12,13)의 select: 강제 한 줄 + 본문 폰트와 동일
              (사용자 요청: 옆 위험성 텍스트와 동일하게 — 작아보이지 않도록 printFontSize 사용) */
-          .risk-print-area-table tbody td:nth-child(7) select,
           .risk-print-area-table tbody td:nth-child(8) select,
-          .risk-print-area-table tbody td:nth-child(11) select,
-          .risk-print-area-table tbody td:nth-child(12) select {
+          .risk-print-area-table tbody td:nth-child(9) select,
+          .risk-print-area-table tbody td:nth-child(12) select,
+          .risk-print-area-table tbody td:nth-child(13) select {
             white-space: nowrap !important;
             word-break: keep-all !important;
             overflow-wrap: normal !important;
             font-size: ${printFontSize}pt !important;
             text-align: center !important;
           }
-          /* 위험성·후위험성 컬럼(9,13)의 b/span 텍스트 한 줄 */
-          .risk-print-area-table tbody td:nth-child(9),
-          .risk-print-area-table tbody td:nth-child(13) {
+          /* 위험성·후위험성 컬럼(10,14)의 b/span 텍스트 한 줄 */
+          .risk-print-area-table tbody td:nth-child(10),
+          .risk-print-area-table tbody td:nth-child(14) {
             white-space: nowrap !important;
             font-size: ${printFontSize}pt !important;
           }
-          .risk-print-area-table tbody td:nth-child(9) b,
-          .risk-print-area-table tbody td:nth-child(13) b {
+          .risk-print-area-table tbody td:nth-child(10) b,
+          .risk-print-area-table tbody td:nth-child(14) b {
             font-size: ${printFontSize}pt !important;
           }
-          .risk-print-area-table tbody td:nth-child(9) br,
-          .risk-print-area-table tbody td:nth-child(13) br {
+          .risk-print-area-table tbody td:nth-child(10) br,
+          .risk-print-area-table tbody td:nth-child(14) br {
             display: none !important;
           }
           .risk-print-area-table textarea {
@@ -4298,6 +4298,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
         <div className="risk-table-area" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 1700, tableLayout: "fixed" }}>
             <colgroup>
+              <col style={{ width: 36 }} />    {/* 삭제 (맨 왼쪽) */}
               <col style={{ width: 130 }} />   {/* 세부작업 */}
               <col style={{ width: 145 }} />   {/* 위험분류 */}
               <col style={{ width: 160 }} />   {/* 원인 */}
@@ -4314,10 +4315,10 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
               <col style={{ width: 90 }} />    {/* 개선예정일 */}
               <col style={{ width: 90 }} />    {/* 완료일 */}
               <col style={{ width: 70 }} />    {/* 담당자 */}
-              <col style={{ width: 36 }} />    {/* 삭제 */}
             </colgroup>
             <thead>
               <tr style={{ background: "var(--bg-sunk)" }}>
+                <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, textAlign: "center" }} className="no-print"></th>
                 <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>세부작업<br/>내용</th>
                 <th colSpan={3} style={{ padding: "6px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>유해위험요인 파악</th>
                 <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>예상<br/>재해</th>
@@ -4328,7 +4329,6 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                 <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>개선<br/>예정일</th>
                 <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>완료일</th>
                 <th rowSpan={2} className="th-assignee" style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, fontSize: 13, textAlign: "center" }}>담당자</th>
-                <th rowSpan={2} style={{ padding: "7px 5px", border: "1px solid var(--line)", fontWeight: 600, textAlign: "center" }} className="no-print"></th>
               </tr>
               <tr style={{ background: "var(--bg-sunk)" }}>
                 {["위험분류", "원인", "위험발생 환경"].map(h => (
@@ -4392,6 +4392,11 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                 const causeOpts = row.위험분류 ? getAllowedHazardCauses(row.세부작업, row.위험분류) : [];
                 return (
                   <tr key={i} style={{ background: i % 2 ? "var(--bg-sunk)" : "transparent" }}>
+                    {/* 행 삭제 (맨 왼쪽 — 항상 보이도록) */}
+                    <TD center w="28" className="no-print">
+                      <button onClick={() => delRow(i)} title="행 삭제"
+                        style={{ background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", color: "#dc2626", fontSize: 13, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>✕</button>
+                    </TD>
                     {/* 세부작업: textarea + 목록 드롭다운 */}
                     <TD>
                       <div className="task-suggest-wrap" style={{ position: "relative", width: "100%", display: "flex", alignItems: "center", minHeight: "100%" }}>
@@ -4795,10 +4800,6 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                       </div>
                     </TD>
                     <TD center><input value={row.담당자} onChange={e => updRow(i, "담당자", e.target.value)} style={{ ...inIn, textAlign: "center" }} /></TD>
-                    <TD center w="28" className="no-print">
-                      <button onClick={() => delRow(i)} title="행 삭제"
-                        style={{ background: "none", border: "1px solid #fca5a5", borderRadius: 6, cursor: "pointer", color: "#dc2626", fontSize: 13, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>✕</button>
-                    </TD>
                   </tr>
                 );
               })}
