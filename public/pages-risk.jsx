@@ -4186,7 +4186,7 @@ window.__setRiskOwner = (id) => { RISK_USER_ID = id != null ? String(id) : ""; }
 // 서버 동기화 대상 키 판별 (evalContext=현재 선택 상태는 기기별 로컬 유지 → 공유 제외)
 const isSyncedRiskKey = (k) => !!k && (
   k === "wv_risk_evalList" || k === "wv_risk_pending_approvals" ||
-  /^wv_risk_(cover|site|meeting|photos|training)_/.test(k) || /^wv_risk_table_/.test(k)
+  /^wv_risk_(cover|site|meeting|photos|training|mtgphotos)_/.test(k) || /^wv_risk_table_/.test(k)
 );
 const riskPushServer = (key, value) => {
   if (!RISK_OWNER || !isSyncedRiskKey(key)) return;
@@ -4206,6 +4206,49 @@ const riskRemove = (key) => {
     try { fetch("/api/risk-store", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: RISK_OWNER, key }) }).catch(() => {}); } catch (e) {}
   }
 };
+// 서버 저장 결과를 확인하는 버전(사진 등 용량 큰 저장의 성공/실패 판별용)
+const riskPushServerChecked = async (key, value) => {
+  if (!RISK_OWNER || !isSyncedRiskKey(key)) return { ok: false, skipped: true };
+  try {
+    const r = await fetch("/api/risk-store", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ owner: RISK_OWNER, key, value }) });
+    return { ok: r.ok, status: r.status };
+  } catch (e) { return { ok: false, error: e.message }; }
+};
+const riskSaveChecked = async (key, data) => {
+  const json = JSON.stringify(data);
+  try { localStorage.setItem(key, json); } catch (e) {}
+  return await riskPushServerChecked(key, json);
+};
+// 이미지 업로드 시 자동 리사이즈+압축 → base64 용량 대폭 감소(서버 동기화 실패/용량초과 방지)
+const compressImageFile = (file, maxDim = 1600, quality = 0.72) => new Promise((resolve, reject) => {
+  if (!file || !file.type || !file.type.startsWith("image/")) { reject(new Error("이미지 파일이 아닙니다")); return; }
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const dataUrl = ev.target.result;
+    const img = new Image();
+    img.onload = () => {
+      try {
+        let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const cx = canvas.getContext("2d");
+        cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h);   // 투명(PNG) 배경 → 흰색
+        cx.drawImage(img, 0, 0, w, h);
+        const out = canvas.toDataURL("image/jpeg", quality);
+        // 압축 결과가 원본보다 크면(작은 이미지 등) 원본 유지
+        resolve(out && out.length < dataUrl.length ? out : dataUrl);
+      } catch (e) { resolve(dataUrl); }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  };
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
 // 로그인 후 서버 → 로컬 하이드레이션. 서버에 데이터가 있으면 로컬 동기화키를 서버 기준으로 재구성,
 // 비어있으면(계정 첫 사용) 현재 로컬 데이터를 서버로 초기 업로드.
 window.__hydrateRiskStore = async (userId) => {
@@ -5963,9 +6006,9 @@ const RiskPhotoSheetEditor = ({ photos, setPhotos }) => {
   const readFiles = (files) => {
     Array.from(files).forEach(file => {
       if (!file.type.startsWith("image/")) return;
-      const reader = new FileReader();
-      reader.onload = (e) => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: e.target.result, name: file.name, caption: "" }]);
-      reader.readAsDataURL(file);
+      compressImageFile(file)
+        .then(src => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src, name: file.name, caption: "" }]))
+        .catch(() => {});
     });
   };
   const removePhoto = (id) => setPhotos(prev => prev.filter(p => p.id !== id));
@@ -7613,14 +7656,15 @@ const RiskPhotosView = ({ onNav, inPrintAll }) => {
   const handleImg = (key, e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setPhoto(key, ev.target.result);
-    reader.readAsDataURL(file);
+    compressImageFile(file).then(url => setPhoto(key, url)).catch(() => {});
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { photos, _savedAt: at });
+    const res = await riskSaveChecked(SAVE_KEY, { photos, _savedAt: at });
     setSavedAt(at);
+    if (RISK_OWNER && res && !res.ok && !res.skipped) {
+      alert("⚠ 사진이 이 기기에는 저장됐지만 서버 저장에 실패했습니다.\n사진 용량이 크거나 네트워크 문제일 수 있어요. 사진 수를 줄이거나 잠시 후 다시 저장해 주세요.");
+    }
   };
 
   // ── 셀 스타일 (PDF 양식 매칭, 위험성 크기 외 모두 검정·정자) ──
@@ -8629,11 +8673,9 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
   const readFiles = (files) => {
     Array.from(files).forEach(file => {
       if (!file.type.startsWith("image/")) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src: e.target.result, name: file.name, caption: "" }]);
-      };
-      reader.readAsDataURL(file);
+      compressImageFile(file)
+        .then(src => setPhotos(prev => [...prev, { id: Date.now() + Math.random(), src, name: file.name, caption: "" }]))
+        .catch(() => {});
     });
   };
   const onDrop = (e) => { e.preventDefault(); setDraggingOver(false); readFiles(e.dataTransfer.files); };
@@ -8650,10 +8692,13 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
       return arr;
     });
   };
-  const handleSave = () => {
+  const handleSave = async () => {
     const at = new Date().toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
-    riskSave(SAVE_KEY, { title, site, date, photos, _savedAt: at });
+    const res = await riskSaveChecked(SAVE_KEY, { title, site, date, photos, _savedAt: at });
     setSavedAt(at);
+    if (RISK_OWNER && res && !res.ok && !res.skipped) {
+      alert("⚠ 사진이 이 기기에는 저장됐지만 서버 저장에 실패했습니다.\n사진 용량이 크거나 네트워크 문제일 수 있어요. 사진 수를 줄이거나 잠시 후 다시 저장해 주세요.");
+    }
   };
 
   return (
