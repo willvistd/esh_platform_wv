@@ -104,6 +104,8 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [addingForHQ, setAddingForHQ] = React.useState(null);  // 본부 카드에서 + 클릭 시 미리 hqId 설정
   const [bulkOpen, setBulkOpen] = React.useState(false);       // 엑셀 일괄 등록 모달
   const [cleanupOpen, setCleanupOpen] = React.useState(false); // 사업장명 정리 모달
+  // 공용계정(팀)에서 "나는 누구" 담당자 선택 — 기기별 저장(WV_ACTOR 재사용: 문서 작성자명과도 연동)
+  const [myAgent, setMyAgent] = React.useState(() => (window.WV_ACTOR ? window.WV_ACTOR.getStored(currentUser) : "") || "");
 
   // 본인 본부 목록 — 공통 권한 헬퍼 사용 (admin/safety는 전체)
   const userHQs = React.useMemo(() => {
@@ -149,13 +151,25 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
     const explicit = window.WV_PERMS?.parseSiteIds(currentUser) || [];
     return new Set(explicit);
   }, [currentUser, sites, hqs, isStaffOrManager]);
-  const mySites = React.useMemo(
-    () => sites.filter(s => mySiteIds.has(String(s.id))),
-    [sites, mySiteIds]
-  );
+  // 이 계정이 볼 수 있는 사업장들의 '담당자명' 목록(빈도순) — 공용계정 담당자 선택 블록용
+  const agentNames = React.useMemo(() => {
+    const m = new Map();
+    sites.forEach(s => { const n = (s.담당자 || "").trim(); if (n) m.set(n, (m.get(n) || 0) + 1); });
+    return [...m.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "ko"));
+  }, [sites]);
+  // 내 담당 사업장:
+  //  · 공용계정(담당자명이 존재)이면 → 선택한 담당자의 사업장만(미선택 시 빈 목록 → 이름 먼저 선택 유도)
+  //  · 그 외(담당자명 없음)면 → 기존처럼 계정에 지정된 siteIds 기준
+  const mySites = React.useMemo(() => {
+    if (isStaffOrManager && agentNames.length > 0) {
+      return myAgent ? sites.filter(s => (s.담당자 || "").trim() === myAgent) : [];
+    }
+    return sites.filter(s => mySiteIds.has(String(s.id)));
+  }, [sites, mySiteIds, isStaffOrManager, agentNames, myAgent]);
+  const myIdSet = React.useMemo(() => new Set(mySites.map(s => String(s.id))), [mySites]);
   const otherSites = React.useMemo(
-    () => sites.filter(s => !mySiteIds.has(String(s.id))),
-    [sites, mySiteIds]
+    () => sites.filter(s => !myIdSet.has(String(s.id))),
+    [sites, myIdSet]
   );
 
   // 본부별 사업장 묶음
@@ -311,17 +325,55 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           {/* ─── staff/manager: 내 담당 사업장 강조 섹션 ─── */}
           {isStaffOrManager && (
             <div style={{ marginBottom: 28 }}>
+              {/* 공용계정 담당자 선택 블록 — 본인 이름 클릭 시 담당 사업장만 모아 보임 */}
+              {agentNames.length > 0 && (
+                <div style={{ marginBottom: 16, padding: "13px 15px", background: "var(--primary-soft)", border: "1px solid var(--line)", borderRadius: 10 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg-2)", marginBottom: 9 }}>
+                    👤 담당자 선택
+                    <span style={{ fontWeight: 500, color: "var(--fg-3)" }}> · 공용계정입니다. 본인 이름을 누르면 담당 사업장만 모아서 보여드려요.</span>
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {agentNames.map(([name, cnt]) => {
+                      const on = myAgent === name;
+                      return (
+                        <button key={name}
+                          onClick={() => { const v = on ? "" : name; setMyAgent(v); window.WV_ACTOR?.set(currentUser, v); }}
+                          style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "7px 14px", borderRadius: 999,
+                            border: on ? "1.5px solid var(--primary)" : "1px solid var(--line)",
+                            background: on ? "var(--primary)" : "var(--card-bg)", color: on ? "#fff" : "var(--fg-2)" }}>
+                          {name} <span style={{ fontWeight: 500, opacity: 0.85 }}>{cnt}</span>{on ? " ✓" : ""}
+                        </button>
+                      );
+                    })}
+                    {myAgent && (
+                      <button onClick={() => { setMyAgent(""); window.WV_ACTOR?.set(currentUser, ""); }}
+                        style={{ cursor: "pointer", fontSize: 12.5, padding: "7px 12px", borderRadius: 999, border: "1px dashed var(--line)", background: "transparent", color: "var(--fg-3)" }}>
+                        전체 보기 ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 12 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.012em", margin: 0, color: "var(--primary)" }}>
-                  ⭐ 내 담당 사업장
+                  ⭐ {myAgent ? `${myAgent} 담당 사업장` : "내 담당 사업장"}
                 </h2>
                 <span className="meta" style={{ fontSize: 12.5 }}>{mySites.length}개</span>
               </div>
               {mySites.length === 0 ? (
                 <div className="card" style={{ padding: 24, textAlign: "center", color: "var(--fg-3)", border: "1px dashed var(--line)" }}>
                   <Icon name="building" size={24} /><br/>
-                  <div style={{ marginTop: 8, fontSize: 13 }}>아직 담당 사업장이 지정되지 않았습니다.</div>
-                  <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 4 }}>관리자에게 담당 사업장 지정을 요청하거나, 직접 신규 사업장을 등록하세요.</div>
+                  {agentNames.length > 0 && !myAgent ? (
+                    <>
+                      <div style={{ marginTop: 8, fontSize: 13 }}>위에서 <b>본인 이름</b>을 선택하면 담당 사업장이 여기에 표시됩니다.</div>
+                      <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 4 }}>공용계정이라 담당자별로 나눠서 보여드립니다.</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ marginTop: 8, fontSize: 13 }}>아직 담당 사업장이 지정되지 않았습니다.</div>
+                      <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 4 }}>관리자에게 담당 사업장 지정을 요청하거나, 직접 신규 사업장을 등록하세요.</div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="my-sites-grid">
