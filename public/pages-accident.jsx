@@ -2,40 +2,40 @@
 // 첨부(사진·재해조사표 사본)는 그룹웨어에서 관리하므로 여기선 다루지 않음. 통계 데이터만 관리.
 
 // ── 선택값(enum) 정의 ──
-const ACC_TYPES = [
+const IA_ACC_TYPES = [
   "떨어짐", "넘어짐", "깔림·뒤집힘", "부딪힘", "물체에 맞음", "무너짐", "끼임",
   "절단·베임·찔림", "감전", "폭발·파열", "화재", "불균형 및 무리한 동작",
   "이상온도 접촉", "화학물질 누출·접촉", "산소결핍", "빠짐·익사",
   "사업장 내 교통사고", "사업장 외 교통사고", "체육행사", "폭력행위",
   "동물상해", "업무상 질병", "기타",
 ];
-const SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "응급처치"];
-const EMP_TYPES = ["직영", "계약", "도급·협력사"];
-const COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
+const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "응급처치"];
+const IA_EMP_TYPES = ["직영", "계약", "도급·협력사"];
+const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
 
 // ── 계산 헬퍼 ──
-const accDatePart = (s) => String(s || "").slice(0, 10);      // "YYYY-MM-DD"
-const addOneMonth = (ymd) => {
+const iaDatePart = (s) => String(s || "").slice(0, 10);      // "YYYY-MM-DD"
+const iaAddOneMonth = (ymd) => {
   const d = new Date(ymd + "T00:00:00");
   if (isNaN(d)) return "";
   const m = d.getMonth();
   d.setMonth(m + 1);
   return d.toISOString().slice(0, 10);
 };
-const daysBetween = (a, b) => {
+const iaDaysBetween = (a, b) => {
   const d1 = new Date(a + "T00:00:00"), d2 = new Date(b + "T00:00:00");
   if (isNaN(d1) || isNaN(d2)) return null;
   return Math.round((d2 - d1) / 86400000);
 };
 // 재해조사표 준수 계산: 해당없음 / 기한 내 / 기한 초과(+N일) / 미입력
-const reportCompliance = (acc) => {
+const iaReportCompliance = (acc) => {
   const required = acc.severity === "사망" || acc.severity === "3일 이상 휴업";
   if (!required) return { key: "na", label: "해당없음", required: false };
-  const occ = accDatePart(acc.occurredAt);
-  const deadline = occ ? addOneMonth(occ) : "";
-  const sub = accDatePart(acc.reportSubmittedDate);
+  const occ = iaDatePart(acc.occurredAt);
+  const deadline = occ ? iaAddOneMonth(occ) : "";
+  const sub = iaDatePart(acc.reportSubmittedDate);
   if (!sub) return { key: "missing", label: "미입력", required: true, deadline };
-  const over = daysBetween(deadline, sub);
+  const over = iaDaysBetween(deadline, sub);
   if (over !== null && over > 0) return { key: "over", label: `기한 초과(+${over}일)`, required: true, deadline };
   return { key: "in", label: "기한 내", required: true, deadline };
 };
@@ -82,20 +82,20 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   const filtered = React.useMemo(() => list.filter(a => {
     if (fType !== "전체" && a.accidentType !== fType) return false;
     if (fSev !== "전체" && a.severity !== fSev) return false;
-    if (fComp !== "전체" && reportCompliance(a).label.replace(/\(.*\)/, "") !== fComp) return false;
+    if (fComp !== "전체" && iaReportCompliance(a).label.replace(/\(.*\)/, "") !== fComp) return false;
     if (fHq !== "전체" && hqNameOfSite(a.siteId) !== fHq) return false;
     return true;
   }), [list, fType, fSev, fComp, fHq, siteMap, hqMap]);
 
   const del = async (a) => {
-    if (!window.confirm(`이 재해 기록을 삭제할까요?\n(${siteName(a.siteId)} · ${accDatePart(a.occurredAt)})\n되돌릴 수 없습니다.`)) return;
+    if (!window.confirm(`이 재해 기록을 삭제할까요?\n(${siteName(a.siteId)} · ${iaDatePart(a.occurredAt)})\n되돌릴 수 없습니다.`)) return;
     try { await window.WV_API.deleteAccident(a.id); setList(prev => prev.filter(x => x.id !== a.id)); }
     catch (e) { alert("삭제 실패: " + (e.message || "")); }
   };
 
   // ── 색 태그 ──
   const compChip = (a) => {
-    const c = reportCompliance(a);
+    const c = iaReportCompliance(a);
     const map = { na: ["#6b7280", "#f3f4f6"], in: ["#166534", "#dcfce7"], over: ["#b91c1c", "#fee2e2"], missing: ["#92400e", "#fef3c7"] };
     const [fg, bg] = map[c.key] || map.na;
     return <span style={{ fontSize: 11, fontWeight: 700, color: fg, background: bg, padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>{c.label}</span>;
@@ -134,8 +134,8 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           {[
             { label: "전체 재해", value: list.length, color: "var(--primary)" },
             { label: "중대재해", value: list.filter(a => a.isSerious).length, color: "#dc2626" },
-            { label: "조사표 기한초과", value: list.filter(a => reportCompliance(a).key === "over").length, color: "#b91c1c" },
-            { label: "조사표 미입력", value: list.filter(a => reportCompliance(a).key === "missing").length, color: "#d97706" },
+            { label: "조사표 기한초과", value: list.filter(a => iaReportCompliance(a).key === "over").length, color: "#b91c1c" },
+            { label: "조사표 미입력", value: list.filter(a => iaReportCompliance(a).key === "missing").length, color: "#d97706" },
             { label: "조치 미완료", value: list.filter(a => !a.actionCompleted && a.preventionMeasures).length, color: "#7c3aed" },
           ].map(c => (
             <div key={c.label} className="card" style={{ padding: "14px 16px" }}>
@@ -152,10 +152,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           <option>전체</option>{hqs.map(h => <option key={h.id}>{h.name}</option>)}
         </select>
         <select className="field-input" style={{ width: "auto" }} value={fType} onChange={e => setFType(e.target.value)}>
-          <option value="전체">발생형태 전체</option>{ACC_TYPES.map(t => <option key={t}>{t}</option>)}
+          <option value="전체">발생형태 전체</option>{IA_ACC_TYPES.map(t => <option key={t}>{t}</option>)}
         </select>
         <select className="field-input" style={{ width: "auto" }} value={fSev} onChange={e => setFSev(e.target.value)}>
-          <option value="전체">재해정도 전체</option>{SEVERITIES.map(t => <option key={t}>{t}</option>)}
+          <option value="전체">재해정도 전체</option>{IA_SEVERITIES.map(t => <option key={t}>{t}</option>)}
         </select>
         <select className="field-input" style={{ width: "auto" }} value={fComp} onChange={e => setFComp(e.target.value)}>
           {["전체", "해당없음", "기한 내", "기한 초과", "미입력"].map(t => <option key={t}>{t}</option>)}
@@ -189,7 +189,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                         <div style={{ fontSize: 11, color: "var(--fg-3)" }}>{hqNameOfSite(a.siteId) || "-"}</div>
                         <div style={{ fontWeight: 700 }}>{siteName(a.siteId)}{a.isSerious && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: "#dc2626" }}>● 중대재해</span>}</div>
                       </td>
-                      <td style={{ ...TD, whiteSpace: "nowrap" }}>{accDatePart(a.occurredAt) || "-"}</td>
+                      <td style={{ ...TD, whiteSpace: "nowrap" }}>{iaDatePart(a.occurredAt) || "-"}</td>
                       <td style={{ ...TD, whiteSpace: "nowrap" }}>{a.victimName || "-"}</td>
                       <td style={TD}>{typeTag(a.accidentType)}</td>
                       <td style={{ ...TD, whiteSpace: "nowrap", fontWeight: 600 }}>{a.severity || "-"}</td>
@@ -201,20 +201,20 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                       <tr>
                         <td colSpan={8} style={{ padding: "4px 16px 18px", background: "var(--primary-soft)", borderBottom: "1px solid var(--line)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px 24px", fontSize: 13 }}>
-                            <Detail label="발생장소" v={a.location} />
-                            <Detail label="고용형태" v={a.employmentType} />
-                            <Detail label="기인물·가해물" v={a.agentObject} />
-                            <Detail label="작업 내용" v={a.workDescription} />
-                            <Detail label="재해 경위" v={a.circumstances} full />
-                            <Detail label="휴업일수" v={a.lostDays != null ? `${a.lostDays}일` : ""} />
-                            <Detail label="예상 복귀일" v={accDatePart(a.expectedReturnDate)} />
-                            <Detail label="재해조사표 제출일" v={accDatePart(a.reportSubmittedDate)} />
-                            <Detail label="재발방지대책" v={a.preventionMeasures} full />
-                            <Detail label="조치 담당자" v={a.actionOwner} />
-                            <Detail label="조치 기한" v={accDatePart(a.actionDueDate)} />
-                            <Detail label="조치 완료" v={a.actionCompleted ? `완료 (${accDatePart(a.actionCompletedDate) || "-"})` : "미완료"} />
-                            <Detail label="위험성평가 반영" v={a.riskReflected ? "반영함" : "미반영"} />
-                            <Detail label="작성자" v={a.createdBy} />
+                            <IADetail label="발생장소" v={a.location} />
+                            <IADetail label="고용형태" v={a.employmentType} />
+                            <IADetail label="기인물·가해물" v={a.agentObject} />
+                            <IADetail label="작업 내용" v={a.workDescription} />
+                            <IADetail label="재해 경위" v={a.circumstances} full />
+                            <IADetail label="휴업일수" v={a.lostDays != null ? `${a.lostDays}일` : ""} />
+                            <IADetail label="예상 복귀일" v={iaDatePart(a.expectedReturnDate)} />
+                            <IADetail label="재해조사표 제출일" v={iaDatePart(a.reportSubmittedDate)} />
+                            <IADetail label="재발방지대책" v={a.preventionMeasures} full />
+                            <IADetail label="조치 담당자" v={a.actionOwner} />
+                            <IADetail label="조치 기한" v={iaDatePart(a.actionDueDate)} />
+                            <IADetail label="조치 완료" v={a.actionCompleted ? `완료 (${iaDatePart(a.actionCompletedDate) || "-"})` : "미완료"} />
+                            <IADetail label="위험성평가 반영" v={a.riskReflected ? "반영함" : "미반영"} />
+                            <IADetail label="작성자" v={a.createdBy} />
                           </div>
                           {canWrite && (
                             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -246,7 +246,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   );
 };
 
-const Detail = ({ label, v, full }) => (
+const IADetail = ({ label, v, full }) => (
   <div style={{ gridColumn: full ? "1 / -1" : "auto" }}>
     <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", marginBottom: 2 }}>{label}</div>
     <div style={{ whiteSpace: "pre-wrap", color: v ? "var(--fg)" : "var(--fg-4)" }}>{v || "-"}</div>
@@ -258,7 +258,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   const isEdit = !!initial;
   const [f, setF] = React.useState(() => ({
     siteId: initial?.siteId || "",
-    occurredDate: accDatePart(initial?.occurredAt) || "",
+    occurredDate: iaDatePart(initial?.occurredAt) || "",
     occurredTime: (initial?.occurredAt || "").slice(11, 16) || "",
     occurredTimeUnknown: !!initial?.occurredTimeUnknown,
     location: initial?.location || "",
@@ -271,14 +271,14 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     severity: initial?.severity || "",
     isSerious: !!initial?.isSerious,
     lostDays: initial?.lostDays != null ? String(initial.lostDays) : "",
-    expectedReturnDate: accDatePart(initial?.expectedReturnDate) || "",
-    reportSubmittedDate: accDatePart(initial?.reportSubmittedDate) || "",
+    expectedReturnDate: iaDatePart(initial?.expectedReturnDate) || "",
+    reportSubmittedDate: iaDatePart(initial?.reportSubmittedDate) || "",
     compensationStatus: initial?.compensationStatus || "미신청(공상처리)",
     preventionMeasures: initial?.preventionMeasures || "",
     actionOwner: initial?.actionOwner || "",
-    actionDueDate: accDatePart(initial?.actionDueDate) || "",
+    actionDueDate: iaDatePart(initial?.actionDueDate) || "",
     actionCompleted: !!initial?.actionCompleted,
-    actionCompletedDate: accDatePart(initial?.actionCompletedDate) || "",
+    actionCompletedDate: iaDatePart(initial?.actionCompletedDate) || "",
     riskReflected: !!initial?.riskReflected,
   }));
   const [saving, setSaving] = React.useState(false);
@@ -319,7 +319,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   };
 
   // 계산 미리보기
-  const preview = reportCompliance({ severity: f.severity, occurredAt: f.occurredDate, reportSubmittedDate: f.reportSubmittedDate });
+  const preview = iaReportCompliance({ severity: f.severity, occurredAt: f.occurredDate, reportSubmittedDate: f.reportSubmittedDate });
 
   const L = { display: "block", fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 5 };
   const half = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 };
@@ -367,12 +367,12 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>고용형태</label>
-              <select className="field-input" value={f.employmentType} onChange={e => upd("employmentType", e.target.value)}>{EMP_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+              <select className="field-input" value={f.employmentType} onChange={e => upd("employmentType", e.target.value)}>{IA_EMP_TYPES.map(t => <option key={t}>{t}</option>)}</select>
             </div>
             <div>
               <label style={L}>발생형태 *</label>
               <select className="field-input" value={f.accidentType} onChange={e => upd("accidentType", e.target.value)}>
-                <option value="">— 선택 —</option>{ACC_TYPES.map(t => <option key={t}>{t}</option>)}
+                <option value="">— 선택 —</option>{IA_ACC_TYPES.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
           </div>
@@ -381,7 +381,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
             <div>
               <label style={L}>재해정도 *</label>
               <select className="field-input" value={f.severity} onChange={e => upd("severity", e.target.value)}>
-                <option value="">— 선택 —</option>{SEVERITIES.map(t => <option key={t}>{t}</option>)}
+                <option value="">— 선택 —</option>{IA_SEVERITIES.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 16, paddingBottom: 8 }}>
@@ -415,7 +415,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
           <div>
             <label style={L}>산재 처리 상태</label>
-            <select className="field-input" value={f.compensationStatus} onChange={e => upd("compensationStatus", e.target.value)}>{COMP_STATUS.map(t => <option key={t}>{t}</option>)}</select>
+            <select className="field-input" value={f.compensationStatus} onChange={e => upd("compensationStatus", e.target.value)}>{IA_COMP_STATUS.map(t => <option key={t}>{t}</option>)}</select>
           </div>
 
           {/* 사후 조치 */}
