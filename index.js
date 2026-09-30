@@ -548,6 +548,108 @@ async function initDB() {
     console.error('사업장 담당자 정리 실패:', e);
   }
 
+  // ── 산재 사업개시번호 매핑(1회) — 급여기초(26.09.30) '운영중' 사업장 기준 ──
+  // data/site_open_no_20260930.json
+  //   · register  : 위드윌·KBCI·동부캐리어 운영중 사업장 → 먼저 등록(이미 같은 이름이 있으면 등록 생략) 후 개시번호 입력
+  //   · willvision: 윌앤비전 운영중 사업장 → 기존 사업장에 개시번호 입력
+  //   · '확인필요'/'검토' 건은 파일에서 제외(skipped)되어 등록·매핑하지 않음
+  // 이름 매칭: 공백·대소문자 무시 → 안 맞으면 (HR)(FM)(부산) 등 접미사 뗀 이름으로 1:1일 때만 매칭.
+  // 이미 다른 개시번호가 들어있는 사업장은 덮어쓰지 않음(conflicts로 기록). 결과는 app_settings에 JSON으로 남김.
+  try {
+    const KEY = 'site_open_no_map_20260930';
+    // 서버리스 동시 콜드스타트 대비: 마커를 먼저 선점한 인스턴스만 실행
+    const claim = await pool.query(
+      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
+    );
+    if (claim.rowCount > 0) {
+      try {
+        const map = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'site_open_no_20260930.json'), 'utf8'));
+        const SUFFIX_RE = /\s*\((?:HR|FM|CRM|대구|부산|광주|대전|공항)\)\s*$/i;
+        const norm = (v) => String(v == null ? '' : v).replace(/㈜/g, '(주)').replace(/\s+/g, '').toLowerCase();
+        const strip = (v) => norm(String(v == null ? '' : v).trim().replace(SUFFIX_RE, ''));
+
+        // 계열사 → 본부(hq) 연결. 없으면 생성(본부 미지정 방지).
+        const hqRows = (await pool.query('SELECT id, name, code, "sortOrder" FROM hq')).rows;
+        const HQ_CODE = { '위드윌': 'WDW', 'KBCI': 'KBCI', '동부캐리어': 'DBC' };
+        const hqIdFor = {};
+        for (const company of [...new Set(map.register.map(r => r.company))]) {
+          const n = norm(company);
+          let hq = hqRows.find(h => norm(h.name) === n)
+                || hqRows.find(h => norm(h.name).includes(n))
+                || hqRows.find(h => h.code && norm(h.code) === norm(HQ_CODE[company]));
+          if (!hq) {
+            const maxSort = Math.max(0, ...hqRows.map(h => h.sortOrder || 0));
+            hq = (await pool.query(
+              `INSERT INTO hq (name, code, "ownerDept", "sortOrder", status, "createdAt")
+               VALUES ($1,$2,$1,$3,'active',NOW()::TEXT) RETURNING id, name, code, "sortOrder"`,
+              [company, HQ_CODE[company] || '', maxSort + 1]
+            )).rows[0];
+            hqRows.push(hq);
+          }
+          hqIdFor[company] = hq.id;
+        }
+
+        let sites = (await pool.query('SELECT id, name, "openNo" FROM sites')).rows;
+        // 접미사 뗀 이름이 급여기초 전체(종료 포함)에서 여러 사업장과 겹치면 느슨한 매칭 금지
+        const ambiguous = new Set(map.ambiguousBases || []);
+        const findSite = (name) => {
+          const exact = sites.filter(s => norm(s.name) === norm(name));
+          if (exact.length) return exact.length === 1 ? exact[0] : null;
+          const base = strip(name);
+          if (ambiguous.has(base)) return null;
+          // 플랫폼에서 '사업장명 정리'로 접미사를 뗀 경우 (예: 신동진반포빌딩(FM) → 신동진반포빌딩)
+          const loose = sites.filter(s => norm(s.name) === base);
+          return loose.length === 1 ? loose[0] : null;
+        };
+        const result = { registered: [], mapped: [], already: [], conflicts: [], notFound: [] };
+        const applyOpenNo = async (site, name, openNo) => {
+          const cur = String(site.openNo || '').trim();
+          if (cur === openNo) { result.already.push(name); return; }
+          if (cur) { result.conflicts.push({ name, site: site.name, current: cur, file: openNo }); return; }
+          await pool.query('UPDATE sites SET "openNo"=$1 WHERE id=$2', [openNo, site.id]);
+          site.openNo = openNo;
+          result.mapped.push(name);
+        };
+
+        // 1) 계열사(위드윌·KBCI·동부캐리어) 운영중 사업장 등록 → 개시번호
+        for (const r of map.register) {
+          const found = findSite(r.name);
+          if (found) { await applyOpenNo(found, r.name, r.openNo); continue; }
+          const ins = await pool.query(
+            `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address,
+              "orgType", "affiliateName", "openNo", "workType", "contractType", "startAt")
+             VALUES ($1,$2,'',$3,'','active',$4,$5,'계열사',$6,$7,$8,$9,$10) RETURNING id, name, "openNo"`,
+            [r.name, r.region || '', r.manager || '', hqIdFor[r.company] || null, r.address || '',
+             r.company, r.openNo, r.workType || '', r.contractType || '', r.startAt || null]
+          );
+          sites.push(ins.rows[0]);
+          result.registered.push(`${r.company}:${r.name}`);
+        }
+
+        // 2) 윌앤비전 운영중 사업장 개시번호 매핑
+        for (const r of map.willvision) {
+          const site = findSite(r.name);
+          if (site) await applyOpenNo(site, r.name, r.openNo);
+          else result.notFound.push(r.name);
+        }
+
+        const summary = {
+          at: new Date().toISOString(),
+          registered: result.registered.length, mapped: result.mapped.length, already: result.already.length,
+          conflicts: result.conflicts.length, notFound: result.notFound.length, skippedInFile: map.skipped.length,
+          detail: result,
+        };
+        await pool.query('UPDATE app_settings SET value=$1 WHERE key=$2', [JSON.stringify(summary), KEY]);
+        console.log(`[DB] 사업개시번호 매핑: 등록 ${summary.registered} / 매핑 ${summary.mapped} / 기존일치 ${summary.already} / 충돌 ${summary.conflicts} / 미발견 ${summary.notFound}`);
+      } catch (e) {
+        await pool.query('DELETE FROM app_settings WHERE key=$1', [KEY]);  // 실패 시 다음 기동에 재시도
+        throw e;
+      }
+    }
+  } catch (e) {
+    console.error('사업개시번호 매핑 실패:', e);
+  }
+
   const existing = await pool.query('SELECT COUNT(*) FROM users');
   if (parseInt(existing.rows[0].count) === 0 && DEMO_MODE) {
     // ── 데모 전용 가짜 계정 (실제 개인정보 없음) ──
