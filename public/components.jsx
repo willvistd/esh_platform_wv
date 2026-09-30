@@ -143,6 +143,7 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
       {allow("tool-org-chart") && (
         <NavLink active={route.name === "tool-org-chart"} icon="users" onClick={() => onNav({ name: "tool-org-chart" })}>안전보건 조직도</NavLink>
       )}
+      <NavLink active={route.name === "industrial-accident"} icon="alert" onClick={() => onNav({ name: "industrial-accident" })}>산업재해 관리</NavLink>
 
       {categories.some((c) => allow("cat:" + c.id)) && (
         <>
