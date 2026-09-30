@@ -39,6 +39,7 @@ const ENDPOINTS = {
   compliance: API_BASE + "/compliance-submissions",
   orgCharts:  API_BASE + "/org-charts",
   msdsLedger: API_BASE + "/msds-ledger",
+  accidents:  API_BASE + "/accidents",
 };
 
 const api = {
@@ -577,6 +578,34 @@ const api = {
     });
     if (!res.ok) throw new Error(`저장 실패 (${res.status})`);
     return await res.json();
+  },
+  // ── 산업재해 관리 ──
+  async getAccidents() {
+    const res = await fetch(ENDPOINTS.accidents);
+    if (!res.ok) return { accidents: [], canWrite: false };
+    return await res.json();   // { accidents:[...], canWrite:bool }
+  },
+  async createAccident(data) {
+    const res = await fetch(ENDPOINTS.accidents, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || `등록 실패 (${res.status})`);
+    return d;
+  },
+  async updateAccident(id, data) {
+    const res = await fetch(`${ENDPOINTS.accidents}/${id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || `수정 실패 (${res.status})`);
+    return d;
+  },
+  async deleteAccident(id) {
+    const res = await fetch(`${ENDPOINTS.accidents}/${id}`, { method: "DELETE" });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `삭제 실패 (${res.status})`);
+    return d;
   },
 };
 
@@ -1186,6 +1215,8 @@ function App() {
           <RiskTableView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "risk-photos" ? (
           <RiskPhotosView onNav={onNav} currentUser={currentUser} />
+        ) : route.name === "industrial-accident" ? (
+          <IndustrialAccidentView onNav={onNav} currentUser={currentUser} role={role} />
         ) : (
           <div className="content"><h1>준비 중</h1></div>
         )}

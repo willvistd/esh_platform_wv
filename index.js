@@ -485,6 +485,35 @@ async function initDB() {
       data JSONB NOT NULL,
       "updatedAt" TEXT
     );
+    -- 산업재해 관리(통계) — 사건 1건 = 1행. 첨부는 그룹웨어에서 관리하므로 없음.
+    CREATE TABLE IF NOT EXISTS accidents (
+      id SERIAL PRIMARY KEY,
+      "siteId" INTEGER,
+      "occurredAt" TEXT,
+      "occurredTimeUnknown" BOOLEAN DEFAULT false,
+      location TEXT,
+      "victimName" TEXT,
+      "employmentType" TEXT,
+      "accidentType" TEXT,
+      "agentObject" TEXT,
+      "workDescription" TEXT,
+      circumstances TEXT,
+      severity TEXT,
+      "isSerious" BOOLEAN DEFAULT false,
+      "lostDays" INTEGER,
+      "expectedReturnDate" TEXT,
+      "reportSubmittedDate" TEXT,
+      "compensationStatus" TEXT,
+      "preventionMeasures" TEXT,
+      "actionOwner" TEXT,
+      "actionDueDate" TEXT,
+      "actionCompleted" BOOLEAN DEFAULT false,
+      "actionCompletedDate" TEXT,
+      "riskReflected" BOOLEAN DEFAULT false,
+      "createdBy" TEXT,
+      "createdAt" TEXT,
+      "updatedAt" TEXT
+    );
   `);
 
   // 본부(HQ) 시드 — 위험성평가 코드 본부명단과 일치
@@ -1946,6 +1975,86 @@ app.delete('/api/sites/:id', async (req, res) => {
     res.json({ success: true, deleted: result.rows[0] });
   } catch (e) {
     console.error('DELETE /api/sites 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 산업재해 관리(통계) ──
+// 입력/수정/삭제·재해자 실명 조회 = 관리자급(admin/safety)만. 그 외는 조회+실명 마스킹.
+const canWriteAccident = (req) => ['admin', 'safety'].includes(req.session && req.session.role);
+const maskKoreanName = (name) => {
+  const s = String(name || '').trim();
+  if (!s) return '';
+  if (s.length <= 1) return s;
+  if (s.length === 2) return s[0] + '○';
+  return s[0] + '○'.repeat(s.length - 2) + s[s.length - 1];
+};
+const ACCIDENT_COLS = [
+  'siteId','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
+  'accidentType','agentObject','workDescription','circumstances','severity','isSerious',
+  'lostDays','expectedReturnDate','reportSubmittedDate','compensationStatus',
+  'preventionMeasures','actionOwner','actionDueDate','actionCompleted','actionCompletedDate',
+  'riskReflected','createdBy'
+];
+
+app.get('/api/accidents', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM accidents ORDER BY "occurredAt" DESC NULLS LAST, id DESC');
+    const canSeeName = canWriteAccident(req);
+    const rows = result.rows.map(r => canSeeName ? r : { ...r, victimName: maskKoreanName(r.victimName) });
+    res.json({ accidents: rows, canWrite: canWriteAccident(req) });
+  } catch (e) {
+    console.error('GET /api/accidents 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/accidents', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '재해 등록 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const b = req.body || {};
+    const vals = ACCIDENT_COLS.map(c => b[c] === undefined ? null : b[c]);
+    const now = new Date().toISOString();
+    const cols = ACCIDENT_COLS.map(c => `"${c}"`).join(', ');
+    const ph = ACCIDENT_COLS.map((_, i) => `$${i + 1}`).join(', ');
+    const result = await pool.query(
+      `INSERT INTO accidents (${cols}, "createdAt", "updatedAt") VALUES (${ph}, $${ACCIDENT_COLS.length + 1}, $${ACCIDENT_COLS.length + 2}) RETURNING *`,
+      [...vals, now, now]
+    );
+    res.json({ success: true, accident: result.rows[0] });
+  } catch (e) {
+    console.error('POST /api/accidents 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/accidents/:id', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '재해 수정 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const b = req.body || {};
+    const set = ACCIDENT_COLS.map((c, i) => `"${c}"=$${i + 1}`).join(', ');
+    const vals = ACCIDENT_COLS.map(c => b[c] === undefined ? null : b[c]);
+    const now = new Date().toISOString();
+    const result = await pool.query(
+      `UPDATE accidents SET ${set}, "updatedAt"=$${ACCIDENT_COLS.length + 1} WHERE id=$${ACCIDENT_COLS.length + 2} RETURNING *`,
+      [...vals, now, req.params.id]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: '재해 기록을 찾을 수 없습니다.' });
+    res.json({ success: true, accident: result.rows[0] });
+  } catch (e) {
+    console.error('PUT /api/accidents 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete('/api/accidents/:id', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '재해 삭제 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const result = await pool.query('DELETE FROM accidents WHERE id=$1 RETURNING id', [req.params.id]);
+    if (result.rowCount === 0) return res.status(404).json({ error: '재해 기록을 찾을 수 없습니다.' });
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (e) {
+    console.error('DELETE /api/accidents 오류:', e);
     res.status(500).json({ error: e.message });
   }
 });
