@@ -195,6 +195,39 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
     return matchRegion && matchHQ && matchSearch && matchContractFilter(s);
   });
 
+  // 현재 사업장 목록 → 엑셀 내보내기 (담당자 매칭 파일). 일괄등록과 동일한 열 이름 사용 → 되읽기 호환.
+  const handleExportXlsx = () => {
+    try {
+      if (typeof XLSX === "undefined") { alert("엑셀 모듈이 아직 로드되지 않았습니다. 새로고침 후 다시 시도해주세요."); return; }
+      const hqNameOf = (s) => (hqs.find(h => String(h.id) === String(s.hqId))?.name) || "";
+      const statusText = (v) => (v === "active" || v === "운영중" ? "운영중" : v === "inactive" || v === "종료" ? "종료" : (v || ""));
+      // 정렬: 본부 → 사업장명
+      const list = [...sites].sort((a, b) =>
+        (hqNameOf(a)).localeCompare(hqNameOf(b), "ko") ||
+        String(a.사업장명 || a.name || "").localeCompare(String(b.사업장명 || b.name || ""), "ko"));
+      const rowsOut = list.map((s, i) => ({
+        연번: i + 1,
+        본부: hqNameOf(s),
+        사업장명: s.사업장명 || s.name || "",
+        담당자: s.담당자 || "",
+        계약형태: s.계약형태 || "",
+        지역: s.지역 || regionFromAddress(s.주소) || "",
+        전화번호: s.전화번호 || "",
+        상태: statusText(s.상태),
+        주소: s.주소 || "",
+      }));
+      const ws = XLSX.utils.json_to_sheet(rowsOut);
+      ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 40 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "사업장담당자매칭");
+      const d = new Date();
+      const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+      XLSX.writeFile(wb, `사업장_담당자_매칭_${ymd}.xlsx`);
+    } catch (e) {
+      alert("내보내기 중 오류: " + (e.message || ""));
+    }
+  };
+
   // 사업장 삭제
   const handleDeleteSite = async (s) => {
     if (!window.confirm(`사업장 [${s.사업장명}]을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
@@ -246,6 +279,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           {!userIsSiteAgent && canManageHQ(role) && (
             <button className="btn btn-secondary" onClick={() => setBulkOpen(true)} title="엑셀/CSV 파일로 여러 사업장을 한 번에 등록">
               <Icon name="upload" size={14} /> 엑셀 일괄 등록
+            </button>
+          )}
+          {!userIsSiteAgent && (
+            <button className="btn btn-secondary" onClick={handleExportXlsx} title="현재 사업장 목록 + 담당자를 엑셀 파일로 내려받기">
+              <Icon name="download" size={14} /> 엑셀 내보내기
             </button>
           )}
           {!userIsSiteAgent && canManageHQ(role) && (
