@@ -698,6 +698,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           title="사업장 추가"
           hqs={hqs}
           users={users}
+          sites={sites}
           defaultHQId={addingForHQ}
           allowedHQIds={(role === "admin" || role === "safety") ? null : userHQs}
           canEditExpiry={!isSiteAgent(role)}
@@ -722,6 +723,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           initialData={editing}
           hqs={hqs}
           users={users}
+          sites={sites}
           allowedHQIds={(role === "admin" || role === "safety") ? null : userHQs}
           canEditExpiry={!isSiteAgent(role)}
           onSave={async (data) => {
@@ -856,7 +858,7 @@ const HQFormModal = ({ title, initialData, onSave, onClose }) => {
 };
 
 // ─── 사업장 등록/수정 폼 (본부 선택 포함)
-const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, allowedHQIds, canEditExpiry = true, onSave, onClose }) => {
+const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], defaultHQId, allowedHQIds, canEditExpiry = true, onSave, onClose }) => {
   const [form, setForm] = React.useState({
     사업장명: initialData?.["사업장명"] || "",
     구분: initialData?.["구분"] || initialData?.orgType || "본사",   // 본사 / 계열사
@@ -901,6 +903,24 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
   // ⚠ 현장대리인(site_manager/site_staff)은 사업장 자체와 1:1 매핑되는 별도 개체이므로
   //    "담당 직원" 후보에서 제외. 본사 직원(admin/safety/manager/staff)만 노출.
   const HQ_ROLES = ["admin", "safety", "manager", "staff"];
+  // 사업장명으로 만든 팀 공용계정(예: '대한항공 예약센터')은 직원이 아니므로 후보에서 제외.
+  // 계정명이 사업장명(접미사 (HR)(CRM) 등 제거 포함)과 같거나 그 이름으로 시작하면 사업장명 계정으로 봄.
+  const siteNameBases = React.useMemo(() => {
+    const norm = (v) => String(v || "").replace(/㈜/g, "(주)").replace(/\s+/g, "").toLowerCase();
+    const set = new Set();
+    sites.forEach(s => {
+      const raw = String(s.사업장명 || s.name || "").trim();
+      if (!raw) return;
+      set.add(norm(raw));
+      set.add(norm(raw.replace(SITE_SUFFIX_RE, "")));
+    });
+    return { norm, list: [...set].filter(Boolean) };
+  }, [sites]);
+  const isSiteNameAccount = (u) => {
+    if (u.role !== "staff" && u.role !== "manager") return false;
+    const n = siteNameBases.norm(u.name);
+    return !!n && siteNameBases.list.some(b => n === b || (b.length >= 3 && n.startsWith(b)));
+  };
   const candidateUsers = React.useMemo(() => {
     if (!form.hqId) return [];
     const hqIdStr = String(form.hqId);
@@ -909,6 +929,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
       .filter(u => String(u.hqId || "") === hqIdStr)
       .filter(u => u.status !== "deleted" && u.status !== "pending")
       .filter(u => HQ_ROLES.includes(u.role))         // ✅ 본사 직원만
+      .filter(u => !isSiteNameAccount(u) || assigneeIds.includes(u.id))  // 사업장명 계정 제외(이미 선택된 건 해제할 수 있게 유지)
       .filter(u => !q || u.name?.toLowerCase().includes(q) || u.dept?.toLowerCase().includes(q))
       // 이미 선택된 사람을 위에 표시
       .sort((a, b) => {
@@ -917,7 +938,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], defaultHQId, 
         if (aSel !== bSel) return aSel ? -1 : 1;
         return (a.name || "").localeCompare(b.name || "", "ko");
       });
-  }, [users, form.hqId, assigneeSearch, assigneeIds]);
+  }, [users, form.hqId, assigneeSearch, assigneeIds, siteNameBases]);
 
   // 담당자는 사업장당 1명 — 체크하면 그 사람만 남기고, 같은 사람 다시 누르면 해제
   const toggleAssignee = (uid) => {
