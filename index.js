@@ -384,6 +384,8 @@ async function initDB() {
 
   // 기존 테이블에 approval 컬럼 없을 경우 추가
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS approval BOOLEAN DEFAULT false;`);
+  // 산업재해: 재해구분(업무상 사고/질병/출퇴근재해) — 기존 테이블에 없으면 추가
+  await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS category TEXT;`);
 
   // 기존 sites 테이블에 hq_id 컬럼 추가 (다른 본부에 묶기 위한 외래키)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
@@ -489,6 +491,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS accidents (
       id SERIAL PRIMARY KEY,
       "siteId" INTEGER,
+      category TEXT,
       "occurredAt" TEXT,
       "occurredTimeUnknown" BOOLEAN DEFAULT false,
       location TEXT,
@@ -2092,7 +2095,7 @@ const maskKoreanName = (name) => {
   return s[0] + '○'.repeat(s.length - 2) + s[s.length - 1];
 };
 const ACCIDENT_COLS = [
-  'siteId','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
+  'siteId','category','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
   'accidentType','agentObject','workDescription','circumstances','severity','isSerious',
   'lostDays','expectedReturnDate','reportSubmittedDate','compensationStatus',
   'preventionMeasures','actionOwner','actionDueDate','actionCompleted','actionCompletedDate',
