@@ -517,6 +517,14 @@ async function initDB() {
       "createdAt" TEXT,
       "updatedAt" TEXT
     );
+    -- 연도별 근로자수(산재보험 기준) — 재해율 분모
+    CREATE TABLE IF NOT EXISTS workplace_headcounts (
+      "siteId" INTEGER NOT NULL,
+      year INTEGER NOT NULL,
+      "workerCount" INTEGER,
+      "updatedAt" TEXT,
+      PRIMARY KEY ("siteId", year)
+    );
   `);
 
   // 본부(HQ) 시드 — 위험성평가 코드 본부명단과 일치
@@ -2162,6 +2170,49 @@ app.delete('/api/accidents/:id', async (req, res) => {
     console.error('DELETE /api/accidents 오류:', e);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── 연도별 근로자수(재해율 분모) ──
+app.get('/api/headcounts', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT "siteId", year, "workerCount" FROM workplace_headcounts');
+    res.json({ rows: r.rows });
+  } catch (e) { console.error('GET /api/headcounts 오류:', e); res.status(500).json({ error: e.message }); }
+});
+app.put('/api/headcounts', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '근로자수 수정 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const b = req.body || {};
+    const siteId = parseInt(b.siteId), year = parseInt(b.year);
+    if (!siteId || !year) return res.status(400).json({ error: 'siteId/year 필요' });
+    const wc = (b.workerCount === '' || b.workerCount == null) ? null : parseInt(b.workerCount);
+    await pool.query(
+      `INSERT INTO workplace_headcounts ("siteId", year, "workerCount", "updatedAt") VALUES ($1,$2,$3,$4)
+       ON CONFLICT ("siteId", year) DO UPDATE SET "workerCount"=EXCLUDED."workerCount", "updatedAt"=EXCLUDED."updatedAt"`,
+      [siteId, year, wc, new Date().toISOString()]
+    );
+    res.json({ success: true });
+  } catch (e) { console.error('PUT /api/headcounts 오류:', e); res.status(500).json({ error: e.message }); }
+});
+app.post('/api/headcounts/bulk', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '근로자수 등록 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows : [];
+    const now = new Date().toISOString();
+    let n = 0;
+    for (const r of rows) {
+      const siteId = parseInt(r.siteId), year = parseInt(r.year);
+      if (!siteId || !year) continue;
+      const wc = (r.workerCount === '' || r.workerCount == null) ? null : parseInt(r.workerCount);
+      await pool.query(
+        `INSERT INTO workplace_headcounts ("siteId", year, "workerCount", "updatedAt") VALUES ($1,$2,$3,$4)
+         ON CONFLICT ("siteId", year) DO UPDATE SET "workerCount"=EXCLUDED."workerCount", "updatedAt"=EXCLUDED."updatedAt"`,
+        [siteId, year, wc, now]
+      );
+      n++;
+    }
+    res.json({ success: true, count: n });
+  } catch (e) { console.error('POST /api/headcounts/bulk 오류:', e); res.status(500).json({ error: e.message }); }
 });
 
 // ── Approvals ──

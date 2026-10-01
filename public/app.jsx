@@ -607,6 +607,31 @@ const api = {
     if (!res.ok) throw new Error(d.error || `삭제 실패 (${res.status})`);
     return d;
   },
+  // ── 연도별 근로자수 ──
+  async getHeadcounts() {
+    const res = await fetch(API_BASE + "/headcounts");
+    if (!res.ok) return [];
+    const d = await res.json();
+    return d.rows || [];
+  },
+  async saveHeadcount(siteId, year, workerCount) {
+    const res = await fetch(API_BASE + "/headcounts", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ siteId, year, workerCount }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `저장 실패 (${res.status})`);
+    return d;
+  },
+  async bulkHeadcounts(rows) {
+    const res = await fetch(API_BASE + "/headcounts/bulk", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rows }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `업로드 실패 (${res.status})`);
+    return d;
+  },
 };
 
 window.WV_API = api;
