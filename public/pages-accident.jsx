@@ -10,7 +10,7 @@ const IA_ACC_TYPES = [
   "동물상해", "업무상 질병", "기타",
 ];
 const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "응급처치"];
-const IA_EMP_TYPES = ["직영", "계약", "도급·협력사"];
+const IA_EMP_TYPES = ["직영", "계약", "도급·협력사", "파견"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
 const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
 // 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
@@ -103,6 +103,61 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
     catch (e) { alert("삭제 실패: " + (e.message || "")); }
   };
 
+  // 엑셀 일괄등록 (과거 재해)
+  const bulkRef = React.useRef(null);
+  const normDate = (v) => {
+    if (v == null || v === "") return "";
+    if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 86400 * 1000)); return isNaN(d) ? "" : d.toISOString().slice(0, 10); }
+    const s = String(v).trim().replace(/[.\/]/g, "-").replace(/-+/g, "-").replace(/-$/, "");
+    const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+    return "";
+  };
+  const importAccidents = async (file) => {
+    if (!file) return;
+    if (typeof XLSX === "undefined") { alert("엑셀 모듈 로드 대기중. 새로고침 후 시도해주세요."); return; }
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "", raw: false });
+      if (!json.length) { alert("첫 시트에서 데이터를 찾지 못했습니다."); return; }
+      const pick = (r, keys) => { for (const k of keys) { if (r[k] !== undefined && r[k] !== "") return String(r[k]).trim(); } return ""; };
+      const byName = {}; sites.forEach(s => byName[String(s.사업장명).replace(/\s/g, "")] = s.id);
+      const rows = json.map(r => {
+        const date = normDate(pick(r, ["발생일", "발생일자", "발생일시"]));
+        const time = pick(r, ["발생시각", "시각", "시간"]).match(/\d{1,2}:\d{2}/)?.[0] || "";
+        const sevRaw = pick(r, ["재해정도", "상해정도", "severity"]);
+        const sev = /사망/.test(sevRaw) ? "사망" : /3일\s*이상/.test(sevRaw) ? "3일 이상 휴업" : /3일\s*미만/.test(sevRaw) ? "3일 미만 휴업" : /응급/.test(sevRaw) ? "응급처치" : sevRaw;
+        const seriousRaw = pick(r, ["중대재해", "중대"]);
+        const siteNm = pick(r, ["사업장", "사업장명"]).replace(/\s/g, "");
+        return {
+          category: pick(r, ["재해구분", "구분"]) || "업무상 사고",
+          occurredAt: date + (time ? "T" + time : ""),
+          location: pick(r, ["발생장소", "장소"]),
+          victimName: pick(r, ["재해자", "재해자명", "성명"]),
+          employmentType: pick(r, ["고용형태"]) || "직영",
+          accidentType: pick(r, ["발생형태", "재해형태", "유형"]),
+          agentObject: pick(r, ["기인물", "기인물·가해물", "가해물"]),
+          workDescription: pick(r, ["작업내용", "작업"]),
+          circumstances: pick(r, ["재해경위", "경위", "재해발생경위", "상황"]),
+          severity: sev,
+          isSerious: /^(y|yes|예|o|true|중대|1)$/i.test(seriousRaw) || sev === "사망",
+          lostDays: (() => { const n = parseInt(pick(r, ["휴업일수", "휴업일"])); return isNaN(n) ? null : n; })(),
+          reportSubmittedDate: normDate(pick(r, ["고용노동부제출일", "재해조사표제출일", "제출일", "제출일자"])),
+          compensationStatus: pick(r, ["산재진행", "산재처리", "산재상태", "보상상태"]) || "미신청(공상처리)",
+          preventionMeasures: pick(r, ["재발방지대책", "재발방지", "대책"]),
+          actionOwner: pick(r, ["조치담당자", "담당자"]),
+          actionDueDate: normDate(pick(r, ["조치기한", "기한"])),
+          riskReflected: /^(y|yes|예|o|true|반영|1)$/i.test(pick(r, ["위험성평가반영", "위험성평가"])),
+          siteId: byName[siteNm] || null,
+          createdBy: (window.WV_ACTOR ? window.WV_ACTOR.get(currentUser) : "") || currentUser?.name || "",
+        };
+      }).filter(r => r.occurredAt);
+      if (!rows.length) { alert("발생일이 있는 행을 찾지 못했습니다. 열 이름을 확인해주세요."); return; }
+      if (!window.confirm(`${rows.length}건의 재해를 등록합니다. 진행할까요?`)) return;
+      const res = await window.WV_API.bulkAccidents(rows);
+      alert(`재해 ${res.count}건 등록 완료`); reload();
+    } catch (e) { alert("업로드 오류: " + (e.message || "")); }
+  };
+
   // ── 색 태그 ──
   const compChip = (a) => {
     const c = iaReportCompliance(a);
@@ -131,10 +186,16 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
             {!canWrite && <span style={{ marginLeft: 8, color: "var(--fg-3)" }}>· 조회 전용(재해자명 마스킹)</span>}
           </p>
         </div>
-        {canWrite && (
-          <button className="btn btn-primary" onClick={() => setEditing("new")}>
-            <Icon name="plus" size={14} /> 재해 등록
-          </button>
+        {canWrite && tab === "list" && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn btn-secondary" onClick={() => bulkRef.current && bulkRef.current.click()} title="과거 재해를 엑셀로 한 번에 등록">
+              <Icon name="upload" size={14} /> 엑셀 일괄등록
+            </button>
+            <input ref={bulkRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { importAccidents(e.target.files[0]); e.target.value = ""; }} />
+            <button className="btn btn-primary" onClick={() => setEditing("new")}>
+              <Icon name="plus" size={14} /> 재해 등록
+            </button>
+          </div>
         )}
       </div>
 
@@ -323,7 +384,6 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     String(a.사업장명 || "").localeCompare(String(b.사업장명 || ""), "ko")), [sites, hqMap]);
 
   const save = async () => {
-    if (!f.siteId) { setErr("사업장을 선택해주세요."); return; }
     if (!f.occurredDate) { setErr("발생일을 입력해주세요."); return; }
     if (!f.accidentType) { setErr("발생형태를 선택해주세요."); return; }
     if (!f.severity) { setErr("재해정도를 선택해주세요."); return; }
@@ -370,9 +430,9 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <label style={L}>사업장 *</label>
+            <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(선택 · 파견재해는 비우고 발생장소에 현장명 기재)</span></label>
             <select className="field-input" value={f.siteId} onChange={e => upd("siteId", e.target.value)}>
-              <option value="">— 선택 —</option>
+              <option value="">— 미지정(파견 등) —</option>
               {sitesSorted.map(s => <option key={s.id} value={s.id}>{(hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
             </select>
           </div>
