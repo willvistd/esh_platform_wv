@@ -48,6 +48,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   const [canWrite, setCanWrite] = React.useState(false);
   const [sites, setSites] = React.useState([]);
   const [hqs, setHqs] = React.useState([]);
+  const [headcounts, setHeadcounts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [expandedId, setExpandedId] = React.useState(null);
   const [editing, setEditing] = React.useState(null);   // null | "new" | accidentObj
@@ -67,11 +68,13 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
       window.WV_API.getAccidents(),
       window.WV_API.getSites ? window.WV_API.getSites() : Promise.resolve([]),
       window.WV_API.getHQs ? window.WV_API.getHQs() : Promise.resolve([]),
-    ]).then(([acc, siteData, hqData]) => {
+      window.WV_API.getHeadcounts ? window.WV_API.getHeadcounts() : Promise.resolve([]),
+    ]).then(([acc, siteData, hqData, hc]) => {
       setList((acc && acc.accidents) || []);
       setCanWrite(!!(acc && acc.canWrite));
       setSites(Array.isArray(siteData) ? siteData : []);
       setHqs(Array.isArray(hqData) ? hqData : (hqData && hqData.hqs) || []);
+      setHeadcounts(Array.isArray(hc) ? hc : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -137,7 +140,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--line)", margin: "14px 0 18px" }}>
-        {[["list", "재해 대장"], ["dash", "대시보드"]].map(([k, lbl]) => (
+        {[["list", "재해 대장"], ["dash", "대시보드"], ["rate", "재해율 분석"]].map(([k, lbl]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ padding: "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", background: "none", border: "none",
               color: tab === k ? "var(--primary)" : "var(--fg-3)", borderBottom: "2px solid " + (tab === k ? "var(--primary)" : "transparent"), marginBottom: -1 }}>
@@ -148,6 +151,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 
       {tab === "dash" && !loading && (
         <AccidentDashboard list={list} sites={sites} siteMap={siteMap} hqMap={hqMap} hqs={hqs} onOpenDetail={openDetail} />
+      )}
+
+      {tab === "rate" && !loading && (
+        <AccidentRateView list={list} sites={sites} siteMap={siteMap} hqMap={hqMap} headcounts={headcounts} canWrite={canWrite} onReload={reload} />
       )}
 
       {/* 통계 요약 (재해 대장 탭) */}
@@ -689,6 +696,260 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
         <div style={card}><h3 style={h3}>부서별 재해조사표 평균 소요일</h3><p style={cs}>발생→고용노동부 제출까지 평균 (30일 초과 빨강)</p><IAHBars data={byDept} /></div>
       </div>
       <style>{`@media(max-width:720px){.ia-grid2{grid-template-columns:1fr !important}}`}</style>
+    </div>
+  );
+};
+
+// ───────────────────────── 재해율 분석 (3단계) ─────────────────────────
+const iaYearOf = (a) => parseInt(iaDatePart(a.occurredAt).slice(0, 4)) || 0;
+const iaRateFmt = (r) => r == null ? "—" : (r === 0 ? "0%" : r.toFixed(2) + "%");
+
+const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, onReload }) => {
+  const curYear = new Date().getFullYear();
+  const [startYear, setStartYear] = React.useState(curYear - 2);
+  const [endYear, setEndYear] = React.useState(curYear);
+  const [basis, setBasis] = React.useState("off");   // off=공식, all=전체
+  const [view, setView] = React.useState("table");    // table | chart
+  // 근로자수 로컬 맵(편집 반영)
+  const [hc, setHc] = React.useState(() => { const m = {}; (headcounts || []).forEach(r => m[r.siteId + ":" + r.year] = r.workerCount); return m; });
+  React.useEffect(() => { const m = {}; (headcounts || []).forEach(r => m[r.siteId + ":" + r.year] = r.workerCount); setHc(m); }, [headcounts]);
+  const fileRef = React.useRef(null);
+
+  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "(미지정)";
+  const years = []; for (let y = startYear; y <= endYear; y++) years.push(y);
+  const rangeStart = startYear + "-01-01", rangeEnd = endYear + "-12-31";
+  const getHc = (sid, y) => { const v = hc[sid + ":" + y]; return (v === undefined || v === null || v === "") ? null : Number(v); };
+
+  // 계약구분 판별
+  const classify = (s) => {
+    const st = iaDatePart(s.startAt), en = iaDatePart(s.expiresAt);
+    const hasSt = st.length === 10, hasEn = en.length === 10;
+    const overlap = (!hasSt || st <= rangeEnd) && (!hasEn || en >= rangeStart);
+    if (!overlap) return "기타";
+    const cont = (!hasSt || st <= rangeStart) && (!hasEn || en >= rangeEnd);
+    if (cont) return "연속";
+    if (hasSt && st > rangeStart && st <= rangeEnd) return "신규";
+    if (hasEn && en >= rangeStart && en < rangeEnd) return "종료";
+    return "연속";
+  };
+  const analysisSites = React.useMemo(() => sites.map(s => ({ s, cls: classify(s) })).filter(x => x.cls !== "기타"), [sites, startYear, endYear]);
+  const contSites = analysisSites.filter(x => x.cls === "연속").map(x => x.s);
+
+  // 재해자수(연도·기준별)
+  const cntBy = (sid, y, b) => list.filter(a => a.siteId === sid && iaYearOf(a) === y && (b === "all" ? true : iaIsApproved(a.compensationStatus))).length;
+  const rateOf = (sid, y, b) => { const n = getHc(sid, y); if (!n) return null; return cntBy(sid, y, b) / n * 100; };
+  const topTypeOf = (sid) => { const m = {}; list.filter(a => a.siteId === sid).forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]).join("·") || "-"; };
+
+  // 평균 재해율(연속, 종료연도)
+  const avgRate = (() => { const rs = contSites.map(s => rateOf(s.id, endYear, basis)).filter(r => r != null); return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null; })();
+
+  // 공식 vs 전체 차이 큰 사업장 (범위 합계 기준)
+  const gapSites = React.useMemo(() => analysisSites.map(({ s }) => {
+    let hcSum = 0, allN = 0, offN = 0;
+    years.forEach(y => { const n = getHc(s.id, y); if (n) { hcSum += n; allN += cntBy(s.id, y, "all"); offN += cntBy(s.id, y, "off"); } });
+    const allR = hcSum ? allN / hcSum * 100 : null, offR = hcSum ? offN / hcSum * 100 : null;
+    return { s, allN, offN, allR, offR, gap: (allR != null && offR != null) ? (allR - offR) : 0 };
+  }).filter(x => x.allN > x.offN && x.gap > 0).sort((a, b) => b.gap - a.gap), [analysisSites, hc, list, startYear, endYear]);
+
+  const saveCell = async (sid, y, val) => {
+    setHc(prev => ({ ...prev, [sid + ":" + y]: val === "" ? "" : (parseInt(val) || 0) }));
+    try { await window.WV_API.saveHeadcount(sid, y, val === "" ? null : (parseInt(val) || 0)); } catch (e) { alert("근로자수 저장 실패: " + (e.message || "")); }
+  };
+
+  // 엑셀 내보내기(연속 사업장 비교)
+  const exportXlsx = () => {
+    if (typeof XLSX === "undefined") { alert("엑셀 모듈 로드 대기중. 새로고침 후 시도해주세요."); return; }
+    const rows = contSites.map((s, i) => { const o = { 연번: i + 1, 사업장: siteName(s.id), 계약: "연속" };
+      years.forEach(y => { o[y + " 건수"] = cntBy(s.id, y, basis); const r = rateOf(s.id, y, basis); o[y + " 재해율"] = r == null ? "" : r.toFixed(2) + "%"; });
+      o["주요발생형태"] = topTypeOf(s.id); return o; });
+    const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "재해율분석");
+    XLSX.writeFile(wb, `재해율분석_${startYear}-${endYear}_${basis === "off" ? "공식" : "전체"}.xlsx`);
+  };
+  // 근로자수 템플릿 내보내기(현재값 포함, 가로형)
+  const exportHcTemplate = () => {
+    if (typeof XLSX === "undefined") return;
+    const rows = analysisSites.map(({ s }) => { const o = { 사업장명: siteName(s.id) }; years.forEach(y => o[y] = getHc(s.id, y) ?? ""); return o; });
+    const ws = XLSX.utils.json_to_sheet(rows); const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "근로자수"); XLSX.writeFile(wb, `근로자수_양식_${startYear}-${endYear}.xlsx`);
+  };
+  // 근로자수 엑셀 업로드(가로형: 사업장명 + 연도열)
+  const importHc = async (file) => {
+    if (!file || typeof XLSX === "undefined") return;
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
+      const byName = {}; sites.forEach(s => byName[String(s.사업장명).replace(/\s/g, "")] = s.id);
+      const rows = [];
+      json.forEach(r => { const nm = String(r["사업장명"] || r["사업장"] || "").replace(/\s/g, ""); const sid = byName[nm]; if (!sid) return;
+        Object.keys(r).forEach(k => { const y = parseInt(k); if (y >= 2000 && y <= 2100 && r[k] !== "") rows.push({ siteId: sid, year: y, workerCount: parseInt(r[k]) || 0 }); }); });
+      if (!rows.length) { alert("엑셀에서 매칭되는 사업장·연도 데이터를 찾지 못했습니다. (사업장명이 정확히 일치해야 합니다)"); return; }
+      const res = await window.WV_API.bulkHeadcounts(rows);
+      alert(`근로자수 ${res.count}건 반영 완료`); onReload && onReload();
+    } catch (e) { alert("업로드 오류: " + (e.message || "")); }
+  };
+
+  const card = { background: "var(--card-bg)", border: "1px solid var(--line)", borderRadius: 14, padding: 18, marginBottom: 16 };
+  const h3 = { margin: "0 0 2px", fontSize: 15, fontWeight: 800 };
+  const cs = { fontSize: 12, color: "var(--fg-3)", margin: "0 0 14px" };
+  const pill = (on) => ({ fontSize: 12.5, fontWeight: 700, padding: "7px 14px", borderRadius: 999, cursor: "pointer",
+    border: "1px solid " + (on ? "var(--primary)" : "var(--line)"), background: on ? "var(--primary)" : "#fff", color: on ? "#fff" : "var(--fg-2)" });
+  const yearOpts = []; for (let y = curYear; y >= 2018; y--) yearOpts.push(y);
+  const TH = { padding: "9px 8px", fontSize: 11.5, fontWeight: 700, color: "var(--fg-2)", background: "#fafbfc", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap", textAlign: "center" };
+  const TD = { padding: "9px 8px", fontSize: 12.5, borderBottom: "1px solid var(--line)", textAlign: "center" };
+
+  // 스몰멀티플 최대값
+  let gmax = 0; contSites.forEach(s => years.forEach(y => { const r = rateOf(s.id, y, basis); if (r != null && r > gmax) gmax = r; }));
+  gmax = Math.max(gmax, 1) * 1.2;
+
+  return (
+    <div>
+      {/* 컨트롤 */}
+      <div style={card}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 시작연도</label>
+            <select className="field-input" style={{ width: 110 }} value={startYear} onChange={e => setStartYear(Math.min(+e.target.value, endYear))}>{yearOpts.map(y => <option key={y}>{y}</option>)}</select></div>
+          <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 종료연도</label>
+            <select className="field-input" style={{ width: 110 }} value={endYear} onChange={e => setEndYear(Math.max(+e.target.value, startYear))}>{yearOpts.map(y => <option key={y}>{y}</option>)}</select></div>
+          <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>재해율 기준</label>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button style={pill(basis === "off")} onClick={() => setBasis("off")}>공식 기준</button>
+              <button style={pill(basis === "all")} onClick={() => setBasis("all")}>전체 기준</button>
+            </div></div>
+          <div style={{ flex: 1 }} />
+          <button style={{ ...pill(false), borderColor: "var(--primary)", color: "var(--primary)" }} onClick={exportXlsx}>⬇ 엑셀 내보내기</button>
+        </div>
+        <div style={{ marginTop: 12, background: "var(--primary-soft)", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "var(--fg-2)" }}>
+          {basis === "off"
+            ? <>📊 <b>공식 기준</b>: 산재 <b>승인·요양중·치료종결</b> 건만 재해율에 반영 (고용노동부 공식 통계와 동일)</>
+            : <>📊 <b>전체 기준</b>: 공상처리 포함 <b>모든 재해</b>를 재해율에 반영 (실제 위험 수준 파악용)</>}
+        </div>
+      </div>
+
+      {/* KPI */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }}>
+        {[
+          { l: "분석대상 사업장", v: analysisSites.length, c: "var(--primary)" },
+          { l: "3년 연속 계약", v: contSites.length, c: "#16a34a" },
+          { l: "신규", v: analysisSites.filter(x => x.cls === "신규").length, c: "var(--fg)" },
+          { l: "종료", v: analysisSites.filter(x => x.cls === "종료").length, c: "var(--fg)" },
+          { l: `평균 재해율(${endYear})`, v: iaRateFmt(avgRate), c: "#dc2626" },
+        ].map(k => (
+          <div key={k.l} className="card" style={{ padding: "13px 15px" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: k.c }}>{k.v}</div>
+            <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>{k.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 공식 vs 전체 경고 */}
+      <div style={card}>
+        <h3 style={h3}>⚠ 공식 통계에 안 잡히는 위험 사업장</h3>
+        <p style={cs}>공상처리로 공식 재해율엔 빠지지만 실제 재해가 많은 곳 ({startYear}~{endYear} 합계)</p>
+        {gapSites.length === 0 ? <div style={{ color: "var(--fg-4)", fontSize: 13 }}>해당 사업장이 없습니다. (근로자수 미입력 시 계산되지 않음)</div> :
+          gapSites.slice(0, 5).map(({ s, allR, offR, allN, offN }) => (
+            <div key={s.id} style={{ background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#9a3412", marginBottom: 8 }}>
+              <b>{siteName(s.id)}</b> — 전체 기준 <b style={{ color: "#c2410c" }}>{iaRateFmt(allR)}</b>({allN}건) 이지만 공식 기준은 <b>{iaRateFmt(offR)}</b>({offN}건) · 공상처리 {allN - offN}건 누락
+            </div>
+          ))}
+      </div>
+
+      {/* 연속 사업장 비교 */}
+      <div style={card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div><h3 style={h3}>연속 계약 사업장 — 연도별 재해율</h3><p style={cs}>분석기간 내내 계약 유지된 사업장만 (재해율 = 재해자수 ÷ 근로자수 × 100)</p></div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button style={pill(view === "table")} onClick={() => setView("table")}>표</button>
+            <button style={pill(view === "chart")} onClick={() => setView("chart")}>그래프</button>
+          </div>
+        </div>
+        {contSites.length === 0 ? <div style={{ color: "var(--fg-4)", fontSize: 13 }}>연속 계약 사업장이 없습니다. (사업장의 계약 시작/종료일을 확인하세요)</div> :
+          view === "table" ? (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+                <thead><tr><th style={{ ...TH, textAlign: "left" }}>사업장</th>{years.map(y => <th key={y} style={TH} colSpan={2}>{y}</th>)}<th style={TH}>추세</th><th style={TH}>주요형태</th></tr>
+                  <tr><th style={TH}></th>{years.map(y => <React.Fragment key={y}><th style={{ ...TH, fontWeight: 500 }}>건수</th><th style={{ ...TH, fontWeight: 500 }}>재해율</th></React.Fragment>)}<th style={TH}></th><th style={TH}></th></tr></thead>
+                <tbody>
+                  {contSites.map(s => { const r0 = rateOf(s.id, years[0], basis), rN = rateOf(s.id, years[years.length - 1], basis);
+                    const trend = (r0 != null && rN != null) ? (rN > r0 ? <span style={{ color: "#dc2626", fontWeight: 800 }}>▲</span> : rN < r0 ? <span style={{ color: "#16a34a", fontWeight: 800 }}>▼</span> : "―") : "―";
+                    return (
+                      <tr key={s.id}>
+                        <td style={{ ...TD, textAlign: "left", fontWeight: 700 }}>{siteName(s.id)}</td>
+                        {years.map(y => { const r = rateOf(s.id, y, basis);
+                          return <React.Fragment key={y}><td style={TD}>{cntBy(s.id, y, basis)}건</td><td style={{ ...TD, fontWeight: 700, color: r == null ? "var(--fg-4)" : "var(--fg)" }}>{iaRateFmt(r)}</td></React.Fragment>; })}
+                        <td style={TD}>{trend}</td><td style={{ ...TD, color: "var(--fg-3)" }}>{topTypeOf(s.id)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {years.some(y => contSites.some(s => getHc(s.id, y) == null)) &&
+                <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 8 }}>※ 재해율이 "—"인 칸은 해당 연도 근로자수가 비어있어서예요. 아래에서 입력하면 자동 계산됩니다.</div>}
+            </div>
+          ) : (
+            <div>
+              <p style={{ ...cs, marginTop: 2 }}>사업장별로 3년간 재해율 수준을 따로 표시 (막대 높이는 모든 사업장 같은 기준)</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(210px, 1fr))", gap: 14 }}>
+                {contSites.map(s => {
+                  const panelW = 190, H = 120, padB = 22, padT = 20, bw = 34, n = years.length, slot = panelW / n;
+                  const r0 = rateOf(s.id, years[0], basis), rN = rateOf(s.id, years[years.length - 1], basis);
+                  const trend = (r0 != null && rN != null) ? (rN > r0 ? <span style={{ color: "#dc2626" }}>▲</span> : rN < r0 ? <span style={{ color: "#16a34a" }}>▼</span> : <span style={{ color: "var(--fg-4)" }}>―</span>) : <span style={{ color: "var(--fg-4)" }}>―</span>;
+                  return (
+                    <div key={s.id} style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "12px 12px 6px" }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 4, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{siteName(s.id)} {trend}</div>
+                      <svg width="100%" height={H} viewBox={`0 0 ${panelW} ${H}`} preserveAspectRatio="xMidYMid meet">
+                        <line x1="0" y1={H - padB} x2={panelW} y2={H - padB} stroke="#e6e6ea" />
+                        {years.map((y, i) => { const r = rateOf(s.id, y, basis); const h = (H - padT - padB) * ((r || 0) / gmax); const x = slot * i + slot / 2 - bw / 2; const by = H - padB - h;
+                          return <g key={y}>
+                            <rect x={x} y={by} width={bw} height={Math.max(h, 0)} rx="4" fill="var(--primary)" />
+                            <text x={x + bw / 2} y={by - 5} fontSize="10.5" fill="#424248" fontWeight="800" textAnchor="middle">{iaRateFmt(r)}</text>
+                            <text x={x + bw / 2} y={H - 7} fontSize="10" fill="#6e6e73" textAnchor="middle">{y}</text>
+                          </g>; })}
+                      </svg>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+      </div>
+
+      {/* 근로자수 입력 */}
+      <div style={card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div><h3 style={h3}>연도별 근로자 수 (재해율 분모)</h3><p style={cs}>산재보험 적용 근로자수 기준 (근로복지공단 토탈서비스에서 확인){!canWrite && " · 조회전용"}</p></div>
+          {canWrite && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button style={pill(false)} onClick={exportHcTemplate}>양식 다운로드</button>
+              <button style={{ ...pill(false), borderColor: "var(--primary)", color: "var(--primary)" }} onClick={() => fileRef.current && fileRef.current.click()}>엑셀 업로드</button>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }} onChange={e => { importHc(e.target.files[0]); e.target.value = ""; }} />
+            </div>
+          )}
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ borderCollapse: "collapse", minWidth: 400 }}>
+            <thead><tr><th style={{ ...TH, textAlign: "left" }}>사업장</th>{years.map(y => <th key={y} style={TH}>{y}</th>)}</tr></thead>
+            <tbody>
+              {analysisSites.map(({ s, cls }) => (
+                <tr key={s.id}>
+                  <td style={{ ...TD, textAlign: "left", whiteSpace: "nowrap" }}>{siteName(s.id)} <span style={{ fontSize: 10, color: "var(--fg-4)" }}>{cls}</span></td>
+                  {years.map(y => (
+                    <td key={y} style={TD}>
+                      {canWrite ? (
+                        <input type="number" value={hc[s.id + ":" + y] ?? ""} onChange={e => setHc(prev => ({ ...prev, [s.id + ":" + y]: e.target.value }))}
+                          onBlur={e => saveCell(s.id, y, e.target.value)}
+                          style={{ width: 64, textAlign: "center", border: "1px solid var(--line)", borderRadius: 6, padding: "4px 4px", fontSize: 12.5, fontFamily: "inherit" }} />
+                      ) : (getHc(s.id, y) ?? "—")}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+              {analysisSites.length === 0 && <tr><td style={{ ...TD, color: "var(--fg-4)" }} colSpan={years.length + 1}>분석기간에 해당하는 사업장이 없습니다.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
