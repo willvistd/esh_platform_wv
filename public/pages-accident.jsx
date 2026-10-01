@@ -208,7 +208,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                             <IADetail label="재해 경위" v={a.circumstances} full />
                             <IADetail label="휴업일수" v={a.lostDays != null ? `${a.lostDays}일` : ""} />
                             <IADetail label="예상 복귀일" v={iaDatePart(a.expectedReturnDate)} />
-                            <IADetail label="재해조사표 제출일" v={iaDatePart(a.reportSubmittedDate)} />
+                            <IADetail label="재해조사표 제출일(고용노동부)" v={iaDatePart(a.reportSubmittedDate)} />
                             <IADetail label="재발방지대책" v={a.preventionMeasures} full />
                             <IADetail label="조치 담당자" v={a.actionOwner} />
                             <IADetail label="조치 기한" v={iaDatePart(a.actionDueDate)} />
@@ -402,9 +402,9 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
           {/* 법정 관리 */}
           <div style={{ padding: "12px 14px", background: "var(--primary-soft)", borderRadius: 10 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 8 }}>재해조사표 (품의 기준 제출일)</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 8 }}>재해조사표 (고용노동부 제출일 기준)</div>
             <div style={half}>
-              <div><label style={L}>제출일자</label><input type="date" className="field-input" value={f.reportSubmittedDate} onChange={e => upd("reportSubmittedDate", e.target.value)} /></div>
+              <div><label style={L}>고용노동부 제출일자</label><input type="date" className="field-input" value={f.reportSubmittedDate} onChange={e => upd("reportSubmittedDate", e.target.value)} /></div>
               <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8, fontSize: 12.5 }}>
                 <span>대상 여부: <b>{preview.required ? "제출 대상" : "해당없음"}</b>
                   {preview.required && preview.deadline && <> · 기한 <b>{preview.deadline}</b> · <b style={{ color: preview.key === "over" ? "#b91c1c" : preview.key === "in" ? "#166534" : "#92400e" }}>{preview.label}</b></>}
