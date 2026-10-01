@@ -607,6 +607,14 @@ const api = {
     if (!res.ok) throw new Error(d.error || `삭제 실패 (${res.status})`);
     return d;
   },
+  async bulkAccidents(rows) {
+    const res = await fetch(`${ENDPOINTS.accidents}/bulk`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.error || `일괄등록 실패 (${res.status})`);
+    return d;
+  },
   // ── 연도별 근로자수 ──
   async getHeadcounts() {
     const res = await fetch(API_BASE + "/headcounts");

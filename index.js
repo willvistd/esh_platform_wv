@@ -2141,6 +2141,30 @@ app.post('/api/accidents', async (req, res) => {
   }
 });
 
+// 재해 일괄등록 (과거 데이터 엑셀 업로드용)
+app.post('/api/accidents/bulk', async (req, res) => {
+  if (!canWriteAccident(req)) return res.status(403).json({ error: '재해 등록 권한이 없습니다(관리자·안전관리자 전용).' });
+  try {
+    const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows : [];
+    const now = new Date().toISOString();
+    const cols = ACCIDENT_COLS.map(c => `"${c}"`).join(', ');
+    const ph = ACCIDENT_COLS.map((_, i) => `$${i + 1}`).join(', ');
+    let n = 0;
+    for (const b of rows) {
+      const vals = ACCIDENT_COLS.map(c => b[c] === undefined ? null : b[c]);
+      await pool.query(
+        `INSERT INTO accidents (${cols}, "createdAt", "updatedAt") VALUES (${ph}, $${ACCIDENT_COLS.length + 1}, $${ACCIDENT_COLS.length + 2})`,
+        [...vals, now, now]
+      );
+      n++;
+    }
+    res.json({ success: true, count: n });
+  } catch (e) {
+    console.error('POST /api/accidents/bulk 오류:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.put('/api/accidents/:id', async (req, res) => {
   if (!canWriteAccident(req)) return res.status(403).json({ error: '재해 수정 권한이 없습니다(관리자·안전관리자 전용).' });
   try {
