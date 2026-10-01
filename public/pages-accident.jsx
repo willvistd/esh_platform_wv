@@ -12,6 +12,9 @@ const IA_ACC_TYPES = [
 const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "응급처치"];
 const IA_EMP_TYPES = ["직영", "계약", "도급·협력사"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
+const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
+// 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
+const iaIsApproved = (s) => s === "승인" || s === "요양중" || s === "치료종결";
 
 // ── 계산 헬퍼 ──
 const iaDatePart = (s) => String(s || "").slice(0, 10);      // "YYYY-MM-DD"
@@ -53,6 +56,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   const [fType, setFType] = React.useState("전체");
   const [fSev, setFSev] = React.useState("전체");
   const [fComp, setFComp] = React.useState("전체");
+  const [tab, setTab] = React.useState("list");   // list | dash
+  // 대시보드에서 재해 클릭 → 대장 탭으로 이동 + 해당 건 펼침
+  const openDetail = (id) => { setFHq("전체"); setFType("전체"); setFSev("전체"); setFComp("전체"); setTab("list"); setExpandedId(id);
+    setTimeout(() => { const el = document.getElementById("acc-row-" + id); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 60); };
 
   const reload = React.useCallback(() => {
     setLoading(true);
@@ -128,9 +135,24 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
         )}
       </div>
 
-      {/* 통계 요약 */}
-      {!loading && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, margin: "14px 0 18px" }}>
+      {/* 탭 */}
+      <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--line)", margin: "14px 0 18px" }}>
+        {[["list", "재해 대장"], ["dash", "대시보드"]].map(([k, lbl]) => (
+          <button key={k} onClick={() => setTab(k)}
+            style={{ padding: "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", background: "none", border: "none",
+              color: tab === k ? "var(--primary)" : "var(--fg-3)", borderBottom: "2px solid " + (tab === k ? "var(--primary)" : "transparent"), marginBottom: -1 }}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+
+      {tab === "dash" && !loading && (
+        <AccidentDashboard list={list} sites={sites} siteMap={siteMap} hqMap={hqMap} hqs={hqs} onOpenDetail={openDetail} />
+      )}
+
+      {/* 통계 요약 (재해 대장 탭) */}
+      {tab === "list" && !loading && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, margin: "0 0 18px" }}>
           {[
             { label: "전체 재해", value: list.length, color: "var(--primary)" },
             { label: "중대재해", value: list.filter(a => a.isSerious).length, color: "#dc2626" },
@@ -146,6 +168,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
         </div>
       )}
 
+      {tab === "list" && (<>
       {/* 필터 */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <select className="field-input" style={{ width: "auto" }} value={fHq} onChange={e => setFHq(e.target.value)}>
@@ -183,10 +206,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                 const open = expandedId === a.id;
                 return (
                   <React.Fragment key={a.id}>
-                    <tr onClick={() => setExpandedId(open ? null : a.id)}
+                    <tr id={"acc-row-" + a.id} onClick={() => setExpandedId(open ? null : a.id)}
                       style={{ cursor: "pointer", background: a.isSerious ? "rgba(220,38,38,0.05)" : (open ? "var(--primary-soft)" : "transparent") }}>
                       <td style={TD}>
-                        <div style={{ fontSize: 11, color: "var(--fg-3)" }}>{hqNameOfSite(a.siteId) || "-"}</div>
+                        <div style={{ fontSize: 11, color: "var(--fg-3)" }}>{hqNameOfSite(a.siteId) || "-"}{a.category ? " · " + a.category : ""}</div>
                         <div style={{ fontWeight: 700 }}>{siteName(a.siteId)}{a.isSerious && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: "#dc2626" }}>● 중대재해</span>}</div>
                       </td>
                       <td style={{ ...TD, whiteSpace: "nowrap" }}>{iaDatePart(a.occurredAt) || "-"}</td>
@@ -201,6 +224,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                       <tr>
                         <td colSpan={8} style={{ padding: "4px 16px 18px", background: "var(--primary-soft)", borderBottom: "1px solid var(--line)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px 24px", fontSize: 13 }}>
+                            <IADetail label="재해구분" v={a.category} />
                             <IADetail label="발생장소" v={a.location} />
                             <IADetail label="고용형태" v={a.employmentType} />
                             <IADetail label="기인물·가해물" v={a.agentObject} />
@@ -232,6 +256,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           </table>
         </div>
       )}
+      </>)}
 
       {editing && (
         <AccidentFormModal
@@ -258,6 +283,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   const isEdit = !!initial;
   const [f, setF] = React.useState(() => ({
     siteId: initial?.siteId || "",
+    category: initial?.category || "업무상 사고",
     occurredDate: iaDatePart(initial?.occurredAt) || "",
     occurredTime: (initial?.occurredAt || "").slice(11, 16) || "",
     occurredTimeUnknown: !!initial?.occurredTimeUnknown,
@@ -298,6 +324,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     const occurredAt = f.occurredDate + (!f.occurredTimeUnknown && f.occurredTime ? "T" + f.occurredTime : "");
     const payload = {
       siteId: parseInt(f.siteId) || null,
+      category: f.category,
       occurredAt,
       occurredTimeUnknown: f.occurredTimeUnknown,
       location: f.location, victimName: f.victimName, employmentType: f.employmentType,
@@ -341,6 +368,21 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
               <option value="">— 선택 —</option>
               {sitesSorted.map(s => <option key={s.id} value={s.id}>{(hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
             </select>
+          </div>
+
+          <div>
+            <label style={L}>재해구분 *</label>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {IA_CATEGORIES.map(c => {
+                const on = f.category === c;
+                return (
+                  <button key={c} type="button" onClick={() => upd("category", c)}
+                    style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, padding: "8px 16px", borderRadius: 999,
+                      border: on ? "1.5px solid var(--primary)" : "1px solid var(--line)",
+                      background: on ? "var(--primary)" : "#fff", color: on ? "#fff" : "var(--fg-2)" }}>{c}</button>
+                );
+              })}
+            </div>
           </div>
 
           <div style={half}>
@@ -442,6 +484,211 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <button className="btn btn-primary" onClick={save} disabled={saving}>{saving ? "저장 중..." : (isEdit ? "수정 저장" : "등록")}</button>
         </div>
       </div>
+    </div>
+  );
+};
+
+// ───────────────────────── 대시보드 (2단계) ─────────────────────────
+const IA_sevColor = (x) => x === "사망" ? "#dc2626" : (x || "").indexOf("3일 이상") >= 0 ? "#d97706" : "#6e6e73";
+
+// 가로 막대 리스트
+const IAHBars = ({ data, unit }) => {
+  const max = Math.max(...data.map(d => d.v), 1);
+  if (!data.length) return <div style={{ color: "var(--fg-4)", fontSize: 12.5, padding: "8px 0" }}>데이터 없음</div>;
+  return (
+    <div>
+      {data.map((d, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, margin: "7px 0", fontSize: 12.5 }}>
+          <div style={{ width: 120, textAlign: "right", color: "var(--fg-2)", flexShrink: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={d.l}>{d.l}</div>
+          <div style={{ flex: 1, background: "#f0f1f4", borderRadius: 5, height: 18 }}>
+            <div style={{ width: (d.v / max * 100) + "%", height: "100%", borderRadius: 5, background: d.color || "var(--primary)" }} />
+          </div>
+          <div style={{ width: 40, fontWeight: 700, color: "var(--fg-2)" }}>{d.vLabel != null ? d.vLabel : d.v}{unit || ""}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) => {
+  const [range, setRange] = React.useState("12");
+  const [hover, setHover] = React.useState(null);   // 월 인덱스
+  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "(사업장 미지정)";
+  const hqOf = (id) => { const s = siteMap[String(id)]; return s ? (hqMap[String(s.hqId)]?.name || "미지정") : "미지정"; };
+
+  // KPI
+  const total = list.length;
+  const cntCat = (c) => list.filter(a => a.category === c).length;
+  const approved = list.filter(a => iaIsApproved(a.compensationStatus)).length;
+
+  // 조치기한 알림 (기한초과·미완료)
+  const today = new Date().toISOString().slice(0, 10);
+  const actionAlerts = list.filter(a => a.preventionMeasures && !a.actionCompleted)
+    .map(a => { const due = iaDatePart(a.actionDueDate); const over = due ? iaDaysBetween(due, today) : null;
+      return { a, due, over: (over != null && over > 0) ? over : 0 }; })
+    .sort((x, y) => y.over - x.over);
+
+  // 월별 버킷
+  const months = React.useMemo(() => {
+    const yms = list.map(a => iaDatePart(a.occurredAt).slice(0, 7)).filter(s => s.length === 7);
+    const now = new Date(); const curYm = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    let minYm = yms.length ? yms.reduce((a, b) => a < b ? a : b) : curYm;
+    const seq = [];
+    let [y, m] = minYm.split("-").map(Number);
+    const [cy, cm] = curYm.split("-").map(Number);
+    let guard = 0;
+    while ((y < cy || (y === cy && m <= cm)) && guard++ < 400) {
+      const ym = y + "-" + String(m).padStart(2, "0");
+      seq.push({ ym, label: (m === 1 || seq.length === 0) ? `'${String(y).slice(2)}.${m}` : String(m),
+        items: list.filter(a => iaDatePart(a.occurredAt).slice(0, 7) === ym) });
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return seq;
+  }, [list]);
+  const view = range === "all" ? months : months.slice(-parseInt(range));
+  const defIdx = (() => { let i = view.length - 1; while (i > 0 && view[i] && view[i].items.length === 0) i--; return i; })();
+  const activeIdx = hover != null && view[hover] ? hover : defIdx;
+  const activeMonth = view[activeIdx];
+
+  // 집계들
+  const byHq = React.useMemo(() => {
+    const m = {}; (hqs || []).forEach(h => m[h.name] = 0);
+    list.forEach(a => { const n = hqOf(a.siteId); m[n] = (m[n] || 0) + 1; });
+    return Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([l, v]) => ({ l, v }));
+  }, [list, siteMap, hqMap, hqs]);
+  const byType = React.useMemo(() => {
+    const m = {}; list.forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([l, v]) => ({ l, v }));
+  }, [list]);
+  const bySite = React.useMemo(() => {
+    const m = {}; list.forEach(a => { const n = siteName(a.siteId); m[n] = (m[n] || 0) + 1; });
+    return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([l, v]) => ({ l, v }));
+  }, [list, siteMap]);
+  const byDept = React.useMemo(() => {
+    const acc = {};
+    list.forEach(a => { const sub = iaDatePart(a.reportSubmittedDate), occ = iaDatePart(a.occurredAt);
+      const d = (sub && occ) ? iaDaysBetween(occ, sub) : null;
+      if (d != null && d >= 0) { const n = hqOf(a.siteId); (acc[n] = acc[n] || []).push(d); } });
+    return Object.entries(acc).map(([l, arr]) => { const avg = Math.round(arr.reduce((s, x) => s + x, 0) / arr.length);
+      return { l, v: avg, vLabel: avg + "일", color: avg > 30 ? "#dc2626" : "var(--primary)" }; }).sort((a, b) => b.v - a.v);
+  }, [list, siteMap, hqMap]);
+
+  // ── 월별 추이 SVG ──
+  const LINE = view.length > 14;
+  const W = 760, H = 200, padL = 28, padB = 26, padT = 14, padR = 6;
+  const n = view.length || 1;
+  const vals = view.map(mo => mo.items.length);
+  const max = Math.max(...vals, 1);
+  const cw = (W - padL - padR) / n, bw = Math.min(30, cw * 0.5);
+  const cx = (i) => padL + cw * i + cw / 2;
+  const cy = (v) => H - padB - (H - padT - padB) * (v / max);
+  const everyLabel = n <= 14 ? 1 : Math.ceil(n / 14);
+  const grid = []; for (let g = 0; g <= max; g++) grid.push(g);
+  const linePts = view.map((mo, i) => [cx(i), cy(mo.items.length)]);
+  const linePath = linePts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const areaPath = linePts.length ? `M${linePts[0][0].toFixed(1)} ${H - padB} ` + linePts.map(p => `L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ") + ` L${linePts[linePts.length - 1][0].toFixed(1)} ${H - padB} Z` : "";
+
+  const card = { background: "var(--card-bg)", border: "1px solid var(--line)", borderRadius: 14, padding: "18px 18px 14px", marginBottom: 16 };
+  const h3 = { margin: "0 0 2px", fontSize: 15, fontWeight: 800 };
+  const cs = { fontSize: 12, color: "var(--fg-3)", margin: "0 0 14px" };
+
+  return (
+    <div>
+      {/* KPI */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 16 }}>
+        {[
+          { l: "전체 재해 수", v: total, c: "var(--primary)" },
+          { l: "업무상 사고", v: cntCat("업무상 사고"), c: "var(--fg)" },
+          { l: "업무상 질병", v: cntCat("업무상 질병"), c: "var(--fg)" },
+          { l: "출퇴근재해", v: cntCat("출퇴근재해"), c: "var(--fg)" },
+          { l: "산재요양 승인", v: approved, c: "#16a34a" },
+        ].map(k => (
+          <div key={k.l} className="card" style={{ padding: "14px 16px" }}>
+            <div style={{ fontSize: 26, fontWeight: 800, color: k.c }}>{k.v}</div>
+            <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>{k.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 조치기한 알림 */}
+      <div style={card}>
+        <h3 style={h3}>⚠ 재발방지 조치 — 기한 초과·미완료</h3>
+        <p style={cs}>조치기한이 지났거나 완료되지 않은 건만 (클릭 시 상세)</p>
+        {actionAlerts.length === 0 ? <div style={{ color: "var(--fg-4)", fontSize: 13 }}>해당 건이 없습니다. 👍</div> :
+          actionAlerts.slice(0, 6).map(({ a, due, over }) => (
+            <div key={a.id} onClick={() => onOpenDetail(a.id)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+                background: over ? "#fff5f5" : "#fffbeb", border: "1px solid " + (over ? "#fecaca" : "#fde68a"), marginBottom: 8 }}>
+              <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: over ? "#dc2626" : "#d97706", padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
+                {over ? `기한초과 +${over}일` : "미완료"}
+              </span>
+              <div style={{ flex: 1, fontSize: 13 }}><b>{siteName(a.siteId)}</b> · {a.accidentType || "-"} · {a.preventionMeasures ? a.preventionMeasures.split("\n")[0] : "-"}
+                <span style={{ fontSize: 11, color: "var(--fg-3)" }}> {a.actionOwner ? `(담당 ${a.actionOwner}` : "("}{due ? ` · 기한 ${due.slice(5)})` : ")"}</span></div>
+            </div>
+          ))}
+      </div>
+
+      {/* 월별 추이 + 날개박스 */}
+      <div style={card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div><h3 style={h3}>월별 재해 건수 추이</h3><p style={cs}>막대/점에 마우스를 올리면 해당 월 재해 목록이 오른쪽에 표시됩니다</p></div>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[["12", "최근 12개월"], ["24", "최근 24개월"], ["all", "전체"]].map(([r, lbl]) => (
+              <button key={r} onClick={() => { setRange(r); setHover(null); }}
+                style={{ fontSize: 12, fontWeight: 700, padding: "6px 13px", borderRadius: 999, cursor: "pointer",
+                  border: "1px solid " + (range === r ? "var(--primary)" : "var(--line)"), background: range === r ? "var(--primary)" : "#fff", color: range === r ? "#fff" : "var(--fg-2)" }}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
+          <svg style={{ flex: 1, minWidth: 0 }} height="200" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
+            onMouseLeave={() => setHover(null)}>
+            <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="#e6e6ea" />
+            {grid.map(g => { const y = padT + (H - padT - padB) * (1 - g / max);
+              return <g key={g}><line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#f0f1f4" /><text x={padL - 6} y={y + 3} fontSize="10" fill="#a1a1a6" textAnchor="end">{g}</text></g>; })}
+            {LINE && areaPath && <path d={areaPath} fill="var(--primary)" opacity="0.08" />}
+            {LINE && <path d={linePath} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />}
+            {view.map((mo, i) => {
+              const v = mo.items.length, isAct = i === activeIdx;
+              return (
+                <g key={i}>
+                  {!LINE && <rect x={cx(i) - bw / 2} y={cy(v)} width={bw} height={Math.max(H - padB - cy(v), 0)} rx="4" fill={isAct ? "var(--primary)" : (hover != null ? "#b9ccf0" : "var(--primary)")} style={{ pointerEvents: "none" }} />}
+                  {!LINE && v > 0 && <text x={cx(i)} y={cy(v) - 5} fontSize="11" fill="#424248" fontWeight="700" textAnchor="middle" style={{ pointerEvents: "none" }}>{v}</text>}
+                  {LINE && <circle cx={cx(i)} cy={cy(v)} r={isAct ? 5 : 2.6} fill="var(--primary)" style={{ pointerEvents: "none" }} />}
+                  {i % everyLabel === 0 && <text x={cx(i)} y={H - 8} fontSize="10" fill="#6e6e73" textAnchor="middle" style={{ pointerEvents: "none" }}>{mo.label}</text>}
+                  <rect x={padL + cw * i} y={padT} width={cw} height={H - padT - padB} fill="transparent" style={{ cursor: "pointer" }} onMouseEnter={() => setHover(i)} />
+                </g>
+              );
+            })}
+          </svg>
+          <div style={{ width: 300, flexShrink: 0, border: "1px solid var(--line)", borderRadius: 10, background: "var(--bg-subtle, #fcfcfd)", padding: "12px 14px", display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{activeMonth ? activeMonth.label : "-"} <span style={{ color: "var(--primary)" }}>· 재해 {activeMonth ? activeMonth.items.length : 0}건</span></div>
+            <div style={{ overflow: "auto", flex: 1 }}>
+              {!activeMonth || activeMonth.items.length === 0 ? (
+                <div style={{ color: "var(--fg-4)", fontSize: 12.5, margin: "auto 0", textAlign: "center" }}>이 달은 재해가 없습니다.</div>
+              ) : activeMonth.items.map(a => (
+                <div key={a.id} onClick={() => onOpenDetail(a.id)} style={{ padding: "8px 0", borderBottom: "1px solid var(--line)", cursor: "pointer" }}>
+                  <div style={{ fontWeight: 700, fontSize: 12.5 }}>{siteName(a.siteId)}</div>
+                  <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 2 }}>
+                    <span style={{ color: "var(--primary)", fontWeight: 700 }}>{a.accidentType || "-"}</span> · <span style={{ color: IA_sevColor(a.severity), fontWeight: 700 }}>{a.severity || "-"}</span>{a.victimName ? " · " + a.victimName : ""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 본부별 / 발생형태 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ia-grid2">
+        <div style={card}><h3 style={h3}>본부·법인별 재해 건수</h3><p style={cs}>전체 기간 누적</p><IAHBars data={byHq} /></div>
+        <div style={card}><h3 style={h3}>발생형태 Top</h3><p style={cs}>많이 발생한 유형 순</p><IAHBars data={byType} /></div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ia-grid2">
+        <div style={card}><h3 style={h3}>재해 다발 사업장 Top 5</h3><p style={cs}>사업장별 누적 건수</p><IAHBars data={bySite} /></div>
+        <div style={card}><h3 style={h3}>부서별 재해조사표 평균 소요일</h3><p style={cs}>발생→고용노동부 제출까지 평균 (30일 초과 빨강)</p><IAHBars data={byDept} /></div>
+      </div>
+      <style>{`@media(max-width:720px){.ia-grid2{grid-template-columns:1fr !important}}`}</style>
     </div>
   );
 };
