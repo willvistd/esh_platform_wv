@@ -86,19 +86,31 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   const hqMap = React.useMemo(() => {
     const m = {}; hqs.forEach(h => { m[String(h.id)] = h; }); return m;
   }, [hqs]);
-  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "(사업장 미지정)";
+  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "";
   const hqNameOfSite = (id) => { const s = siteMap[String(id)]; return s ? (hqMap[String(s.hqId)]?.name || "") : ""; };
+  // 본부: 재해 레코드에 직접 저장된 본부(hqName) 우선, 없으면 등록 사업장의 본부
+  const hqNameOf = (a) => (a.hqName && a.hqName.trim()) || hqNameOfSite(a.siteId);
+  // 발생장소/현장: 등록 사업장명 우선, 없으면 자유입력 발생장소
+  const placeOf = (a) => siteName(a.siteId) || a.location || "";
+
+  // 본부 필터 옵션: 등록 본부 + 재해에 직접 입력된 본부(미등록 현장) 합집합
+  const hqOptions = React.useMemo(() => {
+    const set = new Set();
+    (hqs || []).forEach(h => { if (h.name) set.add(h.name); });
+    list.forEach(a => { if (a.hqName && a.hqName.trim()) set.add(a.hqName.trim()); });
+    return [...set].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [hqs, list]);
 
   const filtered = React.useMemo(() => list.filter(a => {
     if (fType !== "전체" && a.accidentType !== fType) return false;
     if (fSev !== "전체" && a.severity !== fSev) return false;
     if (fComp !== "전체" && iaReportCompliance(a).label.replace(/\(.*\)/, "") !== fComp) return false;
-    if (fHq !== "전체" && hqNameOfSite(a.siteId) !== fHq) return false;
+    if (fHq !== "전체" && hqNameOf(a) !== fHq) return false;
     return true;
   }), [list, fType, fSev, fComp, fHq, siteMap, hqMap]);
 
   const del = async (a) => {
-    if (!window.confirm(`이 재해 기록을 삭제할까요?\n(${siteName(a.siteId)} · ${iaDatePart(a.occurredAt)})\n되돌릴 수 없습니다.`)) return;
+    if (!window.confirm(`이 재해 기록을 삭제할까요?\n(${hqNameOf(a) || placeOf(a) || "재해"} · ${iaDatePart(a.occurredAt)})\n되돌릴 수 없습니다.`)) return;
     try { await window.WV_API.deleteAccident(a.id); setList(prev => prev.filter(x => x.id !== a.id)); }
     catch (e) { alert("삭제 실패: " + (e.message || "")); }
   };
@@ -130,8 +142,9 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
         const siteNm = pick(r, ["사업장", "사업장명"]).replace(/\s/g, "");
         return {
           category: pick(r, ["재해구분", "구분"]) || "업무상 사고",
+          hqName: pick(r, ["본부", "사업본부", "관리본부", "소속본부", "관리조직"]),
           occurredAt: date + (time ? "T" + time : ""),
-          location: pick(r, ["발생장소", "장소"]),
+          location: pick(r, ["발생장소", "장소", "사업장", "현장", "사업장명", "현장명"]),
           victimName: pick(r, ["재해자", "재해자명", "성명"]),
           employmentType: pick(r, ["고용형태"]) || "직영",
           accidentType: pick(r, ["발생형태", "재해형태", "유형"]),
@@ -240,7 +253,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
       {/* 필터 */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
         <select className="field-input" style={{ width: "auto" }} value={fHq} onChange={e => setFHq(e.target.value)}>
-          <option>전체</option>{hqs.map(h => <option key={h.id}>{h.name}</option>)}
+          <option>전체</option>{hqOptions.map(nm => <option key={nm}>{nm}</option>)}
         </select>
         <select className="field-input" style={{ width: "auto" }} value={fType} onChange={e => setFType(e.target.value)}>
           <option value="전체">발생형태 전체</option>{IA_ACC_TYPES.map(t => <option key={t}>{t}</option>)}
@@ -266,7 +279,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
             <thead>
               <tr>
-                {["본부 / 사업장", "발생일", "재해자", "발생형태", "재해정도", "조사표", "산재진행", ""].map((h, i) => <th key={i} style={TH}>{h}</th>)}
+                {["본부", "사업장 / 현장", "발생일", "재해자", "발생형태", "재해정도", "조사표", "산재진행", ""].map((h, i) => <th key={i} style={TH}>{h}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -276,9 +289,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                   <React.Fragment key={a.id}>
                     <tr id={"acc-row-" + a.id} onClick={() => setExpandedId(open ? null : a.id)}
                       style={{ cursor: "pointer", background: a.isSerious ? "rgba(220,38,38,0.05)" : (open ? "var(--primary-soft)" : "transparent") }}>
+                      <td style={{ ...TD, fontWeight: 700 }}>{hqNameOf(a) || "-"}</td>
                       <td style={TD}>
-                        <div style={{ fontSize: 11, color: "var(--fg-3)" }}>{hqNameOfSite(a.siteId) || "-"}{a.category ? " · " + a.category : ""}</div>
-                        <div style={{ fontWeight: 700 }}>{siteName(a.siteId)}{a.isSerious && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: "#dc2626" }}>● 중대재해</span>}</div>
+                        <div style={{ fontWeight: 700 }}>{placeOf(a) || "(미지정)"}{a.isSerious && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: "#dc2626" }}>● 중대재해</span>}</div>
+                        {a.category && <div style={{ fontSize: 11, color: "var(--fg-3)" }}>{a.category}</div>}
                       </td>
                       <td style={{ ...TD, whiteSpace: "nowrap" }}>{iaDatePart(a.occurredAt) || "-"}</td>
                       <td style={{ ...TD, whiteSpace: "nowrap" }}>{a.victimName || "-"}</td>
@@ -290,8 +304,9 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                     </tr>
                     {open && (
                       <tr>
-                        <td colSpan={8} style={{ padding: "4px 16px 18px", background: "var(--primary-soft)", borderBottom: "1px solid var(--line)" }}>
+                        <td colSpan={9} style={{ padding: "4px 16px 18px", background: "var(--primary-soft)", borderBottom: "1px solid var(--line)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px 24px", fontSize: 13 }}>
+                            <IADetail label="본부" v={hqNameOf(a)} />
                             <IADetail label="재해구분" v={a.category} />
                             <IADetail label="발생장소" v={a.location} />
                             <IADetail label="고용형태" v={a.employmentType} />
@@ -351,6 +366,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   const isEdit = !!initial;
   const [f, setF] = React.useState(() => ({
     siteId: initial?.siteId || "",
+    hqName: initial?.hqName || "",
     category: initial?.category || "업무상 사고",
     occurredDate: iaDatePart(initial?.occurredAt) || "",
     occurredTime: (initial?.occurredAt || "").slice(11, 16) || "",
@@ -391,6 +407,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     const occurredAt = f.occurredDate + (!f.occurredTimeUnknown && f.occurredTime ? "T" + f.occurredTime : "");
     const payload = {
       siteId: parseInt(f.siteId) || null,
+      hqName: (f.hqName || "").trim(),
       category: f.category,
       occurredAt,
       occurredTimeUnknown: f.occurredTimeUnknown,
@@ -429,12 +446,19 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
         {err && <div style={{ background: "#fee2e2", color: "#b91c1c", padding: "8px 12px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div>
-            <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(선택 · 파견재해는 비우고 발생장소에 현장명 기재)</span></label>
-            <select className="field-input" value={f.siteId} onChange={e => upd("siteId", e.target.value)}>
-              <option value="">— 미지정(파견 등) —</option>
-              {sitesSorted.map(s => <option key={s.id} value={s.id}>{(hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
-            </select>
+          <div style={half}>
+            <div>
+              <label style={L}>본부 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(관리 조직)</span></label>
+              <input className="field-input" list="ia-hq-list" value={f.hqName} onChange={e => upd("hqName", e.target.value)} placeholder="예: HR사업본부 / 부산지사" />
+              <datalist id="ia-hq-list">{(hqs || []).map(h => <option key={h.id} value={h.name} />)}</datalist>
+            </div>
+            <div>
+              <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장이면 선택)</span></label>
+              <select className="field-input" value={f.siteId} onChange={e => upd("siteId", e.target.value)}>
+                <option value="">— 미등록 현장(파견·고객사 등) —</option>
+                {sitesSorted.map(s => <option key={s.id} value={s.id}>{(hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
+              </select>
+            </div>
           </div>
 
           <div>
@@ -580,8 +604,9 @@ const IAHBars = ({ data, unit }) => {
 const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) => {
   const [range, setRange] = React.useState("12");
   const [hover, setHover] = React.useState(null);   // 월 인덱스
-  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "(사업장 미지정)";
-  const hqOf = (id) => { const s = siteMap[String(id)]; return s ? (hqMap[String(s.hqId)]?.name || "미지정") : "미지정"; };
+  const siteName = (id) => (siteMap[String(id)]?.사업장명) || "";
+  const hqOf = (a) => { if (a && a.hqName && a.hqName.trim()) return a.hqName.trim(); const s = siteMap[String(a?.siteId)]; return s ? (hqMap[String(s.hqId)]?.name || "미지정") : "미지정"; };
+  const placeName = (a) => siteName(a?.siteId) || (a?.location || "") || "(미지정)";
 
   // KPI
   const total = list.length;
@@ -620,7 +645,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
   // 집계들
   const byHq = React.useMemo(() => {
     const m = {}; (hqs || []).forEach(h => m[h.name] = 0);
-    list.forEach(a => { const n = hqOf(a.siteId); m[n] = (m[n] || 0) + 1; });
+    list.forEach(a => { const n = hqOf(a); m[n] = (m[n] || 0) + 1; });
     return Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([l, v]) => ({ l, v }));
   }, [list, siteMap, hqMap, hqs]);
   const byType = React.useMemo(() => {
@@ -628,14 +653,14 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([l, v]) => ({ l, v }));
   }, [list]);
   const bySite = React.useMemo(() => {
-    const m = {}; list.forEach(a => { const n = siteName(a.siteId); m[n] = (m[n] || 0) + 1; });
+    const m = {}; list.forEach(a => { const n = placeName(a); m[n] = (m[n] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([l, v]) => ({ l, v }));
   }, [list, siteMap]);
   const byDept = React.useMemo(() => {
     const acc = {};
     list.forEach(a => { const sub = iaDatePart(a.reportSubmittedDate), occ = iaDatePart(a.occurredAt);
       const d = (sub && occ) ? iaDaysBetween(occ, sub) : null;
-      if (d != null && d >= 0) { const n = hqOf(a.siteId); (acc[n] = acc[n] || []).push(d); } });
+      if (d != null && d >= 0) { const n = hqOf(a); (acc[n] = acc[n] || []).push(d); } });
     return Object.entries(acc).map(([l, arr]) => { const avg = Math.round(arr.reduce((s, x) => s + x, 0) / arr.length);
       return { l, v: avg, vLabel: avg + "일", color: avg > 30 ? "#dc2626" : "var(--primary)" }; }).sort((a, b) => b.v - a.v);
   }, [list, siteMap, hqMap]);
@@ -689,7 +714,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
               <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: over ? "#dc2626" : "#d97706", padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
                 {over ? `기한초과 +${over}일` : "미완료"}
               </span>
-              <div style={{ flex: 1, fontSize: 13 }}><b>{siteName(a.siteId)}</b> · {a.accidentType || "-"} · {a.preventionMeasures ? a.preventionMeasures.split("\n")[0] : "-"}
+              <div style={{ flex: 1, fontSize: 13 }}><b>{hqOf(a)}{placeName(a) !== "(미지정)" ? " · " + placeName(a) : ""}</b> · {a.accidentType || "-"} · {a.preventionMeasures ? a.preventionMeasures.split("\n")[0] : "-"}
                 <span style={{ fontSize: 11, color: "var(--fg-3)" }}> {a.actionOwner ? `(담당 ${a.actionOwner}` : "("}{due ? ` · 기한 ${due.slice(5)})` : ")"}</span></div>
             </div>
           ))}
@@ -735,7 +760,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
                 <div style={{ color: "var(--fg-4)", fontSize: 12.5, margin: "auto 0", textAlign: "center" }}>이 달은 재해가 없습니다.</div>
               ) : activeMonth.items.map(a => (
                 <div key={a.id} onClick={() => onOpenDetail(a.id)} style={{ padding: "8px 0", borderBottom: "1px solid var(--line)", cursor: "pointer" }}>
-                  <div style={{ fontWeight: 700, fontSize: 12.5 }}>{siteName(a.siteId)}</div>
+                  <div style={{ fontWeight: 700, fontSize: 12.5 }}>{hqOf(a)}{placeName(a) !== "(미지정)" ? " · " + placeName(a) : ""}</div>
                   <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 2 }}>
                     <span style={{ color: "var(--primary)", fontWeight: 700 }}>{a.accidentType || "-"}</span> · <span style={{ color: IA_sevColor(a.severity), fontWeight: 700 }}>{a.severity || "-"}</span>{a.victimName ? " · " + a.victimName : ""}
                   </div>

@@ -386,6 +386,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE categories ADD COLUMN IF NOT EXISTS approval BOOLEAN DEFAULT false;`);
   // 산업재해: 재해구분(업무상 사고/질병/출퇴근재해) — 기존 테이블에 없으면 추가
   await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS category TEXT;`);
+  // 산업재해: 본부(관리조직) — 사업장(site) 미등록 현장(파견·고객사)의 본부를 직접 저장. 발생장소와 분리.
+  await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS "hqName" TEXT;`);
 
   // 기존 sites 테이블에 hq_id 컬럼 추가 (다른 본부에 묶기 위한 외래키)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
@@ -2103,7 +2105,7 @@ const maskKoreanName = (name) => {
   return s[0] + '○'.repeat(s.length - 2) + s[s.length - 1];
 };
 const ACCIDENT_COLS = [
-  'siteId','category','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
+  'siteId','hqName','category','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
   'accidentType','agentObject','workDescription','circumstances','severity','isSerious',
   'lostDays','expectedReturnDate','reportSubmittedDate','compensationStatus',
   'preventionMeasures','actionOwner','actionDueDate','actionCompleted','actionCompletedDate',
