@@ -5993,9 +5993,15 @@ const PHOTO_SHEET_CSS = `
   .mtgphoto-item img { max-width: 100%; max-height: 240px; object-fit: contain; display: block; }
   .mtgphoto-item .caption-area { border-top: 1px solid #333; padding: 6px 10px; background: #fafafa; display: flex; align-items: center; gap: 6px; min-height: 20px; }
   .mtgphoto-item .caption-area input { flex: 1; border: none; background: transparent; outline: none; font-size: 12px; padding: 2px 0; font-family: inherit; }
+  /* 출력(미리보기·인쇄) 사진대지: 한 페이지에 크게 2장 (1열 × 2행) */
+  .sheet-print-area .mtgphoto-grid { grid-template-columns: 1fr !important; gap: 14px; }
+  .sheet-print-area .mtgphoto-item .img-wrap { min-height: 360px; }
+  .sheet-print-area .mtgphoto-item img { max-height: 380px; }
   @media print {
-    .mtgphoto-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .mtgphoto-item img { max-height: 220px !important; }
+    .sheet-print-area .mtgphoto-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+    .sheet-print-area .mtgphoto-item img { max-height: 380px !important; }
+    .sheet-print-area .mtgphoto-item { break-inside: avoid; page-break-inside: avoid; }
+    .sheet-print-area .mtgphoto-item:nth-child(2n):not(:last-child) { page-break-after: always; }
   }
 `;
 
@@ -8723,8 +8729,10 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
             min-height: 267mm !important; font-size: 11pt !important; color: #000 !important;
           }
           .mtgphoto-no-print { display: none !important; }
-          .mtgphoto-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-          .mtgphoto-item img { max-height: 220px !important; }
+          .mtgphoto-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+          .mtgphoto-item img { max-height: 380px !important; }
+          .mtgphoto-item { break-inside: avoid; page-break-inside: avoid; }
+          .mtgphoto-item:nth-child(2n):not(:last-child) { page-break-after: always; }
           .mtgphoto-item .remove-btn { display: none !important; }
           .mtgphoto-item .move-btn { display: none !important; }
         }
@@ -8734,8 +8742,9 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
           background: #f8fafc;
         }
         .mtgphoto-drop.drag-over { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+        /* 사진대지: 한 페이지에 크게 2장 (1열 × 2행) */
         .mtgphoto-grid {
-          display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 16px;
+          display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 16px;
         }
         .mtgphoto-item {
           border: 1px solid #333; border-radius: 6px; overflow: hidden; background: #fff;
@@ -8743,9 +8752,9 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
         }
         .mtgphoto-item .img-wrap {
           background: #f5f5f5; display: flex; align-items: center; justify-content: center;
-          min-height: 180px; position: relative;
+          min-height: 340px; position: relative;
         }
-        .mtgphoto-item img { max-width: 100%; max-height: 240px; object-fit: contain; display: block; }
+        .mtgphoto-item img { max-width: 100%; max-height: 400px; object-fit: contain; display: block; }
         .mtgphoto-item .caption-area {
           border-top: 1px solid #333; padding: 6px 10px; background: #fafafa;
           display: flex; align-items: center; gap: 6px;
