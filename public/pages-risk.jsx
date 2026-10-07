@@ -6043,8 +6043,7 @@ const RiskPhotoSheetEditor = ({ photos, setPhotos }) => {
               </div>
               <div className="caption-area">
                 <span style={{ fontSize: 11, fontWeight: 700, color: "#555", minWidth: 28 }}>#{i + 1}</span>
-                <input value={p.caption} onChange={e => updateCaption(p.id, e.target.value)} placeholder="사진 설명 (예: 강사 교육 진행 모습)" />
-                <span style={{ display: "flex", gap: 2 }}>
+                <span style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
                   {i > 0 && <button type="button" onClick={() => movePhoto(i, -1)} title="앞으로" style={{ background: "none", border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 10 }}>↑</button>}
                   {i < photos.length - 1 && <button type="button" onClick={() => movePhoto(i, 1)} title="뒤로" style={{ background: "none", border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 10 }}>↓</button>}
                 </span>
@@ -6140,10 +6139,6 @@ const RiskStepPhotoSheet = ({ context, evalId, defaultTitle, defaultSite, defaul
             {photos.map((p, i) => (
               <div key={p.id || i} className="mtgphoto-item">
                 <div className="img-wrap"><img src={p.src} alt="" /></div>
-                <div className="caption-area">
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#555", minWidth: 28 }}>#{i + 1}</span>
-                  <span style={{ fontSize: 12 }}>{p.caption}</span>
-                </div>
               </div>
             ))}
           </div>
@@ -8836,11 +8831,9 @@ const RiskMeetingPhotosView = ({ onNav, currentUser }) => {
                     title="삭제"
                     style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: 99, width: 24, height: 24, cursor: "pointer", fontSize: 12 }}>✕</button>
                 </div>
-                <div className="caption-area">
+                <div className="caption-area mtgphoto-no-print">
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#555", minWidth: 28 }}>#{i + 1}</span>
-                  <input value={p.caption} onChange={e => updateCaption(p.id, e.target.value)}
-                    placeholder="사진 설명 (예: 강사 교육 진행 모습)" />
-                  <span className="move-btn mtgphoto-no-print" style={{ display: "flex", gap: 2 }}>
+                  <span className="move-btn mtgphoto-no-print" style={{ display: "flex", gap: 2, marginLeft: "auto" }}>
                     {i > 0 && <button type="button" onClick={() => movePhoto(i, -1)} title="앞으로"
                       style={{ background: "none", border: "1px solid #ddd", borderRadius: 4, padding: "2px 6px", cursor: "pointer", fontSize: 10 }}>↑</button>}
                     {i < photos.length - 1 && <button type="button" onClick={() => movePhoto(i, 1)} title="뒤로"
