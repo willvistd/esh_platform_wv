@@ -388,6 +388,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS category TEXT;`);
   // 산업재해: 본부(관리조직) — 사업장(site) 미등록 현장(파견·고객사)의 본부를 직접 저장. 발생장소와 분리.
   await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS "hqName" TEXT;`);
+  // MSDS 관리대장: 부서(팀) — 미화팀/시설팀 등 팀별로 대장을 구분 보관.
+  await pool.query(`ALTER TABLE msds_ledger ADD COLUMN IF NOT EXISTS "부서" TEXT;`);
 
   // 기존 sites 테이블에 hq_id 컬럼 추가 (다른 본부에 묶기 위한 외래키)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
@@ -2620,12 +2622,12 @@ app.post('/api/msds-ledger', async (req, res) => {
     const b = req.body || {};
     const result = await pool.query(
       `INSERT INTO msds_ledger (
-        "siteId","사업장명","제품명","제조회사","개정일자","사용용도","사용빈도","비고",
+        "siteId","사업장명","부서","제품명","제조회사","개정일자","사용용도","사용빈도","비고",
         "신호어","ghsIds","ppeIds","측정대상","특검대상","특별관리물질","성분","작성자","작성일","createdAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW()::TEXT) RETURNING *`,
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW()::TEXT) RETURNING *`,
       [
         b['siteId'] ? parseInt(b['siteId']) : null,
-        b['사업장명'] || '', b['제품명'] || '', b['제조회사'] || '', b['개정일자'] || '',
+        b['사업장명'] || '', b['부서'] || '', b['제품명'] || '', b['제조회사'] || '', b['개정일자'] || '',
         b['사용용도'] || '', b['사용빈도'] || '', b['비고'] || '',
         b['신호어'] || '', b['ghsIds'] || '', b['ppeIds'] || '',
         b['측정대상'] || '', b['특검대상'] || '', !!b['특별관리물질'],
@@ -2643,7 +2645,7 @@ app.post('/api/msds-ledger', async (req, res) => {
 app.put('/api/msds-ledger/:id', async (req, res) => {
   try {
     const b = req.body || {};
-    const cols = ['제품명', '제조회사', '개정일자', '사용용도', '사용빈도', '비고', '측정대상', '특검대상', '특별관리물질'];
+    const cols = ['부서', '제품명', '제조회사', '개정일자', '사용용도', '사용빈도', '비고', '측정대상', '특검대상', '특별관리물질'];
     const sets = [];
     const vals = [];
     let n = 1;
