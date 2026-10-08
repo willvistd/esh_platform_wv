@@ -1,6 +1,8 @@
 // pages-msds.jsx — MSDS 문서 자동생성 (v4 — 인라인 편집)
 
 // ── 상수 ──────────────────────────────────────────────────
+// MSDS 관리대장 부서(팀) — 팀별로 대장 구분 보관. 필요시 항목 추가.
+const MSDS_DEPTS = ['미화팀', '시설팀'];
 const GHS_LIST = [
   { id: 1, label: '폭발성' },
   { id: 2, label: '인화성' },
@@ -289,6 +291,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [sites,        setSites]        = React.useState([]);
   const [showSave,     setShowSave]     = React.useState(false);
   const [saveSite,     setSaveSite]     = React.useState('');
+  const [saveDept,     setSaveDept]     = React.useState('');
   const [saveUsage,    setSaveUsage]    = React.useState('');
   const [saveFreq,     setSaveFreq]     = React.useState('');
   const [saveNote,     setSaveNote]     = React.useState('');
@@ -335,7 +338,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       const wemT = judgeRes ? judgeRes.components.filter(c => c.wem.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
       const sheT = judgeRes ? judgeRes.components.filter(c => c.she.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
       await window.WV_API.addMsdsLedger({
-        siteId: site.id, 사업장명: site.name,
+        siteId: site.id, 사업장명: site.name, 부서: saveDept,
         제품명: form.productName, 제조회사: form.companyName, 개정일자: form.revisionDate,
         사용용도: saveUsage, 사용빈도: saveFreq, 비고: saveNote,
         신호어: form.signalWord, ghsIds: ghsSel.join(','), ppeIds: ppeSel.join(','),
@@ -1018,6 +1021,14 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                   </select>
                   {allowedSites.length === 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>담당 사업장이 없습니다. 관리자에게 문의하세요.</span>}
                 </label>
+                <label style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
+                  <select className="field-select" value={saveDept} onChange={e => setSaveDept(e.target.value)}
+                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13 }}>
+                    <option value="">선택 안 함</option>
+                    {MSDS_DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <span style={{ fontSize: 11, color: 'var(--fg-3, #667085)', fontWeight: 400 }}>팀을 지정하면 관리대장에서 팀별로 구분·출력할 수 있어요.</span>
+                </label>
                 <label style={{ fontSize: 12.5, fontWeight: 700 }}>사용용도
                   <input className="field-input" value={saveUsage} onChange={e => setSaveUsage(e.target.value)} placeholder="예: 바닥 전용 세척제"
                     style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
@@ -1250,6 +1261,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const [sites, setSites]     = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [siteFilter, setSiteFilter] = React.useState('전체');
+  const [deptFilter, setDeptFilter] = React.useState('전체');   // 부서(팀) 알약 필터
   const [editItem, setEditItem] = React.useState(null);   // 목록에서 직접 수정 중인 행
   const [editForm, setEditForm] = React.useState({});
   const [savingEdit, setSavingEdit] = React.useState(false);
@@ -1278,10 +1290,16 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   }, [items, sites, role, currentUser]);
 
   const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
-  const filtered = visible.filter(it => siteFilter === '전체' || it['사업장명'] === siteFilter);
+  // 부서(팀) 매칭: '전체'=모두, '미분류'=부서 비어있음, 그 외=정확히 일치
+  const matchDept = (it) => deptFilter === '전체' || (deptFilter === '미분류' ? !String(it['부서'] || '').trim() : it['부서'] === deptFilter);
+  const hasUnassigned = React.useMemo(() => visible.some(it => !String(it['부서'] || '').trim()), [visible]);
+  const filtered = visible.filter(it => (siteFilter === '전체' || it['사업장명'] === siteFilter) && matchDept(it));
   // 사업장 컬럼은 '전체'로 여러 사업장을 볼 때만. 사업장 계정(1곳)이나 특정 사업장 필터 시엔 제목 아래 사업장명만 표기.
   const showSiteCol = siteFilter === '전체' && siteNames.length > 1;
   const soleSite = siteFilter !== '전체' ? siteFilter : (siteNames.length === 1 ? siteNames[0] : '');
+  // 부서 컬럼은 '전체' 볼 때만 표시(특정 팀 선택 시엔 제목에 팀명 표기)
+  const showDeptCol = deptFilter === '전체';
+  const soleDept = deptFilter !== '전체' && deptFilter !== '미분류' ? deptFilter : '';
 
   // 담당 사업장 집합 (본인 사업장 항목은 작성자가 관리자여도 관리 가능)
   const myAllowedSiteIds = React.useMemo(() => {
@@ -1301,6 +1319,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const openEdit = (it) => {
     setEditItem(it);
     setEditForm({
+      부서: it['부서'] || '',
       제품명: it['제품명'] || '', 제조회사: it['제조회사'] || '', 개정일자: it['개정일자'] || '',
       사용용도: it['사용용도'] || '', 사용빈도: it['사용빈도'] || '',
       측정대상: it['측정대상'] || '', 특검대상: it['특검대상'] || '',
@@ -1375,6 +1394,23 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
         </div>
       </div>
 
+      {/* ── 부서(팀) 알약 버튼 — 팀별 대장 구분 ── */}
+      <div className="ledger-no-print" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+        <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--fg-3)', marginRight: 2 }}>팀 구분</span>
+        {['전체', ...MSDS_DEPTS, ...(hasUnassigned ? ['미분류'] : [])].map(d => {
+          const on = deptFilter === d;
+          return (
+            <button key={d} onClick={() => setDeptFilter(d)}
+              style={{ padding: '7px 16px', borderRadius: 999, fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                border: on ? '1px solid var(--primary)' : '1px solid var(--line)',
+                background: on ? 'var(--primary)' : 'var(--bg, #fff)',
+                color: on ? '#fff' : 'var(--fg-2)' }}>
+              {d}{d !== '전체' && <span style={{ marginLeft: 6, fontSize: 11, opacity: .85 }}>{visible.filter(it => d === '미분류' ? !String(it['부서'] || '').trim() : it['부서'] === d).length}</span>}
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--fg-3)' }}>불러오는 중…</div>
       ) : filtered.length === 0 ? (
@@ -1387,7 +1423,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
       ) : (
         <div className="card ledger-print" style={{ overflowX: 'auto' }}>
           <div style={{ padding: '14px 16px 4px' }}>
-            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장</div>
+            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장{soleDept && ` — ${soleDept}`}</div>
             {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, tableLayout: 'auto' }}>
@@ -1395,6 +1431,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
               <tr>
                 <th style={{ ...th, width: 34 }}>구분</th>
                 {showSiteCol && <th style={th}>사업장</th>}
+                {showDeptCol && <th style={{ ...th, width: 70 }}>부서</th>}
                 <th style={th}>제품명</th>
                 <th style={th}>제조회사</th>
                 <th style={th}>사용용도</th>
@@ -1414,6 +1451,7 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                   <tr key={it.id}>
                     <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
                     {showSiteCol && <td style={td}>{it['사업장명']}</td>}
+                    {showDeptCol && <td style={td}>{String(it['부서'] || '').trim() ? it['부서'] : <span style={{ color: 'var(--fg-4)' }}>미분류</span>}</td>}
                     <td style={{ ...td, fontWeight: 600, wordBreak: 'break-word' }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
                     <td style={{ ...td, wordBreak: 'break-word' }}>{it['제조회사'] || '—'}</td>
                     <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용용도'] || '—'}</td>
@@ -1460,6 +1498,12 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 이 사업장 관리대장에 저장된 내용을 직접 수정합니다.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <label style={{ ...lb, gridColumn: '1 / -1' }}>부서(팀)
+                  <select className="field-select" value={editForm['부서'] || ''} onChange={e => ef('부서', e.target.value)} style={inp}>
+                    <option value="">미분류</option>
+                    {MSDS_DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </label>
                 <div style={{ gridColumn: '1 / -1' }}>{field('제품명', '예: 무광 마감제')}</div>
                 {field('제조회사')}
                 {field('개정일자', '예: 2023.05.01')}
