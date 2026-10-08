@@ -592,6 +592,24 @@ async function initDB() {
     console.error('사업장 담당자 정리 실패:', e);
   }
 
+  // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
+  //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
+  //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
+  //   (부산·대구·광주·대전지사는 각 사업본부로 취급하므로 그대로 둠)
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='accident_hq_fix_v1'");
+    if (done.rowCount === 0) {
+      await pool.query(`UPDATE accidents SET "location" = '신분당선타워 ' || COALESCE("location", '')
+                        WHERE "hqName" = '신분당선타워' AND COALESCE("location", '') NOT LIKE '신분당선타워%'`);
+      const r1 = await pool.query(`UPDATE accidents SET "hqName" = 'FM사업본부' WHERE "hqName" = '신분당선타워'`);
+      const r2 = await pool.query(`UPDATE accidents SET "hqName" = 'CRM사업본부' WHERE "hqName" IN ('CRM1팀','CRM3팀','마케팅지원팀')`);
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('accident_hq_fix_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 산업재해 본부 교정 v1: 신분당선타워→FM ${r1.rowCount}건, CRM계열→CRM사업본부 ${r2.rowCount}건`);
+    }
+  } catch (e) {
+    console.error('산업재해 본부 교정 실패:', e);
+  }
+
   // ── 산재 사업개시번호 매핑(1회) — 급여기초(26.09.30) '운영중' 사업장 기준 ──
   // data/site_open_no_20260930.json
   //   · register  : 위드윌·KBCI·동부캐리어 운영중 사업장 → 먼저 등록(이미 같은 이름이 있으면 등록 생략) 후 개시번호 입력

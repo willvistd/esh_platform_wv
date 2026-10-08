@@ -13,6 +13,8 @@ const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "�
 const IA_EMP_TYPES = ["직영", "계약", "도급·협력사", "파견"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
 const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
+// 본부(관리조직) 목록 — 자유 입력을 막고 실제 본부/지사에서만 선택. 추가·변경은 이 배열만 수정.
+const IA_HQS = ["FM사업본부", "HR사업본부", "CRM사업본부", "공항사업본부", "KBCI", "부산지사", "대구지사", "광주지사", "대전지사"];
 // 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
 const iaIsApproved = (s) => s === "승인" || s === "요양중" || s === "치료종결";
 
@@ -449,8 +451,11 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>본부 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(관리 조직)</span></label>
-              <input className="field-input" list="ia-hq-list" value={f.hqName} onChange={e => upd("hqName", e.target.value)} placeholder="예: HR사업본부 / 부산지사" />
-              <datalist id="ia-hq-list">{(hqs || []).map(h => <option key={h.id} value={h.name} />)}</datalist>
+              <select className="field-input" value={IA_HQS.includes(f.hqName) ? f.hqName : (f.hqName ? "__other__" : "")} onChange={e => upd("hqName", e.target.value === "__other__" ? f.hqName : e.target.value)}>
+                <option value="">— 본부 선택 —</option>
+                {IA_HQS.map(h => <option key={h} value={h}>{h}</option>)}
+                {f.hqName && !IA_HQS.includes(f.hqName) && <option value="__other__">{f.hqName} (목록 외)</option>}
+              </select>
             </div>
             <div>
               <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장이면 선택)</span></label>
