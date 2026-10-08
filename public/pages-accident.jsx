@@ -288,7 +288,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                 return (
                   <React.Fragment key={a.id}>
                     <tr id={"acc-row-" + a.id} onClick={() => setExpandedId(open ? null : a.id)}
-                      style={{ cursor: "pointer", background: a.isSerious ? "rgba(220,38,38,0.05)" : (open ? "var(--primary-soft)" : "transparent") }}>
+                      style={{ cursor: "pointer", background: a.isSerious ? "rgba(220,38,38,0.05)" : (open ? "var(--bg)" : "transparent") }}>
                       <td style={{ ...TD, fontWeight: 700 }}>{hqNameOf(a) || "-"}</td>
                       <td style={TD}>
                         <div style={{ fontWeight: 700 }}>{placeOf(a) || "(미지정)"}{a.isSerious && <span style={{ marginLeft: 6, fontSize: 10.5, fontWeight: 800, color: "#dc2626" }}>● 중대재해</span>}</div>
@@ -304,8 +304,8 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                     </tr>
                     {open && (
                       <tr>
-                        <td colSpan={9} style={{ padding: "4px 16px 18px", background: "var(--primary-soft)", borderBottom: "1px solid var(--line)" }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px 24px", fontSize: 13 }}>
+                        <td colSpan={9} style={{ padding: "10px 16px 18px", background: "var(--bg-elev)", borderBottom: "1px solid var(--line)" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", fontSize: 13, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--bg-elev)" }}>
                             <IADetail label="본부" v={hqNameOf(a)} />
                             <IADetail label="재해구분" v={a.category} />
                             <IADetail label="발생장소" v={a.location} />
@@ -355,8 +355,8 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 };
 
 const IADetail = ({ label, v, full }) => (
-  <div style={{ gridColumn: full ? "1 / -1" : "auto" }}>
-    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", marginBottom: 2 }}>{label}</div>
+  <div style={{ gridColumn: full ? "1 / -1" : "auto", borderRight: "1px solid var(--line)", borderBottom: "1px solid var(--line)", padding: "8px 12px" }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", marginBottom: 3 }}>{label}</div>
     <div style={{ whiteSpace: "pre-wrap", color: v ? "var(--fg)" : "var(--fg-4)" }}>{v || "-"}</div>
   </div>
 );
