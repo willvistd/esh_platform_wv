@@ -337,17 +337,32 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     if (!site) { setLedgerMsg('사업장을 선택하세요.'); return; }
     setSavingLedger(true); setLedgerMsg('');
     try {
-      const wemT = judgeRes ? judgeRes.components.filter(c => c.wem.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
-      const sheT = judgeRes ? judgeRes.components.filter(c => c.she.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
+      // 판정이 아직 안 된 상태면 저장 직전에 자동 판정(내부 법정물질 DB 대조 — AI/외부 API 미사용).
+      // → 유해인자(측정대상·특검대상)가 빈 채로 저장되는 것을 방지.
+      let jr = judgeRes;
+      if (!jr && Array.isArray(components) && components.length) {
+        setLedgerMsg('유해인자 판정 중…');
+        try {
+          const res = await fetch('/api/substances/judge', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ components, product: { name: form.productName, manufacturer: form.companyName, revisionDate: form.revisionDate || '' } }),
+          });
+          const d = await res.json();
+          if (!d.error) { jr = d; setJudgeRes(d); }
+        } catch (e) {}
+        setLedgerMsg('');
+      }
+      const wemT = jr ? jr.components.filter(c => c.wem.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
+      const sheT = jr ? jr.components.filter(c => c.she.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ') : '';
       await window.WV_API.addMsdsLedger({
         siteId: site.id, 사업장명: site.name, 부서: saveDept,
         제품명: form.productName, 제조회사: form.companyName, 개정일자: form.revisionDate,
         사용용도: saveUsage, 사용빈도: saveFreq, 비고: saveNote,
         신호어: form.signalWord, ghsIds: ghsSel.join(','), ppeIds: ppeSel.join(','),
         측정대상: wemT, 특검대상: sheT,
-        특별관리물질: !!(judgeRes && judgeRes.summary && judgeRes.summary.special_substance),
+        특별관리물질: !!(jr && jr.summary && jr.summary.special_substance),
         성분: JSON.stringify(components || []),
-        판정결과: judgeRes ? JSON.stringify(judgeRes) : '',
+        판정결과: jr ? JSON.stringify(jr) : '',
         작성자: (currentUser && currentUser.name) || '',
       });
       setLedgerMsg('✓ 저장 완료! 관리대장에서 확인할 수 있어요.');
