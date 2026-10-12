@@ -487,39 +487,64 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     const target = previewTab === 0
       ? document.querySelector('.msds-card')
       : previewTab === 2
-      ? document.querySelector('.hz-print')
+      ? null
       : document.querySelector('.msds-label-wrap');
-    if (!target) return;
+    if (previewTab !== 2 && !target) return;
 
     // PDF 저장 파일명 — 인식된 제품명 기준 자동 ('제품명 관리요령'). 파일명 금지문자 제거.
     const safeName = (s) => String(s || '').replace(/[\\/:*?"<>|\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
     const prod = safeName(form.productName);
     const pdfTitle = (prod ? prod + ' ' : '') + (previewTab === 0 ? '관리요령' : previewTab === 2 ? '유해인자 분석' : '경고표지');
 
-    const html = target.outerHTML.replace(/src="(assets\/)/g, `src="${base}$1`);
+    let html;
+    if (previewTab === 2) {
+      // 관리요령 서식에 준하는 분석표(회색 제목 바 + #999 테두리 표) — judgeRes로 직접 구성
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+      const compName = (c) => { const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim(); return ko ? (sub && sub !== ko ? `${ko} (${sub})` : ko) : (c.name || '—'); };
+      const RL = { TARGET: '측정 대상', BELOW_THRESHOLD: '기준 미달', NOT_LISTED: '대상 아님', UNDETERMINED: '판정 불가' };
+      const sm = judgeRes.summary || {};
+      const rows = judgeRes.components.map((c, i) => {
+        const flags = c.flags.filter(f => f !== '이름매칭(신뢰도 낮음)').join(', ');
+        return `<tr><td class="hz-c">${i + 1}</td><td>${esc(compName(c))}</td>`
+          + `<td class="hz-c" style="font-family:monospace">${esc(c.cas || c.cas_raw || '—')}</td>`
+          + `<td class="hz-c">${esc(c.content_raw || '—')}</td>`
+          + `<td class="hz-c">${esc(RL[c.wem.result] || c.wem.result)}</td>`
+          + `<td class="hz-c">${c.she.result === 'TARGET' ? '대상' : '—'}</td>`
+          + `<td>${esc(flags)}</td></tr>`;
+      }).join('');
+      const warn = (sm.special_substance || sm.permit_substance)
+        ? `<tr><td colspan="7" style="color:#b42318;font-weight:700">⚠ ${sm.special_substance ? '특별관리물질 포함' : ''}${sm.permit_substance ? ' · 허가대상물질 포함' : ''} — 별도 관리·기록 의무가 있습니다.</td></tr>` : '';
+      const notices = (judgeRes.notices || []).map(n => `<li>${esc(n)}</li>`).join('')
+        + `<li>판정일 ${esc(judgeRes.judged_at)} · 법령 데이터 기준일 ${esc(judgeRes.data_baseline)}</li>`;
+      html = `<div class="msds-card">`
+        + `<div class="msds-card-title">작업환경측정 · 특수건강진단 유해인자 분석표</div>`
+        + `<table class="msds-ft"><colgroup><col style="width:38px"/><col/><col style="width:108px"/><col style="width:72px"/><col style="width:84px"/><col style="width:62px"/><col style="width:22%"/></colgroup><tbody>`
+        + `<tr><td class="msds-fl">제 품 명</td><td colspan="6" style="font-size:17px;font-weight:800;text-align:center">${esc(prod) || '—'}</td></tr>`
+        + `<tr><td class="msds-fl">제조사</td><td colspan="3">${esc(safeName(form.companyName)) || '—'}</td><td class="msds-fl">판정일</td><td colspan="2" class="hz-c">${esc(judgeRes.judged_at)}</td></tr>`
+        + `<tr><td class="msds-fh" colspan="7">유해인자 판정 결과 &nbsp; (측정대상 ${sm.wem_target_count || 0} · 특수검진 ${sm.she_target_count || 0} · 기준미달 ${sm.wem_below_count || 0} · 판정불가 ${sm.undetermined_count || 0} · 대상아님 ${sm.not_listed_count || 0})</td></tr>`
+        + `<tr><td class="msds-fl">연번</td><td class="msds-fl">성분명</td><td class="msds-fl">CAS No.</td><td class="msds-fl">함유량</td><td class="msds-fl">작업환경측정</td><td class="msds-fl">특수검진</td><td class="msds-fl">비고(특별관리 등)</td></tr>`
+        + rows + warn
+        + `</tbody></table>`
+        + `<ul style="font-size:10.5px;color:#555;margin:6px 2px 0;padding-left:16px;line-height:1.6">${notices}</ul>`
+        + `</div>`;
+    } else {
+      html = target.outerHTML.replace(/src="(assets\/)/g, `src="${base}$1`);
+    }
 
-    const labelCss = previewTab === 0 ? `
-      /* 카드 외곽 border 제거. 제목이 자체적으로 외곽선 역할.
-         width를 4px 줄여 카드(제목+표) 우측 끝을 페이지 인쇄영역 경계에서 띄움.
-         → 우측 외곽선이 경계에 걸려 안티앨리어싱으로 흐려지는 현상 방지(좌측은 0에 붙어 또렷, 우측도 동일하게). */
+    // 관리요령·분석표 공용 카드 서식(회색 제목 바 + #999 테두리 표 + 회색 라벨칸)
+    const cardCss = `
       .msds-card { width:calc(100% - 4px); border:none; box-sizing:border-box; }
       .msds-card-title { background:#e8ecf0; text-align:center; padding:9px; font-size:14px; font-weight:700; border:1px solid #999; border-bottom:none; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      /* border-collapse는 인쇄 시 우측·하단 외곽선이 얇아지는 버그가 있음.
-         → separate 로 바꿔 '표=상·좌, 셀=우·하' 로 그리면 외곽선을 셀이 직접 그려 좌우 동일한 1px 보장. */
       .msds-ft { width:100%; border-collapse:separate; border-spacing:0; border-top:1px solid #999; border-left:1px solid #999; }
       .msds-ft td { border-right:1px solid #999; border-bottom:1px solid #999; padding:4px 9px; font-size:11px; vertical-align:top; line-height:1.7; }
       .msds-ft, .msds-ft td, .msds-card-title { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .msds-fl { background:#e8ecf0 !important; font-weight:700; text-align:center; vertical-align:middle !important; white-space:nowrap; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .msds-fh { background:#e8ecf0 !important; font-weight:700; font-size:11px; vertical-align:middle !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    ` : previewTab === 2 ? `
-      /* ── 유해인자 분석 인쇄 — 셀 테두리 + 배지 색상 유지 ── */
-      .hz-print { max-width: 100% !important; }
-      .hz-no-print { display: none !important; }
-      .hz-print table { width:100%; border-collapse:collapse; }
-      .hz-print th, .hz-print td { border:1px solid #c0c6d0; padding:5px 8px; font-size:11px; vertical-align:top; }
-      .hz-print th { background:#eef2f7; }
-      .hz-print *, .hz-print *::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    ` : `
+      .hz-c { text-align:center; }
+    `;
+    const labelCss = previewTab === 0 ? cardCss
+      : previewTab === 2 ? cardCss
+      : `
       /* ── 경고표지(폼텍 라벨지) 인쇄 — @page 여백 0, 라벨지 실측 여백을 padding으로 재현 ── */
       @page { size: 210mm 297mm; margin: 0; }
       body { display: block; }
