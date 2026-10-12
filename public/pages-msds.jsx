@@ -74,7 +74,7 @@ const MsdsInlineEdit = ({ value, onChange, placeholder, rows, isSelect, bold, ce
           {bullets ? '· ' + l.replace(/^[·•\-\s]+/, '') : l}
           {i < a.length - 1 && <br />}
         </React.Fragment>)
-    : <span className="msds-ph" style={{ color: '#bbb', fontWeight: 400 }}>{placeholder || '—'}</span>;
+    : <span className="msds-ph" style={{ color: '#bbb', fontWeight: 400 }}>{placeholder || ''}</span>;
 
   if (editing) {
     if (isSelect) {
@@ -148,7 +148,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
     const lines = [H.map(q).join(',')];
     const compName = c => { const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim(); return ko ? (sub && sub !== ko ? `${ko} (${sub})` : ko) : c.name; };
     judgeRes.components.forEach((c, i) => lines.push([i + 1, judgeRes.product_name || (product && product.name) || '', compName(c), c.cas || c.cas_raw || '', c.content_raw, '', '', '',
-      (RES[c.wem.result] || {}).label || c.wem.result, c.she.result === 'TARGET' ? '대상' : '—',
+      (RES[c.wem.result] || {}).label || c.wem.result, c.she.result === 'TARGET' ? '대상' : '',
       c.flags.includes('특별관리물질') ? '○' : '', c.flags.includes('허가대상물질') ? '○' : '', c.wem.reason, judgeRes.judged_at, judgeRes.data_baseline].map(q).join(',')));
     const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -205,16 +205,16 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
                   <td style={td}>{(() => {
                     const ko = c.name_ko && c.name_ko.trim();
                     const sub = (c.name_en && c.name_en.trim()) || (c.name && c.name.trim());
-                    if (!ko && !c.name) return <span style={{ color: '#bbb' }}>—</span>;
+                    if (!ko && !c.name) return <span style={{ color: '#bbb' }}></span>;
                     return (<>
                       <div style={{ fontWeight: 600 }}>{ko || c.name}</div>
                       {ko && sub && sub !== ko && <div style={{ fontSize: 11, color: '#98a2b3' }}>{sub}</div>}
                     </>);
                   })()}</td>
-                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{c.cas || c.cas_raw || '—'}</td>
-                  <td style={td}>{c.content_raw || '—'}</td>
+                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{c.cas || c.cas_raw || ''}</td>
+                  <td style={td}>{c.content_raw || ''}</td>
                   <td style={td}>{badge(c.wem.result)}</td>
-                  <td style={td}><span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: c.she.result === 'TARGET' ? '#eafaf0' : '#eef2f7', color: c.she.result === 'TARGET' ? '#087443' : '#98a2b3', border: `1px solid ${c.she.result === 'TARGET' ? '#bce8cf' : '#e0e5ec'}` }}>{c.she.result === 'TARGET' ? '대상' : '—'}</span></td>
+                  <td style={td}>{c.she.result === 'TARGET' ? <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: '#eafaf0', color: '#087443', border: '1px solid #bce8cf' }}>대상</span> : null}</td>
                   <td style={td}>{c.flags.filter(f => f !== '이름매칭(신뢰도 낮음)').map((f, k) => (<span key={k} style={{ display: 'inline-block', fontSize: 11, background: '#eef2f7', color: '#475467', borderRadius: 5, padding: '1px 6px', margin: '1px 2px 1px 0' }}>{f}</span>))}{c.match_method === 'keyword' && <span style={{ fontSize: 11, color: '#b25e09' }}>이름매칭</span>}</td>
                 </tr>
               ))}
@@ -500,28 +500,42 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     if (previewTab === 2) {
       // 관리요령 서식에 준하는 분석표(회색 제목 바 + #999 테두리 표) — judgeRes로 직접 구성
       const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
-      const compName = (c) => { const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim(); return ko ? (sub && sub !== ko ? `${ko} (${sub})` : ko) : (c.name || '—'); };
+      const compName = (c) => { const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim(); return ko ? (sub && sub !== ko ? `${ko} (${sub})` : ko) : (c.name || ''); };
       const RL = { TARGET: '측정 대상', BELOW_THRESHOLD: '기준 미달', NOT_LISTED: '대상 아님', UNDETERMINED: '판정 불가' };
+      const WS = { TARGET: ['#b42318', '#fdeeee'], BELOW_THRESHOLD: ['#b25e09', '#fff7e6'], NOT_LISTED: ['#475467', '#eef2f7'], UNDETERMINED: ['#6941c6', '#f2eefe'] };
       const sm = judgeRes.summary || {};
+      const pill = (text, fg, bg) => `<span style="display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:5px;background:${bg};color:${fg};-webkit-print-color-adjust:exact;print-color-adjust:exact">${text}</span>`;
+      const tile = (label, n, fg, bg) => `<div style="background:${bg};color:${fg};border-radius:8px;padding:7px 14px;min-width:74px;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact"><div style="font-size:18px;font-weight:800">${n}</div><div style="font-size:11px;font-weight:600">${label}</div></div>`;
+      const tiles = `<div style="display:flex;gap:7px;flex-wrap:wrap">`
+        + tile('측정 대상', sm.wem_target_count || 0, '#b42318', '#fdeeee')
+        + tile('특수검진', sm.she_target_count || 0, '#087443', '#eafaf0')
+        + tile('기준 미달', sm.wem_below_count || 0, '#b25e09', '#fff7e6')
+        + tile('판정 불가', sm.undetermined_count || 0, '#6941c6', '#f2eefe')
+        + tile('대상 아님', sm.not_listed_count || 0, '#475467', '#eef2f7')
+        + `</div>`;
       const rows = judgeRes.components.map((c, i) => {
         const flags = c.flags.filter(f => f !== '이름매칭(신뢰도 낮음)').join(', ');
+        const [wfg, wbg] = WS[c.wem.result] || WS.NOT_LISTED;
+        const wemCell = pill(RL[c.wem.result] || c.wem.result, wfg, wbg);
+        const sheCell = c.she.result === 'TARGET' ? pill('대상', '#087443', '#eafaf0') : '';
         return `<tr><td class="hz-c">${i + 1}</td><td>${esc(compName(c))}</td>`
-          + `<td class="hz-c" style="font-family:monospace">${esc(c.cas || c.cas_raw || '—')}</td>`
-          + `<td class="hz-c">${esc(c.content_raw || '—')}</td>`
-          + `<td class="hz-c">${esc(RL[c.wem.result] || c.wem.result)}</td>`
-          + `<td class="hz-c">${c.she.result === 'TARGET' ? '대상' : '—'}</td>`
+          + `<td class="hz-c" style="font-family:monospace">${esc(c.cas || c.cas_raw || '')}</td>`
+          + `<td class="hz-c">${esc(c.content_raw || '')}</td>`
+          + `<td class="hz-c">${wemCell}</td>`
+          + `<td class="hz-c">${sheCell}</td>`
           + `<td>${esc(flags)}</td></tr>`;
       }).join('');
       const warn = (sm.special_substance || sm.permit_substance)
-        ? `<tr><td colspan="7" style="color:#b42318;font-weight:700">⚠ ${sm.special_substance ? '특별관리물질 포함' : ''}${sm.permit_substance ? ' · 허가대상물질 포함' : ''} — 별도 관리·기록 의무가 있습니다.</td></tr>` : '';
+        ? `<tr><td colspan="7" style="color:#b42318;font-weight:700;background:#fef3f2;-webkit-print-color-adjust:exact;print-color-adjust:exact">⚠ ${sm.special_substance ? '특별관리물질 포함' : ''}${sm.permit_substance ? ' · 허가대상물질 포함' : ''} (별도 관리·기록 의무)</td></tr>` : '';
       const notices = (judgeRes.notices || []).map(n => `<li>${esc(n)}</li>`).join('')
         + `<li>판정일 ${esc(judgeRes.judged_at)} · 법령 데이터 기준일 ${esc(judgeRes.data_baseline)}</li>`;
       html = `<div class="msds-card">`
         + `<div class="msds-card-title">작업환경측정 · 특수건강진단 유해인자 분석표</div>`
-        + `<table class="msds-ft"><colgroup><col style="width:38px"/><col/><col style="width:108px"/><col style="width:72px"/><col style="width:84px"/><col style="width:62px"/><col style="width:22%"/></colgroup><tbody>`
-        + `<tr><td class="msds-fl">제 품 명</td><td colspan="6" style="font-size:17px;font-weight:800;text-align:center">${esc(prod) || '—'}</td></tr>`
-        + `<tr><td class="msds-fl">제조사</td><td colspan="3">${esc(safeName(form.companyName)) || '—'}</td><td class="msds-fl">판정일</td><td colspan="2" class="hz-c">${esc(judgeRes.judged_at)}</td></tr>`
-        + `<tr><td class="msds-fh" colspan="7">유해인자 판정 결과 &nbsp; (측정대상 ${sm.wem_target_count || 0} · 특수검진 ${sm.she_target_count || 0} · 기준미달 ${sm.wem_below_count || 0} · 판정불가 ${sm.undetermined_count || 0} · 대상아님 ${sm.not_listed_count || 0})</td></tr>`
+        + `<table class="msds-ft"><colgroup><col style="width:38px"/><col/><col style="width:108px"/><col style="width:72px"/><col style="width:88px"/><col style="width:66px"/><col style="width:22%"/></colgroup><tbody>`
+        + `<tr><td class="msds-fl">제 품 명</td><td colspan="6" style="font-size:17px;font-weight:800;text-align:center">${esc(prod)}</td></tr>`
+        + `<tr><td class="msds-fl">제조사</td><td colspan="3">${esc(safeName(form.companyName))}</td><td class="msds-fl">판정일</td><td colspan="2" class="hz-c">${esc(judgeRes.judged_at)}</td></tr>`
+        + `<tr><td class="msds-fh" colspan="7">유해인자 판정 결과 요약</td></tr>`
+        + `<tr><td colspan="7" style="padding:9px">${tiles}</td></tr>`
         + `<tr><td class="msds-fl">연번</td><td class="msds-fl">성분명</td><td class="msds-fl">CAS No.</td><td class="msds-fl">함유량</td><td class="msds-fl">작업환경측정</td><td class="msds-fl">특수검진</td><td class="msds-fl">비고(특별관리 등)</td></tr>`
         + rows + warn
         + `</tbody></table>`
@@ -1491,14 +1505,14 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                     {showSiteCol && <td style={td}>{it['사업장명']}</td>}
                     {showDeptCol && <td style={td}>{String(it['부서'] || '').trim() ? it['부서'] : <span style={{ color: 'var(--fg-4)' }}>미분류</span>}</td>}
                     <td style={{ ...td, fontWeight: 600, wordBreak: 'break-word' }}>{it['제품명']}{it['특별관리물질'] && <span className="ledger-badge" style={{ marginLeft: 6, fontSize: 10, background: '#fdeeee', color: '#b42318', border: '1px solid #f3c0bd', borderRadius: 5, padding: '1px 5px' }}>특별관리</span>}</td>
-                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['제조회사'] || '—'}</td>
-                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용용도'] || '—'}</td>
-                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용빈도'] || '—'}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['제조회사'] || ''}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용용도'] || ''}</td>
+                    <td style={{ ...td, wordBreak: 'break-word' }}>{it['사용빈도'] || ''}</td>
                     <td style={{ ...td, whiteSpace: 'nowrap', color: stale ? '#c0392b' : undefined, fontWeight: stale ? 700 : undefined }}>
-                      {it['개정일자'] || '—'}{stale && <span className="ledger-warn" title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
+                      {it['개정일자'] || ''}{stale && <span className="ledger-warn" title="개정일 3년 초과 — 최신본 확인 필요"> ⚠</span>}
                     </td>
-                    <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{targets || '—'}</td>
-                    <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{it['비고'] || '—'}</td>
+                    <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{targets || ''}</td>
+                    <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{it['비고'] || ''}</td>
                     <td style={{ ...td }} className="ledger-no-print">
                       <div style={{ display: 'flex', gap: 2 }}>
                         {canDelete(it) && <button className="btn btn-ghost btn-sm" title="수정" onClick={() => openEdit(it)} style={{ color: '#2563eb' }}><Icon name="edit" size={12} /></button>}
@@ -1729,11 +1743,11 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
                   <td style={{ ...td, color: 'var(--fg-3)' }}>{i + 1}</td>
                   {showSiteCol && <td style={td}>{r.site}</td>}
                   <td style={{ ...td, fontWeight: 600, wordBreak: 'break-word' }}>{r.name}</td>
-                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas || '—'}</td>
+                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas || ''}</td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.wem, '작측', 'red')}</span></td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.she, '특검', 'green')}</span></td>
-                  <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{[...r.freqs].join(' / ') || '—'}</td>
-                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{[...r.products].join(', ') || '—'}</td>
+                  <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{[...r.freqs].join(' / ') || ''}</td>
+                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{[...r.products].join(', ') || ''}</td>
                 </tr>
               ))}
             </tbody>
