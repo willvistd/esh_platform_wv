@@ -347,6 +347,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         측정대상: wemT, 특검대상: sheT,
         특별관리물질: !!(judgeRes && judgeRes.summary && judgeRes.summary.special_substance),
         성분: JSON.stringify(components || []),
+        판정결과: judgeRes ? JSON.stringify(judgeRes) : '',
         작성자: (currentUser && currentUser.name) || '',
       });
       setLedgerMsg('✓ 저장 완료! 관리대장에서 확인할 수 있어요.');
@@ -1584,6 +1585,91 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   );
 };
 
+// ── 판정 상세 팝업 (목록표에서 제품명 클릭 시) — 저장된 판정결과 우선, 없으면 성분으로 재구성 ──
+const MsdsJudgeDetailModal = ({ item, onClose }) => {
+  const data = React.useMemo(() => {
+    const norm = (v) => String(v || '').replace(/\s+/g, '').toLowerCase();
+    let jr = null;
+    try { jr = item['판정결과'] ? JSON.parse(item['판정결과']) : null; } catch (e) {}
+    if (jr && Array.isArray(jr.components) && jr.components.length) {
+      return {
+        approx: false, judged_at: jr.judged_at || '', data_baseline: jr.data_baseline || '',
+        summary: jr.summary || {}, notices: jr.notices || [],
+        rows: jr.components.map(c => {
+          const ko = (c.name_ko || '').trim(); const sub = ((c.name_en || c.name) || '').trim();
+          return { name: ko || c.name || '', sub: (ko && sub && sub !== ko) ? sub : '',
+            cas: c.cas || c.cas_raw || '', content: c.content_raw || '',
+            wem: (c.wem && c.wem.result) || 'NOT_LISTED', she: !!(c.she && c.she.result === 'TARGET'),
+            flags: (c.flags || []).filter(f => f !== '이름매칭(신뢰도 낮음)') };
+        }),
+      };
+    }
+    // 재구성: 저장된 성분 + 측정대상/특검대상 이름으로 추정
+    let comps = []; try { comps = JSON.parse(item['성분'] || '[]'); } catch (e) {}
+    const wemSet = new Set((item['측정대상'] || '').split(/[,、·/]/).map(norm).filter(Boolean));
+    const sheSet = new Set((item['특검대상'] || '').split(/[,、·/]/).map(norm).filter(Boolean));
+    const rows = comps.map(c => {
+      const names = [c.name_ko, c.name, c.name_en].filter(Boolean);
+      return { name: (c.name_ko || c.name || ''), sub: '', cas: (c.cas || c.cas_raw || ''), content: (c.content || c.content_raw || ''),
+        wem: names.some(n => wemSet.has(norm(n))) ? 'TARGET' : 'NOT_LISTED', she: names.some(n => sheSet.has(norm(n))), flags: [] };
+    });
+    const summary = { wem_target_count: rows.filter(r => r.wem === 'TARGET').length, she_target_count: rows.filter(r => r.she).length,
+      wem_below_count: 0, undetermined_count: 0, not_listed_count: rows.filter(r => r.wem !== 'TARGET').length, special_substance: !!item['특별관리물질'] };
+    return { approx: true, judged_at: '', data_baseline: '', summary, notices: [], rows };
+  }, [item]);
+
+  const RL = { TARGET: '측정 대상', BELOW_THRESHOLD: '기준 미달', NOT_LISTED: '대상 아님', UNDETERMINED: '판정 불가' };
+  const WS = { TARGET: ['#b42318', '#fdeeee', '#f3c0bd'], BELOW_THRESHOLD: ['#b25e09', '#fff7e6', '#f5d199'], NOT_LISTED: ['#475467', '#eef2f7', '#e0e5ec'], UNDETERMINED: ['#6941c6', '#f2eefe', '#d9ccf7'] };
+  const pill = (t, fg, bg, bd) => <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 9px', borderRadius: 6, background: bg, color: fg, border: `1px solid ${bd}`, whiteSpace: 'nowrap' }}>{t}</span>;
+  const sm = data.summary || {};
+  const td = { padding: '7px 9px', borderBottom: '1px solid #eef1f5', fontSize: 12.5, verticalAlign: 'top' };
+  const th = { textAlign: 'left', fontSize: 12, color: '#667085', fontWeight: 700, padding: '7px 9px', borderBottom: '2px solid #e5e9ef', whiteSpace: 'nowrap' };
+  return (
+    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 16px', overflowY: 'auto' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg, #fff)', borderRadius: 12, width: '100%', maxWidth: 720, padding: '20px 22px', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#98a2b3' }}>유해인자 판정{item['사업장명'] ? ' · ' + item['사업장명'] : ''}{item['부서'] ? ' · ' + item['부서'] : ''}</div>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>{item['제품명'] || '(제품명 없음)'}</div>
+          </div>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--fg-3)' }}>×</button>
+        </div>
+        {data.approx && <div style={{ fontSize: 11.5, color: '#b25e09', background: '#fff7e6', border: '1px solid #f5d199', borderRadius: 8, padding: '6px 10px', marginBottom: 10 }}>※ 저장된 성분·대상으로 재구성한 요약입니다. 기준미달·판정불가 등 세부 구분을 정확히 보려면 해당 제품을 다시 판정·저장하세요.</div>}
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 12 }}>
+          {[['측정 대상', sm.wem_target_count, '#b42318', '#fdeeee'], ['특수검진', sm.she_target_count, '#087443', '#eafaf0'], ['기준 미달', sm.wem_below_count, '#b25e09', '#fff7e6'], ['판정 불가', sm.undetermined_count, '#6941c6', '#f2eefe'], ['대상 아님', sm.not_listed_count, '#475467', '#eef2f7']].map(([l, n, fg, bg], k) => (
+            <div key={k} style={{ background: bg, color: fg, borderRadius: 8, padding: '7px 14px', minWidth: 72, textAlign: 'center' }}><div style={{ fontSize: 18, fontWeight: 800 }}>{n || 0}</div><div style={{ fontSize: 11, fontWeight: 600 }}>{l}</div></div>
+          ))}
+        </div>
+        {(sm.special_substance || sm.permit_substance) && <div style={{ padding: '8px 12px', background: '#fef3f2', border: '1px solid #f3c0bd', borderRadius: 8, color: '#b42318', fontSize: 13, marginBottom: 12 }}>⚠ {sm.special_substance ? '특별관리물질 포함' : ''}{sm.permit_substance ? ' · 허가대상물질 포함' : ''} (별도 관리·기록 의무)</div>}
+        <div style={{ overflowX: 'auto', border: '1px solid #e5e9ef', borderRadius: 8 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+            <thead><tr><th style={th}>성분명</th><th style={th}>CAS</th><th style={th}>함유량</th><th style={th}>작업환경측정</th><th style={th}>특수검진</th><th style={th}>구분</th></tr></thead>
+            <tbody>
+              {data.rows.length === 0 && <tr><td style={{ ...td, textAlign: 'center', color: '#98a2b3' }} colSpan={6}>저장된 성분 정보가 없습니다.</td></tr>}
+              {data.rows.map((r, i) => { const [wfg, wbg, wbd] = WS[r.wem] || WS.NOT_LISTED; return (
+                <tr key={i}>
+                  <td style={td}><div style={{ fontWeight: 600 }}>{r.name}</div>{r.sub && <div style={{ fontSize: 11, color: '#98a2b3' }}>{r.sub}</div>}</td>
+                  <td style={{ ...td, fontFamily: 'monospace', fontSize: 12 }}>{r.cas}</td>
+                  <td style={td}>{r.content}</td>
+                  <td style={td}>{pill(RL[r.wem] || r.wem, wfg, wbg, wbd)}</td>
+                  <td style={td}>{r.she ? pill('대상', '#087443', '#eafaf0', '#bce8cf') : null}</td>
+                  <td style={td}>{r.flags.map((f, k) => <span key={k} style={{ display: 'inline-block', fontSize: 11, background: '#eef2f7', color: '#475467', borderRadius: 5, padding: '1px 6px', margin: '1px 2px 1px 0' }}>{f}</span>)}</td>
+                </tr>
+              ); })}
+            </tbody>
+          </table>
+        </div>
+        {(data.judged_at || data.notices.length > 0) && (
+          <ul style={{ fontSize: 11.5, color: '#667085', marginTop: 10, paddingLeft: 16, lineHeight: 1.6 }}>
+            {data.notices.map((n, i) => <li key={i}>{n}</li>)}
+            {data.judged_at && <li>판정일 {data.judged_at}{data.data_baseline ? ` · 법령 데이터 기준일 ${data.data_baseline}` : ''}</li>}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ── 유해인자(작업환경측정·특수건강진단 대상물질) 목록표 — 사업장 기준 집계 ──
 // MSDS 관리대장에 저장된 측정대상/특검대상/성분을 사업장별로 모아 유해인자 종류를 한눈에 표시.
 const MsdsHazardListView = ({ onNav, currentUser, role }) => {
@@ -1591,6 +1677,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
   const [sites, setSites]     = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [siteFilter, setSiteFilter] = React.useState('전체');
+  const [detailItem, setDetailItem] = React.useState(null);   // 제품명 클릭 → 판정 상세 팝업
 
   React.useEffect(() => {
     setLoading(true);
@@ -1633,10 +1720,10 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
       const add = (nm, which) => {
         const n = String(nm || '').trim(); if (!n) return;
         const key = site + '||' + norm(n);
-        if (!map.has(key)) map.set(key, { site, name: n, wem: false, she: false, cas: '', products: new Set(), freqs: new Set() });
+        if (!map.has(key)) map.set(key, { site, name: n, wem: false, she: false, cas: '', products: new Set(), prodItems: new Map(), freqs: new Set() });
         const r = map.get(key);
         r[which] = true;
-        if (it['제품명']) r.products.add(it['제품명']);
+        if (it['제품명']) { r.products.add(it['제품명']); if (!r.prodItems.has(it['제품명'])) r.prodItems.set(it['제품명'], it); }
         if (it['사용빈도']) r.freqs.add(String(it['사용빈도']).trim());
         if (!r.cas) r.cas = casOf(n);
       };
@@ -1655,7 +1742,7 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
     <span style={{ fontSize: 11.5, fontWeight: 700, padding: '2px 9px', borderRadius: 6,
       background: on ? (color === 'red' ? '#fdeeee' : '#eafaf0') : 'transparent',
       color: on ? (color === 'red' ? '#b42318' : '#087443') : '#cbd2dc',
-      border: `1px solid ${on ? (color === 'red' ? '#f3c0bd' : '#bce8cf') : 'transparent'}` }}>{on ? '○' : '—'}</span>
+      border: `1px solid ${on ? (color === 'red' ? '#f3c0bd' : '#bce8cf') : 'transparent'}` }}>{on ? '○' : ''}</span>
   );
   // 이동(바로가기) 버튼 — 타원형(알약) 모양으로 클릭 가능함을 명확히 (뒤로가기 버튼 제외)
   const navPill = { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 999, border: 'none', background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' };
@@ -1747,16 +1834,28 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.wem, '작측', 'red')}</span></td>
                   <td style={{ ...td, textAlign: 'center' }}><span className="hz-badge">{chip(r.she, '특검', 'green')}</span></td>
                   <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>{[...r.freqs].join(' / ') || ''}</td>
-                  <td style={{ ...td, fontSize: 11.5, color: 'var(--fg-2)', wordBreak: 'break-word' }}>{[...r.products].join(', ') || ''}</td>
+                  <td style={{ ...td, fontSize: 11.5, wordBreak: 'break-word' }}>
+                    {[...r.prodItems.entries()].map(([pname, pit], k) => (
+                      <span key={k}>
+                        {k > 0 && <span style={{ color: 'var(--fg-4)' }}>, </span>}
+                        <span onClick={() => setDetailItem(pit)} title="판정 상세 보기"
+                          style={{ cursor: 'pointer', color: 'var(--primary)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {pname}<span className="hz-no-print" style={{ color: 'var(--fg-4)', fontWeight: 700 }}> ›</span>
+                        </span>
+                      </span>
+                    ))}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div className="hz-no-print" style={{ padding: '10px 16px', fontSize: 11, color: 'var(--fg-3)', lineHeight: 1.6 }}>
-            ※ MSDS 관리대장의 성분 판정 결과(작업환경측정·특수건강진단 대상)를 사업장 기준으로 자동 집계한 표입니다. 원본 수정은 관리대장에서 하세요.
+            ※ MSDS 관리대장의 성분 판정 결과(작업환경측정·특수건강진단 대상)를 사업장 기준으로 자동 집계한 표입니다. <b>관련 MSDS(제품)명을 클릭하면 판정 상세를 바로 볼 수 있습니다.</b> 원본 수정은 관리대장에서 하세요.
           </div>
         </div>
       )}
+
+      {detailItem && <MsdsJudgeDetailModal item={detailItem} onClose={() => setDetailItem(null)} />}
     </div>
   );
 };

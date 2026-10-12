@@ -390,6 +390,8 @@ async function initDB() {
   await pool.query(`ALTER TABLE accidents ADD COLUMN IF NOT EXISTS "hqName" TEXT;`);
   // MSDS 관리대장: 부서(팀) — 미화팀/시설팀 등 팀별로 대장을 구분 보관.
   await pool.query(`ALTER TABLE msds_ledger ADD COLUMN IF NOT EXISTS "부서" TEXT;`);
+  // MSDS 관리대장: 판정결과(JSON) — 저장 시점의 작업환경측정·특수검진 판정 전체를 보관(목록표·관리대장에서 바로 조회).
+  await pool.query(`ALTER TABLE msds_ledger ADD COLUMN IF NOT EXISTS "판정결과" TEXT;`);
 
   // 기존 sites 테이블에 hq_id 컬럼 추가 (다른 본부에 묶기 위한 외래키)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "hqId" INTEGER;`);
@@ -2641,15 +2643,15 @@ app.post('/api/msds-ledger', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO msds_ledger (
         "siteId","사업장명","부서","제품명","제조회사","개정일자","사용용도","사용빈도","비고",
-        "신호어","ghsIds","ppeIds","측정대상","특검대상","특별관리물질","성분","작성자","작성일","createdAt"
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,NOW()::TEXT) RETURNING *`,
+        "신호어","ghsIds","ppeIds","측정대상","특검대상","특별관리물질","성분","판정결과","작성자","작성일","createdAt"
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,NOW()::TEXT) RETURNING *`,
       [
         b['siteId'] ? parseInt(b['siteId']) : null,
         b['사업장명'] || '', b['부서'] || '', b['제품명'] || '', b['제조회사'] || '', b['개정일자'] || '',
         b['사용용도'] || '', b['사용빈도'] || '', b['비고'] || '',
         b['신호어'] || '', b['ghsIds'] || '', b['ppeIds'] || '',
         b['측정대상'] || '', b['특검대상'] || '', !!b['특별관리물질'],
-        b['성분'] || '', b['작성자'] || '', b['작성일'] || new Date().toISOString(),
+        b['성분'] || '', b['판정결과'] || '', b['작성자'] || '', b['작성일'] || new Date().toISOString(),
       ]
     );
     res.json({ success: true, item: result.rows[0] });
