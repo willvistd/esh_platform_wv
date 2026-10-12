@@ -164,7 +164,8 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
   const manufacturer = (product && product.manufacturer) || '';
 
   return (
-    <div style={{ padding: '4px 2px', maxWidth: 860 }}>
+    <div className="hz-analysis" style={{ padding: '4px 2px', maxWidth: 860 }}>
+      <div className="hz-print">
       {/* 물질명(제품명) 헤더 — 관리요령·경고표지와 동일하게 상단에 표기 */}
       <div style={{ borderBottom: '2px solid #e5e9ef', paddingBottom: 10, marginBottom: 12 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#98a2b3', letterSpacing: 0.4 }}>물질명 / 제품명</div>
@@ -229,6 +230,7 @@ const MsdsJudgePanel = ({ components, setComponents, judgeRes, judging, runJudge
           아래 표에서 성분을 확인하고 <b style={{ color: '#475467' }}>판정하기</b>를 누르면, 여기에 작업환경측정·특수검진 대상 여부가 표시됩니다.
         </div>
       )}
+      </div>{/* /hz-print */}
 
       {/* ── 성분 직접 수정 · 재판정 — 하단 배치 ── */}
       <div style={{ fontSize: 12, fontWeight: 700, color: '#475467', margin: '18px 0 6px' }}>성분 직접 수정 · 재판정</div>
@@ -480,16 +482,19 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
 
   // ── 인쇄 ───────────────────────────────────────────────
   const handlePrint = () => {
+    if (previewTab === 2 && !judgeRes) { alert('먼저 [판정하기]를 눌러 분석 결과를 만든 뒤 PDF로 저장하세요.'); return; }
     const base = window.location.href.replace(/[^/]+$/, '');
     const target = previewTab === 0
       ? document.querySelector('.msds-card')
+      : previewTab === 2
+      ? document.querySelector('.hz-print')
       : document.querySelector('.msds-label-wrap');
     if (!target) return;
 
     // PDF 저장 파일명 — 인식된 제품명 기준 자동 ('제품명 관리요령'). 파일명 금지문자 제거.
     const safeName = (s) => String(s || '').replace(/[\\/:*?"<>|\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
     const prod = safeName(form.productName);
-    const pdfTitle = (prod ? prod + ' ' : '') + (previewTab === 0 ? '관리요령' : '경고표지');
+    const pdfTitle = (prod ? prod + ' ' : '') + (previewTab === 0 ? '관리요령' : previewTab === 2 ? '유해인자 분석' : '경고표지');
 
     const html = target.outerHTML.replace(/src="(assets\/)/g, `src="${base}$1`);
 
@@ -506,6 +511,14 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
       .msds-ft, .msds-ft td, .msds-card-title { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .msds-fl { background:#e8ecf0 !important; font-weight:700; text-align:center; vertical-align:middle !important; white-space:nowrap; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       .msds-fh { background:#e8ecf0 !important; font-weight:700; font-size:11px; vertical-align:middle !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    ` : previewTab === 2 ? `
+      /* ── 유해인자 분석 인쇄 — 셀 테두리 + 배지 색상 유지 ── */
+      .hz-print { max-width: 100% !important; }
+      .hz-no-print { display: none !important; }
+      .hz-print table { width:100%; border-collapse:collapse; }
+      .hz-print th, .hz-print td { border:1px solid #c0c6d0; padding:5px 8px; font-size:11px; vertical-align:top; }
+      .hz-print th { background:#eef2f7; }
+      .hz-print *, .hz-print *::before { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     ` : `
       /* ── 경고표지(폼텍 라벨지) 인쇄 — @page 여백 0, 라벨지 실측 여백을 padding으로 재현 ── */
       @page { size: 210mm 297mm; margin: 0; }
