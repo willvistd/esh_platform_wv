@@ -415,6 +415,13 @@ a { color: inherit; text-decoration: none; }
   .kdate-wrap > input[type="date"] { display: none !important; }
   .kdate-ovl { position: static !important; padding-left: 0 !important; display: inline-flex !important; }
 }
+/* 전체출력 미리보기(화면): 인쇄와 동일하게 네이티브 날짜 입력을 숨기고 오버레이만 표시
+   → 화면 미리보기에서 네이티브 값과 오버레이가 겹쳐 보이는 현상 방지(편집 화면은 그대로 입력 가능) */
+.print-all-wrap .kdate-wrap > input[type="date"] { display: none !important; }
+.print-all-wrap .kdate-ovl { position: static !important; padding-left: 0 !important; display: inline-flex !important; }
+/* 개선예정일/완료일(date-yy) 날짜칸도 미리보기에서 동일 처리(겹침 방지) */
+.print-all-wrap input.date-yy-input { display: none !important; }
+.print-all-wrap .date-yy-display { position: static !important; display: block !important; width: 100% !important; text-align: center !important; white-space: nowrap !important; }
 
 /* ─────────── Chips / Tags ─────────── */
 .chip {
