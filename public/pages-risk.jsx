@@ -5562,9 +5562,10 @@ const RiskCoverView = ({ onNav, currentUser }) => {
 
         <div className="cover-flex-spacer" style={{ flex: "3 1 0" }} />
 
-        {/* 제목 — 평가 유형(수시/정기/최초)을 앞에 표기 */}
-        <h1 style={{ textAlign: "center", fontSize: 46, fontWeight: 900, margin: 0, letterSpacing: 8, color: "#111", flex: "0 0 auto" }}>
-          {ctx?.type === "occasional" ? "수시 " : ctx?.type === "regular" ? "정기 " : ctx?.type === "initial" ? "최초 " : ""}위험성평가 이행 및 조치결과
+        {/* 제목 — 평가 유형(수시/정기/최초)을 앞에 표기. 두 줄로 고정 표시 */}
+        <h1 style={{ textAlign: "center", fontSize: 46, fontWeight: 900, margin: 0, letterSpacing: 8, color: "#111", flex: "0 0 auto", lineHeight: 1.3 }}>
+          <span style={{ display: "block" }}>{ctx?.type === "occasional" ? "수시 " : ctx?.type === "regular" ? "정기 " : ctx?.type === "initial" ? "최초 " : ""}위험성평가</span>
+          <span style={{ display: "block" }}>이행 및 조치결과</span>
         </h1>
 
         <div className="cover-flex-spacer" style={{ flex: "2.9 1 0" }} />
