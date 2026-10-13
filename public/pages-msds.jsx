@@ -1491,7 +1491,10 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
       ) : (
         <div className="card ledger-print" style={{ overflowX: 'auto' }}>
           <div style={{ padding: '14px 16px 4px' }}>
-            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>물질안전보건자료(MSDS) 관리대장{soleDept && ` — ${soleDept}`}</div>
+            <div style={{ textAlign: 'center', fontSize: 18, fontWeight: 800 }}>
+              물질안전보건자료(MSDS) 관리대장
+              {soleDept && <span style={{ marginLeft: 10, fontSize: 14, fontWeight: 700, padding: '2px 12px', border: '1.5px solid #333', borderRadius: 6, verticalAlign: 'middle' }}>{soleDept}</span>}
+            </div>
             {soleSite && <div style={{ textAlign: 'center', fontSize: 13, color: 'var(--fg-2)', marginTop: 2 }}>{soleSite}</div>}
           </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640, tableLayout: 'auto' }}>
