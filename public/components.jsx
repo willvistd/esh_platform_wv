@@ -339,8 +339,20 @@ const KTime = ({ value, onChange, style = {} }) => {
   );
 };
 
+// ── 한글 초성 검색 유틸 ──
+const HANGUL_CHO = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const CHO_SET = new Set(HANGUL_CHO);
+// 문자열을 초성 문자열로 변환(완성형 음절 → 초성, 그 외 문자는 그대로)
+const toChosung = (str) => Array.from(String(str)).map(ch => {
+  const c = ch.charCodeAt(0);
+  if (c >= 0xAC00 && c <= 0xD7A3) return HANGUL_CHO[Math.floor((c - 0xAC00) / 588)];
+  return ch;
+}).join('');
+// 입력이 (공백 제외) 전부 초성 자모로만 이뤄졌는지 — 초성검색 모드 판별
+const isChosungQuery = (str) => { const s = String(str).replace(/\s/g, ''); return s.length > 0 && Array.from(s).every(ch => CHO_SET.has(ch)); };
+
 // ── 검색형 선택 상자 — 항목이 많은 드롭다운을 타이핑으로 걸러 선택 ──
-//   options: [{id, name}], value: 선택된 id(문자열), onChange(id) 호출.
+//   options: [{id, name}], value: 선택된 id(문자열), onChange(id) 호출. 한글 초성 검색 지원.
 const SearchSelect = ({ options = [], value, onChange, placeholder = "검색 또는 선택…", emptyText = "검색 결과가 없습니다", style = {} }) => {
   const [open, setOpen] = React.useState(false);
   const [q, setQ] = React.useState("");
@@ -352,8 +364,16 @@ const SearchSelect = ({ options = [], value, onChange, placeholder = "검색 또
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, [open]);
-  const kw = q.trim().toLowerCase();
-  const list = kw ? options.filter(o => String(o.name).toLowerCase().includes(kw)) : options;
+  const qt = q.trim();
+  const kw = qt.toLowerCase();
+  const choMode = isChosungQuery(qt);
+  const choKw = qt.replace(/\s/g, '');
+  const list = !kw ? options : options.filter(o => {
+    const name = String(o.name);
+    if (name.toLowerCase().includes(kw)) return true;          // 일반(글자) 매칭
+    if (choMode) return toChosung(name).includes(choKw);       // 초성 매칭(ㅊㄷㅌㅇ → 초단타워)
+    return false;
+  });
   const baseInp = { width: "100%", padding: "8px 30px 8px 10px", border: "1px solid var(--line, #d5dce6)", borderRadius: 7, fontSize: 13, boxSizing: "border-box", background: "var(--bg-elev, #fff)", color: "var(--fg, #111)", ...style };
   return (
     <div ref={wrapRef} style={{ position: "relative" }}>
