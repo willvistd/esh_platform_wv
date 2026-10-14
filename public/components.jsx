@@ -339,6 +339,52 @@ const KTime = ({ value, onChange, style = {} }) => {
   );
 };
 
+// ── 검색형 선택 상자 — 항목이 많은 드롭다운을 타이핑으로 걸러 선택 ──
+//   options: [{id, name}], value: 선택된 id(문자열), onChange(id) 호출.
+const SearchSelect = ({ options = [], value, onChange, placeholder = "검색 또는 선택…", emptyText = "검색 결과가 없습니다", style = {} }) => {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const wrapRef = React.useRef(null);
+  const selected = options.find(o => String(o.id) === String(value));
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setQ(""); } };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const kw = q.trim().toLowerCase();
+  const list = kw ? options.filter(o => String(o.name).toLowerCase().includes(kw)) : options;
+  const baseInp = { width: "100%", padding: "8px 30px 8px 10px", border: "1px solid var(--line, #d5dce6)", borderRadius: 7, fontSize: 13, boxSizing: "border-box", background: "var(--bg-elev, #fff)", color: "var(--fg, #111)", ...style };
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <input type="text"
+        value={open ? q : (selected ? selected.name : "")}
+        onChange={e => { setQ(e.target.value); if (!open) setOpen(true); }}
+        onFocus={() => { setOpen(true); setQ(""); }}
+        placeholder={selected ? selected.name : placeholder}
+        style={baseInp} />
+      <span aria-hidden="true" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#999", fontSize: 10 }}>▼</span>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 2px)", left: 0, right: 0, zIndex: 1100, maxHeight: 240, overflowY: "auto", background: "var(--bg-elev, #fff)", border: "1px solid var(--line, #d5dce6)", borderRadius: 7, boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
+          {list.length === 0 ? (
+            <div style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--fg-3, #888)" }}>{emptyText}</div>
+          ) : list.map(o => {
+            const on = String(o.id) === String(value);
+            return (
+              <div key={o.id} onClick={() => { onChange && onChange(String(o.id)); setOpen(false); setQ(""); }}
+                style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", background: on ? "var(--primary-soft, #eef3ff)" : "transparent", fontWeight: on ? 700 : 400, color: "var(--fg, #111)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                onMouseEnter={e => { if (!on) e.currentTarget.style.background = "var(--bg-sunk, #f3f5f9)"; }}
+                onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                {o.name}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // ─── TopBar with search + compose button (역할 스위처는 보안상 제거됨 — 로그인 권한으로 대체)
 // 검색: searchableItems prop으로 받은 모든 항목에서 keyword 매칭, 드롭다운으로 결과 표시

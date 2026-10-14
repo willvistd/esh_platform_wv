@@ -1082,11 +1082,10 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <label style={{ fontSize: 12.5, fontWeight: 700 }}>사업장 *
-                  <select className="field-select" value={saveSite} onChange={e => setSaveSite(e.target.value)}
-                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13 }}>
-                    <option value="">사업장 선택…</option>
-                    {allowedSites.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <div style={{ marginTop: 4 }}>
+                    <SearchSelect options={allowedSites} value={saveSite} onChange={setSaveSite}
+                      placeholder="사업장명 입력해 검색…" emptyText="일치하는 사업장이 없습니다" />
+                  </div>
                   {allowedSites.length === 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>담당 사업장이 없습니다. 관리자에게 문의하세요.</span>}
                 </label>
                 <label style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
