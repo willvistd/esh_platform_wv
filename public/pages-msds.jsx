@@ -1730,10 +1730,15 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
       const site = it['사업장명'] || '(미지정)';
       let comps = [];
       try { comps = JSON.parse(it['성분'] || '[]'); } catch (e) {}
-      const casOf = (nm) => {
-        const c = comps.find(c => [c.name_ko, c.name, c.name_en].some(x => x && norm(x) === norm(nm)));
+      // 판정결과(권위 데이터) — 측정/특검 이름이 여기 name_ko에서 왔으므로 CAS가 정확히 매칭됨
+      let jrComps = [];
+      try { const jr = it['판정결과'] ? JSON.parse(it['판정결과']) : null; if (jr && Array.isArray(jr.components)) jrComps = jr.components; } catch (e) {}
+      const findCas = (arr, nm) => {
+        const c = arr.find(c => [c.name_ko, c.name, c.name_en].some(x => x && norm(x) === norm(nm)));
         return c ? (c.cas || c.cas_raw || '') : '';
       };
+      // 1) 판정결과에서 먼저 찾고, 없으면 2) 원본 성분에서 보강
+      const casOf = (nm) => findCas(jrComps, nm) || findCas(comps, nm);
       const add = (nm, which) => {
         const n = String(nm || '').trim(); if (!n) return;
         const key = site + '||' + norm(n);

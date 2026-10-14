@@ -116,7 +116,9 @@ function judgeComponent(comp) {
   else {
     group = matchGroup(nameRaw);
     if (group && group.represent_cas) rec = CAS_INDEX.get(group.represent_cas);
-    if (group) { out.match_method = 'keyword'; out.cas = cas; }
+    // 이름(키워드)으로 매칭된 경우: MSDS에 CAS가 없어도 법정 목록의 대표 CAS를 채워줌
+    // (예: "구리/알루미늄/크실렌/포틀랜드시멘트" 등 — 원본 CAS 미기재 시 CAS 공란 방지)
+    if (group) { out.match_method = 'keyword'; out.cas = cas || (rec && rec.cas) || group.represent_cas || null; }
   }
 
   if (!rec && !group) {
