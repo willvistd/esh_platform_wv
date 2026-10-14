@@ -291,6 +291,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [reviewHint, setReviewHint] = React.useState(false);  // 추출 직후 그림문자·보호구 확인 강조
   // ── 관리대장 저장 ──
   const [sites,        setSites]        = React.useState([]);
+  const [hqs,          setHqs]          = React.useState([]);
   const [showSave,     setShowSave]     = React.useState(false);
   const [saveSite,     setSaveSite]     = React.useState('');
   const [saveDept,     setSaveDept]     = React.useState('');
@@ -309,21 +310,27 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
     setA4Over(p => p === over ? p : over);
   }, [previewTab, form, ghsSel, ppeSel]);
 
-  // 사업장 목록 로드 (관리대장 저장 시 사업장 선택용)
+  // 사업장·본부 목록 로드 (관리대장 저장 시 사업장 선택용)
   React.useEffect(() => {
     if (window.WV_API && window.WV_API.getSites) {
       window.WV_API.getSites().then(list => {
         setSites(Array.isArray(list) ? list : (list && list.sites) || []);
       }).catch(() => {});
     }
+    if (window.WV_API && window.WV_API.getHQs) {
+      window.WV_API.getHQs().then(list => {
+        setHqs(Array.isArray(list) ? list : (list && list.hq) || []);
+      }).catch(() => {});
+    }
   }, []);
 
-  // 저장 가능한 사업장: admin/safety는 전체, 그 외는 본인 담당 사업장만
+  // 저장 가능한 사업장: admin/safety는 전체, 본사 manager/staff는 본인 본부 전체,
+  // 현장계정은 담당 사업장 — 공통 권한 헬퍼(getAccessibleSiteIds)로 일원화
   const allowedSites = React.useMemo(() => {
     if (role === 'admin' || role === 'safety') return sites;
-    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
-    return sites.filter(s => myIds.includes(String(s.id)));
-  }, [sites, role, currentUser]);
+    const ids = new Set((window.WV_PERMS?.getAccessibleSiteIds(currentUser, sites, hqs) || []).map(String));
+    return sites.filter(s => ids.has(String(s.id)));
+  }, [sites, hqs, role, currentUser]);
 
   const openSave = () => {
     setLedgerMsg('');
@@ -1326,6 +1333,7 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
 const MsdsLedgerView = ({ onNav, currentUser, role }) => {
   const [items, setItems]     = React.useState([]);
   const [sites, setSites]     = React.useState([]);
+  const [hqs, setHqs]         = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [siteFilter, setSiteFilter] = React.useState('전체');
   const [deptFilter, setDeptFilter] = React.useState('전체');   // 부서(팀) 알약 필터
@@ -1339,22 +1347,23 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
     Promise.all([
       window.WV_API.getMsdsLedger(),
       window.WV_API.getSites ? window.WV_API.getSites() : Promise.resolve([]),
-    ]).then(([data, siteData]) => {
+      window.WV_API.getHQs ? window.WV_API.getHQs() : Promise.resolve([]),
+    ]).then(([data, siteData, hqData]) => {
       setItems(Array.isArray(data) ? data : []);
       setSites(Array.isArray(siteData) ? siteData : (siteData && siteData.sites) || []);
+      setHqs(Array.isArray(hqData) ? hqData : (hqData && hqData.hq) || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
   React.useEffect(() => { reload(); }, [reload]);
 
-  // 권한별 가시성: admin/safety 전체, 그 외 본인 담당 사업장 + 본인 작성분
+  // 권한별 가시성: admin/safety 전체, 본사 manager/staff는 본인 본부 전체 사업장,
+  // 현장계정은 담당 사업장 — 공통 권한 헬퍼(getAccessibleSiteIds)로 일원화 + 본인 작성분
   const visible = React.useMemo(() => {
     if (role === 'admin' || role === 'safety') return items;
-    const allowed = new Set();
-    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
-    sites.forEach(s => { if (myIds.includes(String(s.id))) allowed.add(String(s.id)); });
+    const allowed = new Set((window.WV_PERMS?.getAccessibleSiteIds(currentUser, sites, hqs) || []).map(String));
     return items.filter(it => (it['작성자'] === (currentUser && currentUser.name)) || allowed.has(String(it.siteId)));
-  }, [items, sites, role, currentUser]);
+  }, [items, sites, hqs, role, currentUser]);
 
   const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
   // 부서(팀) 매칭: '전체'=모두, '미분류'=부서 비어있음, 그 외=정확히 일치
@@ -1692,6 +1701,7 @@ const MsdsJudgeDetailModal = ({ item, onClose }) => {
 const MsdsHazardListView = ({ onNav, currentUser, role }) => {
   const [items, setItems]     = React.useState([]);
   const [sites, setSites]     = React.useState([]);
+  const [hqs, setHqs]         = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [siteFilter, setSiteFilter] = React.useState('전체');
   const [detailItem, setDetailItem] = React.useState(null);   // 제품명 클릭 → 판정 상세 팝업
@@ -1701,21 +1711,22 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
     Promise.all([
       window.WV_API.getMsdsLedger(),
       window.WV_API.getSites ? window.WV_API.getSites() : Promise.resolve([]),
-    ]).then(([data, siteData]) => {
+      window.WV_API.getHQs ? window.WV_API.getHQs() : Promise.resolve([]),
+    ]).then(([data, siteData, hqData]) => {
       setItems(Array.isArray(data) ? data : []);
       setSites(Array.isArray(siteData) ? siteData : (siteData && siteData.sites) || []);
+      setHqs(Array.isArray(hqData) ? hqData : (hqData && hqData.hq) || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  // 권한별 가시성: 관리대장과 동일 (admin/safety 전체, 그 외 담당 사업장 + 본인 작성분)
+  // 권한별 가시성: admin/safety 전체, 본사 manager/staff는 본인 본부 전체 사업장,
+  // 현장계정은 담당 사업장 — 공통 권한 헬퍼(getAccessibleSiteIds)로 일원화 + 본인 작성분
   const visible = React.useMemo(() => {
     if (role === 'admin' || role === 'safety') return items;
-    const allowed = new Set();
-    const myIds = String((currentUser && currentUser.siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
-    sites.forEach(s => { if (myIds.includes(String(s.id))) allowed.add(String(s.id)); });
+    const allowed = new Set((window.WV_PERMS?.getAccessibleSiteIds(currentUser, sites, hqs) || []).map(String));
     return items.filter(it => (it['작성자'] === (currentUser && currentUser.name)) || allowed.has(String(it.siteId)));
-  }, [items, sites, role, currentUser]);
+  }, [items, sites, hqs, role, currentUser]);
 
   const siteNames = React.useMemo(() => [...new Set(visible.map(it => it['사업장명']).filter(Boolean))], [visible]);
   const filtered = visible.filter(it => siteFilter === '전체' || it['사업장명'] === siteFilter);
