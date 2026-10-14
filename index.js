@@ -612,6 +612,39 @@ async function initDB() {
     console.error('산업재해 본부 교정 실패:', e);
   }
 
+  // ── MSDS 관리대장 CAS 재판정(1회) — 이름(키워드)으로 매칭됐던 물질의 CAS 공란 보강 ──
+  //   저장된 '성분'을 재판정해 '판정결과'를 갱신(= 각 물질의 법정 대표 CAS 포함).
+  //   측정대상/특검대상 문자열은 수동 수정분 보존을 위해 '비어 있을 때만' 채움.
+  try {
+    const KEY = 'msds_cas_rejudge_v1';
+    const claim = await pool.query(
+      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
+    );
+    if (claim.rowCount > 0) {
+      const rows = (await pool.query('SELECT id, "성분", "측정대상", "특검대상" FROM msds_ledger')).rows;
+      let updated = 0;
+      for (const row of rows) {
+        let comps = [];
+        try { comps = JSON.parse(row['성분'] || '[]'); } catch (_) {}
+        if (!Array.isArray(comps) || comps.length === 0) continue;
+        let jr;
+        try { jr = judge.judgeAll(comps, {}); } catch (_) { continue; }
+        if (!jr || !Array.isArray(jr.components)) continue;
+        const wemT = jr.components.filter(c => c.wem && c.wem.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ');
+        const sheT = jr.components.filter(c => c.she && c.she.result === 'TARGET').map(c => c.name_ko || c.name).filter(Boolean).join(', ');
+        const newWem = String(row['측정대상'] || '').trim() ? row['측정대상'] : wemT;  // 기존 값 있으면 보존
+        const newShe = String(row['특검대상'] || '').trim() ? row['특검대상'] : sheT;
+        await pool.query('UPDATE msds_ledger SET "판정결과" = $1, "측정대상" = $2, "특검대상" = $3 WHERE id = $4',
+          [JSON.stringify(jr), newWem, newShe, row.id]);
+        updated++;
+      }
+      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done ${updated}건 ${new Date().toISOString()}`]);
+      console.log(`[DB] MSDS CAS 재판정 v1: ${updated}건 갱신`);
+    }
+  } catch (e) {
+    console.error('MSDS CAS 재판정 실패:', e);
+  }
+
   // ── 산재 사업개시번호 매핑(1회) — 급여기초(26.09.30) '운영중' 사업장 기준 ──
   // data/site_open_no_20260930.json
   //   · register  : 위드윌·KBCI·동부캐리어 운영중 사업장 → 먼저 등록(이미 같은 이름이 있으면 등록 생략) 후 개시번호 입력
