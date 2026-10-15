@@ -600,6 +600,48 @@ async function initDB() {
     console.error('산재 공항사업본부 통일 실패:', e);
   }
 
+  // ── FM·HR·CRM 사업본부 명칭 통일(1회) — plain → '윌앤비전 ○○사업본부' ──
+  //   본부(hq) 테이블 중복 병합(사업장·계정 이전 후 삭제) + 재해 데이터 본부명 일치.
+  //   ※ 지사(부산/대구/광주/대전)는 별도 조직이므로 건드리지 않음.
+  try {
+    const KEY = 'hq_unify_bizdiv_v1';
+    const claim = await pool.query(
+      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
+    );
+    if (claim.rowCount > 0) {
+      const pairs = [
+        ['FM사업본부', '윌앤비전 FM사업본부'],
+        ['HR사업본부', '윌앤비전 HR사업본부'],
+        ['CRM사업본부', '윌앤비전 CRM사업본부'],
+      ];
+      let mergedHq = 0, movedAcc = 0;
+      for (const [plain, canon] of pairs) {
+        // 1) hq 테이블 병합
+        const rows = (await pool.query('SELECT id, name FROM hq WHERE name = ANY($1::text[])', [[plain, canon]])).rows;
+        let target = rows.find(r => r.name === canon);
+        let plainRows = rows.filter(r => r.name === plain);
+        if (!target && plainRows.length) {
+          target = plainRows[0]; plainRows = plainRows.slice(1);
+          await pool.query('UPDATE hq SET name = $1 WHERE id = $2', [canon, target.id]);
+        }
+        if (target && plainRows.length) {
+          const dupIds = plainRows.map(r => r.id);
+          await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
+          await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
+          const d = await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [dupIds]);
+          mergedHq += d.rowCount || 0;
+        }
+        // 2) 재해 데이터 본부명 통일
+        const ua = await pool.query('UPDATE accidents SET "hqName" = $1 WHERE "hqName" = $2', [canon, plain]);
+        movedAcc += ua.rowCount || 0;
+      }
+      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done hq=${mergedHq} acc=${movedAcc} ${new Date().toISOString()}`]);
+      console.log(`[DB] FM/HR/CRM 본부 통일 v1: 본부 중복 ${mergedHq}개 정리, 재해 ${movedAcc}건 명칭 통일`);
+    }
+  } catch (e) {
+    console.error('FM/HR/CRM 본부 통일 실패:', e);
+  }
+
   // ⚠️ (제거됨) 예전엔 여기서 '공항사업본부'를 자동 재삽입해, 사용자가 지워도 서버가 뜰 때마다
   //    다시 생기고(진짜 본부는 '윌앤비전 공항사업본부'라 존재 체크가 계속 실패), 서버리스 동시
   //    콜드스타트 시 unique 제약이 없어 중복까지 쌓이던 버그가 있었음 → 자동 추가 로직 삭제.
