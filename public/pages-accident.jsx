@@ -13,8 +13,7 @@ const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "�
 const IA_EMP_TYPES = ["직영", "계약", "도급·협력사", "파견"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "요양중", "치료종결"];
 const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
-// 본부(관리조직) 목록 — 자유 입력을 막고 실제 본부/지사에서만 선택. 추가·변경은 이 배열만 수정.
-const IA_HQS = ["FM사업본부", "HR사업본부", "CRM사업본부", "윌앤비전 공항사업본부", "KBCI", "부산지사", "대구지사", "광주지사", "대전지사"];
+// 본부(관리조직) 선택지는 실제 본부(hq) 테이블에서 가져옴 → 폼에서 hqNames로 구성(하드코딩 목록 제거).
 // 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
 const iaIsApproved = (s) => s === "승인" || s === "요양중" || s === "치료종결";
 
@@ -401,6 +400,30 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     String((hqMap[String(a.hqId)]?.name) || "").localeCompare(String((hqMap[String(b.hqId)]?.name) || ""), "ko") ||
     String(a.사업장명 || "").localeCompare(String(b.사업장명 || ""), "ko")), [sites, hqMap]);
 
+  // 본부 선택 목록 — 실제 본부(hq) 테이블 기준(동부캐리어 등 포함, 명칭도 사업장과 통일). sortOrder → 이름 순.
+  const hqNames = React.useMemo(() => {
+    const sorted = [...(hqs || [])].sort((a, b) =>
+      (a.sortOrder || 0) - (b.sortOrder || 0) || String(a.name || "").localeCompare(String(b.name || ""), "ko"));
+    return [...new Set(sorted.map(h => h.name).filter(Boolean))];
+  }, [hqs]);
+  // 사업장 id → 그 사업장의 본부명
+  const siteHqName = (sid) => { const s = sites.find(x => String(x.id) === String(sid)); return s ? (hqMap[String(s.hqId)]?.name || "") : ""; };
+  // 선택한 본부에 속한 사업장만(본부 미선택 시 전체). 매칭 없으면 안전하게 전체 표시.
+  const siteOptions = React.useMemo(() => {
+    if (!f.hqName) return sitesSorted;
+    const only = sitesSorted.filter(s => (hqMap[String(s.hqId)]?.name || "") === f.hqName);
+    return only.length ? only : sitesSorted;
+  }, [sitesSorted, f.hqName, hqMap]);
+  // 본부 변경: 현재 선택된 사업장이 그 본부 소속이 아니면 사업장 비움
+  const onHqChange = (val) => {
+    const hq = val === "__other__" ? f.hqName : val;
+    setF(s => ({ ...s, hqName: hq, siteId: (s.siteId && siteHqName(s.siteId) === hq) ? s.siteId : "" }));
+  };
+  // 사업장 선택: 그 사업장의 본부를 자동으로 채움(자동 매칭)
+  const onSiteChange = (val) => {
+    setF(s => { const hq = siteHqName(val); return { ...s, siteId: val, hqName: (val && hq) ? hq : s.hqName }; });
+  };
+
   const save = async () => {
     if (!f.occurredDate) { setErr("발생일을 입력해주세요."); return; }
     if (!f.accidentType) { setErr("발생형태를 선택해주세요."); return; }
@@ -451,17 +474,17 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>본부 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(관리 조직)</span></label>
-              <select className="field-input" value={IA_HQS.includes(f.hqName) ? f.hqName : (f.hqName ? "__other__" : "")} onChange={e => upd("hqName", e.target.value === "__other__" ? f.hqName : e.target.value)}>
+              <select className="field-input" value={hqNames.includes(f.hqName) ? f.hqName : (f.hqName ? "__other__" : "")} onChange={e => onHqChange(e.target.value)}>
                 <option value="">— 본부 선택 —</option>
-                {IA_HQS.map(h => <option key={h} value={h}>{h}</option>)}
-                {f.hqName && !IA_HQS.includes(f.hqName) && <option value="__other__">{f.hqName} (목록 외)</option>}
+                {hqNames.map(h => <option key={h} value={h}>{h}</option>)}
+                {f.hqName && !hqNames.includes(f.hqName) && <option value="__other__">{f.hqName} (목록 외)</option>}
               </select>
             </div>
             <div>
               <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장이면 선택)</span></label>
-              <select className="field-input" value={f.siteId} onChange={e => upd("siteId", e.target.value)}>
+              <select className="field-input" value={f.siteId} onChange={e => onSiteChange(e.target.value)}>
                 <option value="">— 미등록 현장(파견·고객사 등) —</option>
-                {sitesSorted.map(s => <option key={s.id} value={s.id}>{(hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
+                {siteOptions.map(s => <option key={s.id} value={s.id}>{(!f.hqName && hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
               </select>
             </div>
           </div>
