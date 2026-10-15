@@ -404,8 +404,11 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   const hqNames = React.useMemo(() => {
     const sorted = [...(hqs || [])].sort((a, b) =>
       (a.sortOrder || 0) - (b.sortOrder || 0) || String(a.name || "").localeCompare(String(b.name || ""), "ko"));
-    return [...new Set(sorted.map(h => h.name).filter(Boolean))];
-  }, [hqs]);
+    const set = [...new Set(sorted.map(h => h.name).filter(Boolean))];
+    // 저장된 본부명이 목록에 없으면 포함(= '목록 외' 꼬리표 방지, 값 보존)
+    if (f.hqName && !set.includes(f.hqName)) set.push(f.hqName);
+    return set;
+  }, [hqs, f.hqName]);
   // 사업장 id → 그 사업장의 본부명
   const siteHqName = (sid) => { const s = sites.find(x => String(x.id) === String(sid)); return s ? (hqMap[String(s.hqId)]?.name || "") : ""; };
   // 선택한 본부에 속한 사업장만(본부 미선택 시 전체). 매칭 없으면 안전하게 전체 표시.
