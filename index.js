@@ -2075,17 +2075,22 @@ app.post('/api/sites/bulk', async (req, res) => {
   try {
     const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows : [];
     const skipDup = req.body.skipDuplicates !== false; // 기본 true
+    const updateExisting = req.body.updateExisting === true; // 기존 사업장의 본부(hqId) 갱신
     if (rows.length === 0) return res.status(400).json({ error: '등록할 행이 없습니다.' });
     if (rows.length > 2000) return res.status(400).json({ error: '한 번에 최대 2000행까지 등록할 수 있습니다.' });
 
     const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
 
-    // 기존 사업장명 집합 (중복 방지)
-    const existing = new Set(
-      (await pool.query('SELECT name FROM sites')).rows.map(r => norm(r.name)).filter(Boolean)
-    );
+    // 기존 사업장명 → id 목록 (중복 방지 + 본부 갱신용)
+    const existingMap = new Map();
+    for (const row of (await pool.query('SELECT id, name FROM sites')).rows) {
+      const k = norm(row.name); if (!k) continue;
+      if (!existingMap.has(k)) existingMap.set(k, []);
+      existingMap.get(k).push(row.id);
+    }
+    const existing = new Set(existingMap.keys());
 
-    let created = 0, skipped = 0;
+    let created = 0, skipped = 0, updated = 0;
     const errors = [];
     const createdNames = [];
 
@@ -2094,7 +2099,20 @@ app.post('/api/sites/bulk', async (req, res) => {
       const name = String(r.name || '').trim();
       if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
       const key = norm(name);
-      if (skipDup && existing.has(key)) { skipped++; continue; }
+      if (existing.has(key)) {
+        // 기존 사업장: 본부 갱신 옵션이 켜져 있고 매칭된 본부가 있으면 hqId만 갱신(다른 값은 보존)
+        if (updateExisting && r.hqId) {
+          try {
+            for (const id of (existingMap.get(key) || [])) {
+              await pool.query('UPDATE sites SET "hqId" = $1 WHERE id = $2', [r.hqId, id]);
+            }
+            updated++;
+          } catch (e) { errors.push({ row: i + 1, name, reason: e.message }); }
+        } else {
+          skipped++;
+        }
+        continue;
+      }
       try {
         await pool.query(
           `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
@@ -2111,7 +2129,7 @@ app.post('/api/sites/bulk', async (req, res) => {
         errors.push({ row: i + 1, name, reason: e.message });
       }
     }
-    res.json({ total: rows.length, created, skipped, errors, createdNames });
+    res.json({ total: rows.length, created, updated, skipped, errors, createdNames });
   } catch (e) {
     console.error('POST /api/sites/bulk 오류:', e);
     res.status(500).json({ error: e.message });

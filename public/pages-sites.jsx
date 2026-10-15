@@ -1225,6 +1225,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState(null);
   const [dupAck, setDupAck] = React.useState(false);   // 중복 확인(안전장치) 체크
+  const [updateExisting, setUpdateExisting] = React.useState(false);   // 기존 사업장의 본부도 갱신
 
   const norm = (v) => String(v == null ? "" : v).replace(/\s+/g, "").toLowerCase();
 
@@ -1301,9 +1302,11 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
     const dups = valid.filter(r => r._dup);
     const noHq = valid.filter(r => r._hqName && !r._hqMatched);
     const willCreate = valid.filter(r => !r._dup);
+    // 기존 사업장 중 본부가 매칭된 것(갱신 가능 대상)
+    const willUpdate = dups.filter(r => r.hqId);
     const unmatchedNames = [...new Set(noHq.map(r => r._hqName))];
     const dupNames = dups.map(r => r.name);
-    return { total: rows.length, valid: valid.length, dups: dups.length, noHq: noHq.length, willCreate: willCreate.length, unmatchedNames, dupNames };
+    return { total: rows.length, valid: valid.length, dups: dups.length, noHq: noHq.length, willCreate: willCreate.length, willUpdate: willUpdate.length, unmatchedNames, dupNames };
   }, [rows]);
 
   const doImport = async () => {
@@ -1311,7 +1314,7 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
     try {
       // API로 보낼 순수 행(메타 제거). 서버도 중복 사업장명은 스킵함.
       const payload = rows.filter(r => !r._noName).map(({ _hqName, _hqMatched, _hqResolved, _dup, _noName, ...api }) => api);
-      const res = await window.WV_API.bulkImportSites(payload, true);
+      const res = await window.WV_API.bulkImportSites(payload, true, updateExisting);
       setResult(res);
       await onDone?.();
     } catch (e) {
@@ -1376,6 +1379,15 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
                         <input type="checkbox" checked={dupAck} onChange={e => setDupAck(e.target.checked)} style={{ cursor: "pointer" }} />
                         위 중복 사업장을 확인했습니다. (중복은 제외하고 신규 {stats.willCreate}건만 등록)
                       </label>
+                      {/* 기존 사업장의 본부(소속)만 갱신하고 싶을 때 — 지사/본부 재연결용 */}
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "var(--fg)", marginTop: 8, paddingTop: 8, borderTop: "1px dashed #fdba74" }}>
+                        <input type="checkbox" checked={updateExisting} onChange={e => setUpdateExisting(e.target.checked)} style={{ cursor: "pointer", marginTop: 2 }} />
+                        <span>기존 사업장의 <b>본부(소속)도 갱신</b>합니다.
+                          <span style={{ display: "block", fontWeight: 400, fontSize: 12, color: "var(--fg-3)" }}>
+                            파일의 ‘본부’ 열로 매칭된 기존 사업장 <b>{stats.willUpdate}건</b>의 소속을 바로잡습니다(이름·담당자 등 다른 값은 그대로 보존). 지사·본부 재연결에 사용하세요.
+                          </span>
+                        </span>
+                      </label>
                     </div>
                   )}
                   {/* 미리보기 (상위 12행) */}
@@ -1411,7 +1423,8 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
             <div style={{ fontSize: 14, lineHeight: 1.8 }}>
               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>✅ 일괄 등록 완료</div>
               <div>• 신규 등록: <b style={{ color: "var(--primary)" }}>{result.created}</b>건</div>
-              <div>• 중복 건너뜀: {result.skipped}건</div>
+              {result.updated > 0 && <div>• 본부(소속) 갱신: <b style={{ color: "#16a34a" }}>{result.updated}</b>건</div>}
+              <div>• 건너뜀: {result.skipped}건</div>
               {result.errors?.length > 0 && (
                 <div style={{ marginTop: 8, color: "var(--danger)" }}>
                   • 실패 {result.errors.length}건:
@@ -1427,12 +1440,16 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
           {!result ? (
             <>
               <button className="btn btn-secondary" onClick={onClose} disabled={busy}>취소</button>
-              {stats.dups > 0 && !dupAck && rows.length > 0 && (
+              {stats.dups > 0 && !dupAck && !updateExisting && rows.length > 0 && (
                 <span style={{ fontSize: 12, color: "#c2410c", alignSelf: "center", marginRight: 4 }}>중복 확인 후 등록 가능</span>
               )}
               <button className="btn btn-primary" onClick={doImport}
-                disabled={busy || stats.willCreate === 0 || (stats.dups > 0 && !dupAck)}>
-                {busy ? <><span className="login-spinner" /> 등록 중…</> : <><Icon name="check" size={14} /> {stats.willCreate}건 등록</>}
+                disabled={busy || (stats.willCreate === 0 && !(updateExisting && stats.willUpdate > 0)) || (stats.dups > 0 && !dupAck && !updateExisting)}>
+                {busy ? <><span className="login-spinner" /> 처리 중…</> : <><Icon name="check" size={14} />
+                  {stats.willCreate > 0 ? `${stats.willCreate}건 등록` : ""}
+                  {updateExisting && stats.willUpdate > 0 ? `${stats.willCreate > 0 ? " · " : ""}본부 ${stats.willUpdate}건 갱신` : ""}
+                  {stats.willCreate === 0 && !(updateExisting && stats.willUpdate > 0) ? "등록" : ""}
+                </>}
               </button>
             </>
           ) : (
