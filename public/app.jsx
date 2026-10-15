@@ -332,11 +332,11 @@ const api = {
     return await res.json();
   },
   // 사업장 일괄 등록 (엑셀/CSV 가져오기) — rows: 이미 API 필드(name, manager, hqId, orgType…)로 정규화된 배열
-  async bulkImportSites(rows, skipDuplicates = true) {
+  async bulkImportSites(rows, skipDuplicates = true, updateExisting = false) {
     const res = await fetch(`${ENDPOINTS.sites}/bulk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rows, skipDuplicates }),
+      body: JSON.stringify({ rows, skipDuplicates, updateExisting }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `일괄 등록 실패 (${res.status})`);
