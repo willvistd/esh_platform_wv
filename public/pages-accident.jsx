@@ -411,12 +411,15 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
   }, [hqs, f.hqName]);
   // 사업장 id → 그 사업장의 본부명
   const siteHqName = (sid) => { const s = sites.find(x => String(x.id) === String(sid)); return s ? (hqMap[String(s.hqId)]?.name || "") : ""; };
-  // 선택한 본부에 속한 사업장만(본부 미선택 시 전체). 매칭 없으면 안전하게 전체 표시.
+  // 선택한 본부에 속한 사업장만 표시(본부 미선택 시 전체).
+  // 본부명 → 본부 id로 찾아 사업장의 hqId와 매칭(이름 공백/표기 차이에 영향 없이 정확).
+  // 본부에 등록 사업장이 없으면 목록은 '미등록 현장'만 남음(전체로 되돌리지 않음).
   const siteOptions = React.useMemo(() => {
     if (!f.hqName) return sitesSorted;
-    const only = sitesSorted.filter(s => (hqMap[String(s.hqId)]?.name || "") === f.hqName);
-    return only.length ? only : sitesSorted;
-  }, [sitesSorted, f.hqName, hqMap]);
+    const selHq = (hqs || []).find(h => h.name === f.hqName);
+    if (!selHq) return sitesSorted;   // 본부 테이블에 없는 값(예외)일 때만 전체
+    return sitesSorted.filter(s => String(s.hqId) === String(selHq.id));
+  }, [sitesSorted, f.hqName, hqs]);
   // 본부 변경: 현재 선택된 사업장이 그 본부 소속이 아니면 사업장 비움
   const onHqChange = (val) => {
     const hq = val === "__other__" ? f.hqName : val;
