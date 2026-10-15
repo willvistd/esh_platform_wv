@@ -548,6 +548,41 @@ async function initDB() {
     console.log('[DB] 본부(HQ) 시드 6건 입력 완료');
   }
 
+  // ── 공항사업본부 중복 본부 병합(1회) — '공항사업본부'(구) + 중복 '윌앤비전 공항사업본부'를
+  //    '윌앤비전 공항사업본부' 하나로 합치고, 붙어있던 사업장·계정(hqId)을 그쪽으로 이전 ──
+  try {
+    const KEY = 'hq_merge_airport_v1';
+    const claim = await pool.query(
+      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
+    );
+    if (claim.rowCount > 0) {
+      const airportNames = ['공항사업본부', '윌앤비전 공항사업본부'];
+      const all = (await pool.query(
+        'SELECT id, name FROM hq WHERE name = ANY($1::text[]) ORDER BY (name = \'윌앤비전 공항사업본부\') DESC, id ASC', [airportNames]
+      )).rows;
+      let moved = 0, removed = 0;
+      if (all.length >= 1) {
+        // 유지할 본부: '윌앤비전 공항사업본부'가 있으면 그것, 없으면 첫 행을 그 이름으로 개명
+        let target = all.find(h => h.name === '윌앤비전 공항사업본부') || all[0];
+        if (target.name !== '윌앤비전 공항사업본부') {
+          await pool.query("UPDATE hq SET name = '윌앤비전 공항사업본부', code = COALESCE(code, 'AIR'), \"ownerDept\" = '공항사업본부' WHERE id = $1", [target.id]);
+        }
+        const dupIds = all.filter(h => h.id !== target.id).map(h => h.id);
+        if (dupIds.length > 0) {
+          const r1 = await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
+          const r2 = await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
+          const r3 = await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [dupIds]);
+          moved = (r1.rowCount || 0) + (r2.rowCount || 0);
+          removed = r3.rowCount || 0;
+          console.log(`[DB] 공항사업본부 병합 v1: 중복 ${removed}개 제거, 사업장·계정 ${moved}건 이전 → 윌앤비전 공항사업본부(id=${target.id})`);
+        }
+      }
+      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done moved=${moved} removed=${removed} ${new Date().toISOString()}`]);
+    }
+  } catch (e) {
+    console.error('공항사업본부 병합 실패:', e);
+  }
+
   // ⚠️ (제거됨) 예전엔 여기서 '공항사업본부'를 자동 재삽입해, 사용자가 지워도 서버가 뜰 때마다
   //    다시 생기고(진짜 본부는 '윌앤비전 공항사업본부'라 존재 체크가 계속 실패), 서버리스 동시
   //    콜드스타트 시 unique 제약이 없어 중복까지 쌓이던 버그가 있었음 → 자동 추가 로직 삭제.
