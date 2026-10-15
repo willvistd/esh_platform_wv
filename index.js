@@ -583,6 +583,23 @@ async function initDB() {
     console.error('공항사업본부 병합 실패:', e);
   }
 
+  // ── 산업재해 '공항사업본부'(구) → '윌앤비전 공항사업본부' 통일(1회) ──
+  //   재해 레코드에 옛 방식(plain)으로 저장된 본부명을 본부 테이블 명칭과 일치시켜
+  //   산재관리 본부 드롭다운의 중복 표시 제거.
+  try {
+    const KEY = 'accident_airport_hq_v1';
+    const claim = await pool.query(
+      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
+    );
+    if (claim.rowCount > 0) {
+      const r = await pool.query(`UPDATE accidents SET "hqName" = '윌앤비전 공항사업본부' WHERE "hqName" = '공항사업본부'`);
+      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done ${r.rowCount}건 ${new Date().toISOString()}`]);
+      if (r.rowCount > 0) console.log(`[DB] 산재 공항사업본부 통일 v1: ${r.rowCount}건 → 윌앤비전 공항사업본부`);
+    }
+  } catch (e) {
+    console.error('산재 공항사업본부 통일 실패:', e);
+  }
+
   // ⚠️ (제거됨) 예전엔 여기서 '공항사업본부'를 자동 재삽입해, 사용자가 지워도 서버가 뜰 때마다
   //    다시 생기고(진짜 본부는 '윌앤비전 공항사업본부'라 존재 체크가 계속 실패), 서버리스 동시
   //    콜드스타트 시 unique 제약이 없어 중복까지 쌓이던 버그가 있었음 → 자동 추가 로직 삭제.
