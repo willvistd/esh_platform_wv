@@ -548,110 +548,52 @@ async function initDB() {
     console.log('[DB] 본부(HQ) 시드 6건 입력 완료');
   }
 
-  // ── 공항사업본부 중복 본부 병합(1회) — '공항사업본부'(구) + 중복 '윌앤비전 공항사업본부'를
-  //    '윌앤비전 공항사업본부' 하나로 합치고, 붙어있던 사업장·계정(hqId)을 그쪽으로 이전 ──
+  // ── 본부 명칭 표준화(매 부팅·멱등) — FM·HR·CRM·공항을 '윌앤비전 ○○사업본부' 하나로 통일 ──
+  //   · 짧은 이름(plain) 또는 중복 캐논 본부를 '윌앤비전 ○○사업본부' 한 행으로 병합
+  //     (붙어있던 사업장·계정 hqId 이전 후 중복 삭제, 없으면 개명)
+  //   · 캐논 본부가 아예 없으면 생성(= 산재 '목록 외' 표시 방지, 드롭다운에 항상 노출)
+  //   · 재해 데이터(accidents.hqName)의 짧은 이름도 캐논으로 통일
+  //   · 지사(부산/대구/광주/대전)·KBCI·동부캐리어 등은 별도 조직이므로 건드리지 않음
+  //   마커 없이 매번 실행하되 모두 멱등(정리 완료 후엔 no-op).
   try {
-    const KEY = 'hq_merge_airport_v1';
-    const claim = await pool.query(
-      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
-    );
-    if (claim.rowCount > 0) {
-      const airportNames = ['공항사업본부', '윌앤비전 공항사업본부'];
-      const all = (await pool.query(
-        'SELECT id, name FROM hq WHERE name = ANY($1::text[]) ORDER BY (name = \'윌앤비전 공항사업본부\') DESC, id ASC', [airportNames]
-      )).rows;
-      let moved = 0, removed = 0;
-      if (all.length >= 1) {
-        // 유지할 본부: '윌앤비전 공항사업본부'가 있으면 그것, 없으면 첫 행을 그 이름으로 개명
-        let target = all.find(h => h.name === '윌앤비전 공항사업본부') || all[0];
-        if (target.name !== '윌앤비전 공항사업본부') {
-          await pool.query("UPDATE hq SET name = '윌앤비전 공항사업본부', code = COALESCE(code, 'AIR'), \"ownerDept\" = '공항사업본부' WHERE id = $1", [target.id]);
-        }
-        const dupIds = all.filter(h => h.id !== target.id).map(h => h.id);
-        if (dupIds.length > 0) {
-          const r1 = await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
-          const r2 = await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
-          const r3 = await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [dupIds]);
-          moved = (r1.rowCount || 0) + (r2.rowCount || 0);
-          removed = r3.rowCount || 0;
-          console.log(`[DB] 공항사업본부 병합 v1: 중복 ${removed}개 제거, 사업장·계정 ${moved}건 이전 → 윌앤비전 공항사업본부(id=${target.id})`);
-        }
+    const canonMap = [
+      ['공항사업본부', '윌앤비전 공항사업본부'],
+      ['FM사업본부',   '윌앤비전 FM사업본부'],
+      ['HR사업본부',   '윌앤비전 HR사업본부'],
+      ['CRM사업본부',  '윌앤비전 CRM사업본부'],
+    ];
+    for (const [plain, canon] of canonMap) {
+      const rows = (await pool.query('SELECT id, name FROM hq WHERE name = ANY($1::text[]) ORDER BY id', [[plain, canon]])).rows;
+      const canons = rows.filter(r => r.name === canon);
+      const plains = rows.filter(r => r.name === plain);
+      let target = canons[0] || null;
+      let dups = [];
+      if (target) {
+        dups = [...canons.slice(1), ...plains];          // 중복 캐논 + 모든 plain
+      } else if (plains.length) {
+        target = plains[0];                               // 캐논이 없으면 plain 하나를 개명
+        await pool.query('UPDATE hq SET name = $1 WHERE id = $2', [canon, target.id]);
+        dups = plains.slice(1);
+      } else {
+        // 캐논도 plain도 없음 → 캐논 본부 신규 생성(드롭다운/산재 표시용)
+        const ins = await pool.query(
+          'INSERT INTO hq (name, "ownerDept", "sortOrder", status, "createdAt") VALUES ($1, $1, 50, \'active\', NOW()::TEXT) RETURNING id', [canon]
+        );
+        target = { id: ins.rows[0].id };
       }
-      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done moved=${moved} removed=${removed} ${new Date().toISOString()}`]);
-    }
-  } catch (e) {
-    console.error('공항사업본부 병합 실패:', e);
-  }
-
-  // ── 산업재해 '공항사업본부'(구) → '윌앤비전 공항사업본부' 통일(1회) ──
-  //   재해 레코드에 옛 방식(plain)으로 저장된 본부명을 본부 테이블 명칭과 일치시켜
-  //   산재관리 본부 드롭다운의 중복 표시 제거.
-  try {
-    const KEY = 'accident_airport_hq_v1';
-    const claim = await pool.query(
-      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
-    );
-    if (claim.rowCount > 0) {
-      const r = await pool.query(`UPDATE accidents SET "hqName" = '윌앤비전 공항사업본부' WHERE "hqName" = '공항사업본부'`);
-      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done ${r.rowCount}건 ${new Date().toISOString()}`]);
-      if (r.rowCount > 0) console.log(`[DB] 산재 공항사업본부 통일 v1: ${r.rowCount}건 → 윌앤비전 공항사업본부`);
-    }
-  } catch (e) {
-    console.error('산재 공항사업본부 통일 실패:', e);
-  }
-
-  // ── FM·HR·CRM 사업본부 명칭 통일(1회) — plain → '윌앤비전 ○○사업본부' ──
-  //   본부(hq) 테이블 중복 병합(사업장·계정 이전 후 삭제) + 재해 데이터 본부명 일치.
-  //   ※ 지사(부산/대구/광주/대전)는 별도 조직이므로 건드리지 않음.
-  try {
-    const KEY = 'hq_unify_bizdiv_v1';
-    const claim = await pool.query(
-      "INSERT INTO app_settings (key, value) VALUES ($1, 'running') ON CONFLICT (key) DO NOTHING RETURNING key", [KEY]
-    );
-    if (claim.rowCount > 0) {
-      const pairs = [
-        ['FM사업본부', '윌앤비전 FM사업본부'],
-        ['HR사업본부', '윌앤비전 HR사업본부'],
-        ['CRM사업본부', '윌앤비전 CRM사업본부'],
-      ];
-      let mergedHq = 0, movedAcc = 0;
-      for (const [plain, canon] of pairs) {
-        // 1) hq 테이블 병합
-        const rows = (await pool.query('SELECT id, name FROM hq WHERE name = ANY($1::text[])', [[plain, canon]])).rows;
-        let target = rows.find(r => r.name === canon);
-        let plainRows = rows.filter(r => r.name === plain);
-        if (!target && plainRows.length) {
-          target = plainRows[0]; plainRows = plainRows.slice(1);
-          await pool.query('UPDATE hq SET name = $1 WHERE id = $2', [canon, target.id]);
-        }
-        if (target && plainRows.length) {
-          const dupIds = plainRows.map(r => r.id);
-          await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
-          await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, dupIds]);
-          const d = await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [dupIds]);
-          mergedHq += d.rowCount || 0;
-        }
-        // 2) 재해 데이터 본부명 통일
-        const ua = await pool.query('UPDATE accidents SET "hqName" = $1 WHERE "hqName" = $2', [canon, plain]);
-        movedAcc += ua.rowCount || 0;
+      if (target && dups.length) {
+        const ids = dups.map(r => r.id);
+        await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, ids]);
+        await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, ids]);
+        await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [ids]);
+        console.log(`[DB] 본부 표준화: ${canon} — 중복 ${ids.length}개 병합`);
       }
-      await pool.query("UPDATE app_settings SET value = $2 WHERE key = $1", [KEY, `done hq=${mergedHq} acc=${movedAcc} ${new Date().toISOString()}`]);
-      console.log(`[DB] FM/HR/CRM 본부 통일 v1: 본부 중복 ${mergedHq}개 정리, 재해 ${movedAcc}건 명칭 통일`);
+      // 재해 데이터 본부명도 캐논으로 통일(멱등)
+      await pool.query('UPDATE accidents SET "hqName" = $1 WHERE "hqName" = $2', [canon, plain]);
     }
   } catch (e) {
-    console.error('FM/HR/CRM 본부 통일 실패:', e);
+    console.error('본부 명칭 표준화 실패:', e);
   }
-
-  // ⚠️ (제거됨) 예전엔 여기서 '공항사업본부'를 자동 재삽입해, 사용자가 지워도 서버가 뜰 때마다
-  //    다시 생기고(진짜 본부는 '윌앤비전 공항사업본부'라 존재 체크가 계속 실패), 서버리스 동시
-  //    콜드스타트 시 unique 제약이 없어 중복까지 쌓이던 버그가 있었음 → 자동 추가 로직 삭제.
-  // 과거에 잘못 생성된 '공항사업본부'(plain) 유령 중복 정리:
-  //   사업장이 하나도 연결되지 않은 것만 삭제(사업장 붙은 본부는 보존 → 고아 방지). idempotent.
-  await pool.query(`
-    DELETE FROM hq
-    WHERE name = '공항사업본부'
-      AND id NOT IN (SELECT "hqId" FROM sites WHERE "hqId" IS NOT NULL)
-  `);
 
   // ── 사업장 담당자 정리(1회) ──
   // 예전엔 담당자 칸에 본부명·팀 공용계정명·사업장명(현장계정명)이 그대로 박혀 목록에서 중복 표시됐음.
