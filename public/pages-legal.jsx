@@ -517,8 +517,11 @@ function LawSmartSearch({ initialQuery = "" }) {
             ? <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }} dangerouslySetInnerHTML={hl(it.title)} />
             : <span style={{ fontSize: 15, fontWeight: 700 }} dangerouslySetInnerHTML={hl(it.title)} />}
         </div>
-        <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.6 }} dangerouslySetInnerHTML={hl(it.highlight_content || it.content)} />
-        {it.keyword && <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 5 }}>관련어: {String(it.keyword).replace(/\s*,\s*/g, " · ")}</div>}
+        <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
+          dangerouslySetInnerHTML={hl(it.highlight_content || it.content)} />
+        {it.keyword && <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          관련어: {String(it.keyword).split(/\s*,\s*/).filter(Boolean).slice(0, 6).join(" · ")}
+        </div>}
       </div>
     );
   };
