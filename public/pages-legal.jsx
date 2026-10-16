@@ -183,8 +183,8 @@ const COND_CHIPS = [
   { k:"office",   label:"사무직만 종사 (교육 일부 제외 검토)" },
 ];
 
-function LegalCheckerView({ onNav, currentUser }) {
-  const [tab, setTab] = React.useState("checker");   // checker | search
+function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
+  const [tab, setTab] = React.useState(initialLawQuery ? "search" : "checker");   // checker | search
   const [n, setN] = React.useState(30);
   const [biz, setBiz] = React.useState({ v: "C|0", l: "건물관리·시설관리업 (FM)" });
   const [search, setSearch] = React.useState("");
@@ -250,7 +250,7 @@ function LegalCheckerView({ onNav, currentUser }) {
         ))}
       </div>
 
-      {tab === "search" && <LawSmartSearch />}
+      {tab === "search" && <LawSmartSearch initialQuery={initialLawQuery} />}
 
       {tab === "checker" && (<>
       <div className="content-hd">
@@ -459,7 +459,7 @@ function LegalCheckerView({ onNav, currentUser }) {
 
 // ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI) ──
 //   백엔드 /api/kosha-search 프록시를 통해 산업안전보건법·령·규칙, KOSHA GUIDE, 미디어 등을 키워드 검색.
-function LawSmartSearch() {
+function LawSmartSearch({ initialQuery = "" }) {
   const CATS = [
     { v: "0", l: "전체" }, { v: "1", l: "산업안전보건법" }, { v: "2", l: "시행령" }, { v: "3", l: "시행규칙" },
     { v: "4", l: "안전보건기준규칙" }, { v: "5", l: "고시·훈령·예규" }, { v: "6", l: "미디어" },
@@ -467,7 +467,7 @@ function LawSmartSearch() {
     { v: "11", l: "유해·위험작업 취업제한 규칙" },
   ];
   const catLabel = (v) => (CATS.find(c => c.v === String(v)) || {}).l || String(v || "");
-  const [q, setQ] = React.useState("");
+  const [q, setQ] = React.useState(initialQuery || "");
   const [cat, setCat] = React.useState("0");
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);
@@ -487,6 +487,12 @@ function LawSmartSearch() {
     } catch (e) { setData(null); setErr("검색 중 오류: " + e.message); }
     finally { setLoading(false); }
   };
+
+  // 홈에서 넘어온 초기 검색어가 있으면 진입 시 자동 검색(1회)
+  React.useEffect(() => {
+    if (initialQuery && initialQuery.trim()) run(1);
+    // eslint-disable-next-line
+  }, [initialQuery]);
 
   // <em class='smart'>...</em> 강조 → <mark>로 변환(그 외 태그 제거)
   const hl = (s) => {
