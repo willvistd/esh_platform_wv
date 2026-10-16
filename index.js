@@ -2770,29 +2770,46 @@ app.get('/api/lawgo-search', async (req, res) => {
     if (!query) return res.status(400).json({ ok: false, message: '검색어를 입력하세요.' });
     const page = String(parseInt(req.query.page) || 1);
     const display = String(Math.min(parseInt(req.query.display) || 20, 50));
-    const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) 등
+    const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) / prec(판례)
     const url = `https://www.law.go.kr/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
     const r = await fetch(url);
     const xml = await r.text();
-    if (/<\s*html/i.test(xml) || /등록되지 않은|인증|권한|error/i.test(xml) && !/<법령일련번호>/.test(xml)) {
-      // 로그인/권한 안내 페이지가 돌아온 경우
-      if (!/<법령일련번호>|<행정규칙일련번호>/.test(xml)) {
+    // target별 블록/필드 매핑
+    const map = {
+      law:    { block: 'law',    serial: '법령일련번호',   name: '법령명한글',  link: '법령상세링크' },
+      admrul: { block: 'admrul', serial: '행정규칙일련번호', name: '행정규칙명',  link: '행정규칙상세링크' },
+      prec:   { block: 'prec',   serial: '판례일련번호',   name: '사건명',      link: '판례상세링크' },
+    };
+    const tg = map[target] || map.law;
+    // 인증/권한 안내 페이지(법 데이터 블록이 없음)면 오류 반환
+    if (!new RegExp('<' + tg.serial + '>').test(xml)) {
+      if (/<\s*html|등록되지 않은|인증|권한|로그인/i.test(xml)) {
         return res.json({ ok: false, message: '국가법령정보센터 인증(OC) 오류 — 공동활용 신청/승인 상태를 확인하세요.', raw: String(xml).slice(0, 200) });
       }
+      // 블록은 없지만 정상(결과 0건)일 수 있음
     }
     const pick = (b, tag) => {
       const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
       return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
     };
-    const unit = /<행정규칙일련번호>/.test(xml) ? 'admrul' : 'law';
-    const splitTag = unit === 'admrul' ? 'admrul' : 'law';
-    const blocks = xml.split(new RegExp('<' + splitTag + '>')).slice(1).map(b => b.split(new RegExp('</' + splitTag + '>'))[0]);
+    const blocks = xml.split(new RegExp('<' + tg.block + '>')).slice(1).map(b => b.split(new RegExp('</' + tg.block + '>'))[0]);
     const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
     const items = blocks.map(b => {
-      let link = pick(b, '법령상세링크') || pick(b, '행정규칙상세링크');
+      let link = pick(b, tg.link);
       if (link && link.startsWith('/')) link = 'https://www.law.go.kr' + link;
+      if (target === 'prec') {
+        return {
+          name: pick(b, '사건명') || pick(b, '사건번호'),
+          caseNo: pick(b, '사건번호'),
+          court: pick(b, '법원명'),
+          judgeDate: pick(b, '선고일자'),
+          caseType: pick(b, '사건종류명'),
+          judgeType: pick(b, '판결유형') || pick(b, '선고'),
+          link,
+        };
+      }
       return {
-        name: pick(b, '법령명한글') || pick(b, '행정규칙명'),
+        name: pick(b, tg.name) || pick(b, '법령명한글') || pick(b, '행정규칙명'),
         dept: pick(b, '소관부처명'),
         lawType: pick(b, '법령구분명') || pick(b, '행정규칙종류'),
         effDate: pick(b, '시행일자') || pick(b, '발령일자'),
@@ -2800,7 +2817,7 @@ app.get('/api/lawgo-search', async (req, res) => {
         link,
       };
     }).filter(x => x.name);
-    res.json({ ok: true, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
+    res.json({ ok: true, target, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
   } catch (e) {
     console.error('[lawgo-search]', e.message);
     res.status(500).json({ ok: false, message: '검색 중 오류: ' + e.message });
