@@ -184,6 +184,7 @@ const COND_CHIPS = [
 ];
 
 function LegalCheckerView({ onNav, currentUser }) {
+  const [tab, setTab] = React.useState("checker");   // checker | search
   const [n, setN] = React.useState(30);
   const [biz, setBiz] = React.useState({ v: "C|0", l: "건물관리·시설관리업 (FM)" });
   const [search, setSearch] = React.useState("");
@@ -237,6 +238,21 @@ function LegalCheckerView({ onNav, currentUser }) {
 
   return (
     <div className="content" style={{ maxWidth: 920 }}>
+      {/* 탭: 법적의무 자동판정 / 안전보건법령 검색 */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, borderBottom: "1px solid var(--line)" }}>
+        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"]].map(([k, label]) => (
+          <button key={k} onClick={() => setTab(k)}
+            style={{ border: "none", background: "transparent", cursor: "pointer", padding: "10px 16px", fontSize: 14,
+              fontWeight: tab === k ? 800 : 600, color: tab === k ? "var(--primary)" : "var(--fg-3)",
+              borderBottom: tab === k ? "2.5px solid var(--primary)" : "2.5px solid transparent", marginBottom: -1 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "search" && <LawSmartSearch />}
+
+      {tab === "checker" && (<>
       <div className="content-hd">
         <div>
           <h1 className="content-title">법적의무 자동판정</h1>
@@ -436,6 +452,138 @@ function LegalCheckerView({ onNav, currentUser }) {
         선임·구성 기준은 산업안전보건법 시행령(별표2·3·5·9) 및 중대재해처벌법 기준입니다.<br/>
         실제 적용은 사업장 표준산업분류·작업 내용에 따라 달라질 수 있으니 최종 확인은 관할 노동청·별표 원문을 참고하세요.
       </div>
+      </>)}
+    </div>
+  );
+}
+
+// ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI) ──
+//   백엔드 /api/kosha-search 프록시를 통해 산업안전보건법·령·규칙, KOSHA GUIDE, 미디어 등을 키워드 검색.
+function LawSmartSearch() {
+  const CATS = [
+    { v: "0", l: "전체" }, { v: "1", l: "산업안전보건법" }, { v: "2", l: "시행령" }, { v: "3", l: "시행규칙" },
+    { v: "4", l: "안전보건기준규칙" }, { v: "5", l: "고시·훈령·예규" }, { v: "6", l: "미디어" },
+    { v: "7", l: "KOSHA GUIDE" }, { v: "8", l: "중대재해처벌법" }, { v: "9", l: "중대재해처벌법 시행령" },
+    { v: "11", l: "유해·위험작업 취업제한 규칙" },
+  ];
+  const catLabel = (v) => (CATS.find(c => c.v === String(v)) || {}).l || String(v || "");
+  const [q, setQ] = React.useState("");
+  const [cat, setCat] = React.useState("0");
+  const [loading, setLoading] = React.useState(false);
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState("");
+  const [needKey, setNeedKey] = React.useState(false);
+  const [page, setPage] = React.useState(1);
+  const PER = 10;
+
+  const run = async (p = 1) => {
+    if (!q.trim()) { setErr("검색어를 입력하세요."); return; }
+    setLoading(true); setErr(""); setNeedKey(false); setPage(p);
+    try {
+      const res = await fetch(`/api/kosha-search?searchValue=${encodeURIComponent(q.trim())}&category=${cat}&pageNo=${p}&numOfRows=${PER}`);
+      const d = await res.json();
+      if (!d.ok) { setData(null); if (d.needKey) setNeedKey(true); else setErr(d.message || "검색에 실패했습니다."); }
+      else setData(d);
+    } catch (e) { setData(null); setErr("검색 중 오류: " + e.message); }
+    finally { setLoading(false); }
+  };
+
+  // <em class='smart'>...</em> 강조 → <mark>로 변환(그 외 태그 제거)
+  const hl = (s) => {
+    const safe = String(s || "").replace(/<(?!\/?em\b)[^>]*>/gi, "");
+    return { __html: safe.replace(/<em[^>]*>/gi, "<mark>").replace(/<\/em>/gi, "</mark>") };
+  };
+
+  const items = (data && data.items) || [];
+  const media = (data && data.media) || [];
+  const totalCount = parseInt(data && data.totalCount) || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER));
+
+  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
+
+  const resultRow = (it, i) => {
+    const link = Array.isArray(it.filepath) ? it.filepath[0] : it.filepath;
+    return (
+      <div key={i} style={{ padding: "14px 2px", borderBottom: "1px solid var(--line-2)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+          <span className="chip chip-primary">{catLabel(it.category)}</span>
+          {link
+            ? <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }} dangerouslySetInnerHTML={hl(it.title)} />
+            : <span style={{ fontSize: 15, fontWeight: 700 }} dangerouslySetInnerHTML={hl(it.title)} />}
+        </div>
+        <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.6 }} dangerouslySetInnerHTML={hl(it.highlight_content || it.content)} />
+        {it.keyword && <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 5 }}>관련어: {String(it.keyword).replace(/\s*,\s*/g, " · ")}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">안전보건법령 검색</h1>
+          <div className="content-sub">
+            산업안전보건법·시행령·규칙, KOSHA GUIDE, 중대재해처벌법, 안전보건 미디어 자료를 키워드로 검색합니다. (출처: 안전보건공단 공공데이터)
+          </div>
+        </div>
+      </div>
+
+      {/* 검색 입력 */}
+      <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <select value={cat} onChange={e => setCat(e.target.value)}
+          style={{ border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 10px", fontSize: 13.5, background: "var(--bg-elev)", color: "var(--fg)" }}>
+          {CATS.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
+        </select>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") run(1); }}
+          placeholder="예: 사다리, 밀폐공간, 특별교육…"
+          style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
+        <button className="btn btn-primary" onClick={() => run(1)} disabled={loading}>
+          {loading ? "검색 중…" : "검색"}
+        </button>
+      </div>
+
+      {needKey && (
+        <div style={{ ...card, marginBottom: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 6 }}>🔑 공공데이터 인증키 설정이 필요합니다</div>
+          <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.75 }}>
+            이 검색은 공공데이터포털(data.go.kr)의 <b>안전보건공단 안전보건법령 스마트검색</b> API를 사용합니다.<br />
+            1) data.go.kr에서 해당 API <b>활용신청</b> → 인증키(serviceKey) 발급<br />
+            2) 발급받은 <b>인증키를 서버 환경변수 <code>KOSHA_API_KEY</code></b>로 등록(배포 설정)<br />
+            설정 방법은 담당(개발)에게 전달해 주시면 바로 검색이 활성화됩니다.
+          </div>
+        </div>
+      )}
+      {err && <div style={{ ...card, marginBottom: 16, borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c", fontSize: 13 }}>{err}</div>}
+
+      {data && !loading && (
+        <div style={card}>
+          <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 4 }}>
+            전체 {totalCount.toLocaleString()}건{cat !== "0" ? ` · ${catLabel(cat)}` : ""}
+          </div>
+          {data.associated && data.associated.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0 10px" }}>
+              {data.associated.map((w, i) => (
+                <button key={i} onClick={() => { setQ(String(w)); run(1); }}
+                  className="chip" style={{ cursor: "pointer" }}>{w}</button>
+              ))}
+            </div>
+          )}
+          {items.length === 0 && media.length === 0
+            ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>검색 결과가 없습니다.</div>
+            : <>
+                {items.map(resultRow)}
+                {items.length === 0 && media.map(resultRow)}
+              </>}
+
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 14 }}>
+              <button className="btn btn-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => run(page - 1)}>이전</button>
+              <span style={{ fontSize: 13, color: "var(--fg-3)" }}>{page} / {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={page >= totalPages || loading} onClick={() => run(page + 1)}>다음</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
