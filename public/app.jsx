@@ -1220,7 +1220,7 @@ function App() {
         ) : route.name === "tool-worker-survey" ? (
           <WorkerSurveyView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "legal-checker" ? (
-          <LegalCheckerView onNav={onNav} currentUser={currentUser} />
+          <LegalCheckerView onNav={onNav} currentUser={currentUser} initialLawQuery={route.lawQuery || ""} />
         ) : route.name === "risk-assessment" ? (
           <RiskAssessmentView onNav={onNav} currentUser={currentUser}
             fromRiskFlow={(() => { const p = prevRouteNameRef.current || ""; return p.startsWith("risk-") && p !== "risk-assessment"; })()} />

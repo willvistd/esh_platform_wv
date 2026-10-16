@@ -1,6 +1,9 @@
 // 윌앤비전 - Dashboard (권한별 / 본부·사업장 통합)
 
 const Dashboard = ({ role, currentUser, onNav }) => {
+  // 홈 중앙 법령 검색(구글식) — 검색 시 법령검색 화면으로 이동
+  const [lawQ, setLawQ] = React.useState("");
+  const goLawSearch = () => { const q = lawQ.trim(); if (!q) return; onNav({ name: "legal-checker", lawQuery: q }); };
   const D = window.WV_DATA;
   const today = D.today;
 
@@ -175,6 +178,20 @@ const Dashboard = ({ role, currentUser, onNav }) => {
             onClick={() => onNav({ name: "manage-sites" })}
           />
         </div>
+      </section>
+
+      {/* ─── 안전보건법령 검색 (구글식 중앙 검색창) ─── */}
+      <section style={{ margin: "4px 0 22px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <div style={{ width: "100%", maxWidth: 640, display: "flex", alignItems: "center", gap: 8,
+          background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: 999,
+          padding: "6px 8px 6px 18px", boxShadow: "var(--shadow)" }}>
+          <Icon name="search" size={18} />
+          <input value={lawQ} onChange={e => setLawQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") goLawSearch(); }}
+            placeholder="안전보건법령·KOSHA GUIDE 검색  (예: 사다리, 밀폐공간, 특별교육)"
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 15, color: "var(--fg)", padding: "8px 4px" }} />
+          <button className="btn btn-primary" onClick={goLawSearch} style={{ borderRadius: 999, padding: "9px 20px" }}>검색</button>
+        </div>
+        <div style={{ fontSize: 11.5, color: "var(--fg-4)" }}>산업안전보건법·령·규칙, KOSHA GUIDE, 중대재해처벌법 등 법령을 바로 검색합니다.</div>
       </section>
 
       {/* ─── 사업장 현황 위젯 (Hero 직후, 권한별 분기) ─── */}
