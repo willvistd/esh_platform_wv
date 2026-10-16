@@ -566,17 +566,29 @@ function LawSmartSearch({ initialQuery = "" }) {
 
       {data && !loading && (
         <div style={card}>
-          <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 4 }}>
-            전체 {totalCount.toLocaleString()}건{cat !== "0" ? ` · ${catLabel(cat)}` : ""}
+          {/* 출처(법령 종류)별 분류 — 건수 표시, 클릭 시 해당 분류만 필터 */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", margin: "2px 0 12px" }}>
+            {(() => {
+              const cc = data.categoryCount || {};
+              const sum = Object.values(cc).reduce((a, b) => a + (parseInt(b) || 0), 0) || totalCount;
+              const mk = (v, label, count) => {
+                const active = String(cat) === String(v);
+                return (
+                  <button key={v} onClick={() => { if (!active) { setCat(String(v)); run(1); } }}
+                    className={"chip" + (active ? " chip-primary" : "")}
+                    style={{ cursor: "pointer", fontWeight: active ? 700 : 500 }}>
+                    {label}<b style={{ marginLeft: 5 }}>{(count ?? 0).toLocaleString()}</b>
+                  </button>
+                );
+              };
+              const chips = [mk("0", "전체", sum)];
+              CATS.filter(c => c.v !== "0").forEach(c => {
+                const n = parseInt(cc[c.v]) || 0;
+                if (n > 0) chips.push(mk(c.v, c.l, n));
+              });
+              return chips;
+            })()}
           </div>
-          {data.associated && data.associated.length > 0 && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "6px 0 10px" }}>
-              {data.associated.map((w, i) => (
-                <button key={i} onClick={() => { setQ(String(w)); run(1); }}
-                  className="chip" style={{ cursor: "pointer" }}>{w}</button>
-              ))}
-            </div>
-          )}
           {items.length === 0 && media.length === 0
             ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>검색 결과가 없습니다.</div>
             : <>
