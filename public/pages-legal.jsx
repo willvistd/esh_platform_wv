@@ -645,11 +645,13 @@ function LawGoSearch({ initialQuery = "" }) {
   const [page, setPage] = React.useState(1);
   const PER = 20;
 
-  const run = async (p = 1) => {
-    if (!q.trim()) { setErr("검색어를 입력하세요."); return; }
+  const run = async (p = 1, overrideQ, overrideTarget) => {
+    const query = String(overrideQ != null ? overrideQ : q).trim();
+    const tg = overrideTarget != null ? overrideTarget : target;
+    if (!query) { setErr("검색어를 입력하세요."); return; }
     setLoading(true); setErr(""); setNeedKey(false); setPage(p);
     try {
-      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(q.trim())}&target=${target}&page=${p}&display=${PER}`);
+      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${tg}&page=${p}&display=${PER}`);
       const d = await res.json();
       if (!d.ok) { setData(null); if (d.needKey) setNeedKey(true); else setErr(d.message || "검색에 실패했습니다."); }
       else setData(d);
@@ -685,6 +687,16 @@ function LawGoSearch({ initialQuery = "" }) {
           placeholder="예: 산업안전보건법, 휴게시설, 중대재해처벌법…"
           style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
         <button className="btn btn-primary" onClick={() => run(1)} disabled={loading}>{loading ? "검색 중…" : "검색"}</button>
+        {/* 자주 쓰는 노동·산재 법령 빠른 검색 */}
+        <div style={{ flexBasis: "100%", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 2 }}>
+          <span style={{ fontSize: 11.5, color: "var(--fg-4)", marginRight: 2 }}>빠른 검색:</span>
+          {["근로기준법", "산업안전보건법", "산업재해보상보험법", "노동조합 및 노동관계조정법", "파견근로자 보호 등에 관한 법률", "기간제 및 단시간근로자 보호 등에 관한 법률", "최저임금법", "남녀고용평등과 일ㆍ가정 양립 지원에 관한 법률", "근로자퇴직급여 보장법", "중대재해 처벌 등에 관한 법률"].map(nm => (
+            <button key={nm} className="chip" style={{ cursor: "pointer" }}
+              onClick={() => { setTarget("law"); setQ(nm); run(1, nm, "law"); }}>
+              {nm.length > 10 ? nm.slice(0, 9) + "…" : nm}
+            </button>
+          ))}
+        </div>
       </div>
 
       {needKey && (
