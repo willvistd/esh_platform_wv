@@ -191,6 +191,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
   const [showDrop, setShowDrop] = React.useState(false);
   const [conds, setConds] = React.useState({ chem:false, conf:false, outdoor:false, contract:false, customer:false, office:false });
   const [showNo, setShowNo] = React.useState(false);
+  const [noOpen, setNoOpen] = React.useState(false);   // '제외' 그룹 펼침 상태(기본 접힘)
   const dropRef = React.useRef(null);
 
   // 바깥 클릭 시 드롭다운 닫기
@@ -382,7 +383,8 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
       ].map(({ key, title, foldDefault }) => {
         const col = colors[key];
         const items = buckets[key];
-        const [open, setOpen] = React.useState(!foldDefault);
+        // 훅을 루프 안에서 호출하지 않도록 상단 state 사용('제외' 그룹만 접힘 토글)
+        const open = foldDefault ? noOpen : true;
         return (
           <div key={key} style={{ marginBottom:24 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
@@ -393,7 +395,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
                 {items.length}건
               </span>
               {foldDefault && (
-                <button onClick={() => setOpen(o => !o)}
+                <button onClick={() => setNoOpen(o => !o)}
                   style={{ marginLeft:"auto", fontFamily:"inherit", fontSize:12, fontWeight:600,
                     color:"var(--fg-3)", background:"var(--bg-elev)", border:"1px solid var(--line)",
                     borderRadius:"var(--r-sm)", padding:"5px 12px", cursor:"pointer" }}>
@@ -624,7 +626,7 @@ function LawSearchPanel({ initialQuery = "" }) {
   return (
     <div>
       <div style={{ display: "flex", marginBottom: 14 }}>
-        {seg("kosha", "산업안전공단 검색")}
+        {seg("kosha", "산업안전보건공단 검색")}
         {seg("lawgo", "국가법령정보센터")}
       </div>
       {src === "kosha" ? <LawSmartSearch initialQuery={initialQuery} /> : <LawGoSearch initialQuery={initialQuery} />}
