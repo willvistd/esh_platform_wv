@@ -2759,6 +2759,54 @@ app.get('/api/kosha-search', async (req, res) => {
   }
 });
 
+// ── 국가법령정보센터(law.go.kr) 법령 검색 프록시 ──
+//   공동활용 OpenAPI. 인증키(OC)는 환경변수 LAWGO_OC(= open.law.go.kr 신청 ID, 보통 이메일 앞부분).
+//   법령상세링크를 그대로 사용해 실제 법령 원문 페이지로 딥링크.
+app.get('/api/lawgo-search', async (req, res) => {
+  try {
+    const oc = process.env.LAWGO_OC || process.env.lawgo_oc || process.env.LAW_GO_OC || process.env.LAW_OC;
+    if (!oc) return res.json({ ok: false, needKey: true, message: 'LAWGO_OC 미설정' });
+    const query = String(req.query.query || '').trim();
+    if (!query) return res.status(400).json({ ok: false, message: '검색어를 입력하세요.' });
+    const page = String(parseInt(req.query.page) || 1);
+    const display = String(Math.min(parseInt(req.query.display) || 20, 50));
+    const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) 등
+    const url = `https://www.law.go.kr/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
+    const r = await fetch(url);
+    const xml = await r.text();
+    if (/<\s*html/i.test(xml) || /등록되지 않은|인증|권한|error/i.test(xml) && !/<법령일련번호>/.test(xml)) {
+      // 로그인/권한 안내 페이지가 돌아온 경우
+      if (!/<법령일련번호>|<행정규칙일련번호>/.test(xml)) {
+        return res.json({ ok: false, message: '국가법령정보센터 인증(OC) 오류 — 공동활용 신청/승인 상태를 확인하세요.', raw: String(xml).slice(0, 200) });
+      }
+    }
+    const pick = (b, tag) => {
+      const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
+      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+    };
+    const unit = /<행정규칙일련번호>/.test(xml) ? 'admrul' : 'law';
+    const splitTag = unit === 'admrul' ? 'admrul' : 'law';
+    const blocks = xml.split(new RegExp('<' + splitTag + '>')).slice(1).map(b => b.split(new RegExp('</' + splitTag + '>'))[0]);
+    const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
+    const items = blocks.map(b => {
+      let link = pick(b, '법령상세링크') || pick(b, '행정규칙상세링크');
+      if (link && link.startsWith('/')) link = 'https://www.law.go.kr' + link;
+      return {
+        name: pick(b, '법령명한글') || pick(b, '행정규칙명'),
+        dept: pick(b, '소관부처명'),
+        lawType: pick(b, '법령구분명') || pick(b, '행정규칙종류'),
+        effDate: pick(b, '시행일자') || pick(b, '발령일자'),
+        promNo: pick(b, '공포번호') || pick(b, '발령번호'),
+        link,
+      };
+    }).filter(x => x.name);
+    res.json({ ok: true, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
+  } catch (e) {
+    console.error('[lawgo-search]', e.message);
+    res.status(500).json({ ok: false, message: '검색 중 오류: ' + e.message });
+  }
+});
+
 // ── MSDS 관리대장 (사업장별 물질 목록) ──
 app.get('/api/msds-ledger', async (req, res) => {
   try {

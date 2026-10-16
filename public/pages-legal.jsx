@@ -250,7 +250,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
         ))}
       </div>
 
-      {tab === "search" && <LawSmartSearch initialQuery={initialLawQuery} />}
+      {tab === "search" && <LawSearchPanel initialQuery={initialLawQuery} />}
 
       {tab === "checker" && (<>
       <div className="content-hd">
@@ -596,6 +596,124 @@ function LawSmartSearch({ initialQuery = "" }) {
                 {items.length === 0 && media.map(resultRow)}
               </>}
 
+          {totalPages > 1 && (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 14 }}>
+              <button className="btn btn-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => run(page - 1)}>이전</button>
+              <span style={{ fontSize: 13, color: "var(--fg-3)" }}>{page} / {totalPages}</span>
+              <button className="btn btn-secondary btn-sm" disabled={page >= totalPages || loading} onClick={() => run(page + 1)}>다음</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── 법령 검색 패널 — 출처(산업안전공단 / 국가법령정보센터) 토글 ──
+function LawSearchPanel({ initialQuery = "" }) {
+  const [src, setSrc] = React.useState("kosha"); // kosha | lawgo
+  const seg = (k, label) => (
+    <button key={k} onClick={() => setSrc(k)}
+      style={{ border: "1px solid var(--line)", cursor: "pointer", padding: "7px 14px", fontSize: 13,
+        fontWeight: src === k ? 800 : 600, color: src === k ? "#fff" : "var(--fg-2)",
+        background: src === k ? "var(--primary)" : "var(--bg-elev)",
+        borderRadius: k === "kosha" ? "999px 0 0 999px" : "0 999px 999px 0" }}>
+      {label}
+    </button>
+  );
+  return (
+    <div>
+      <div style={{ display: "flex", marginBottom: 14 }}>
+        {seg("kosha", "산업안전공단 검색")}
+        {seg("lawgo", "국가법령정보센터")}
+      </div>
+      {src === "kosha" ? <LawSmartSearch initialQuery={initialQuery} /> : <LawGoSearch initialQuery={initialQuery} />}
+    </div>
+  );
+}
+
+// ── 국가법령정보센터(law.go.kr) 법령 검색 — 실제 법령 원문으로 딥링크 ──
+function LawGoSearch({ initialQuery = "" }) {
+  const [q, setQ] = React.useState(initialQuery || "");
+  const [target, setTarget] = React.useState("law"); // law(법령) | admrul(행정규칙)
+  const [loading, setLoading] = React.useState(false);
+  const [data, setData] = React.useState(null);
+  const [err, setErr] = React.useState("");
+  const [needKey, setNeedKey] = React.useState(false);
+  const [page, setPage] = React.useState(1);
+  const PER = 20;
+
+  const run = async (p = 1) => {
+    if (!q.trim()) { setErr("검색어를 입력하세요."); return; }
+    setLoading(true); setErr(""); setNeedKey(false); setPage(p);
+    try {
+      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(q.trim())}&target=${target}&page=${p}&display=${PER}`);
+      const d = await res.json();
+      if (!d.ok) { setData(null); if (d.needKey) setNeedKey(true); else setErr(d.message || "검색에 실패했습니다."); }
+      else setData(d);
+    } catch (e) { setData(null); setErr("검색 중 오류: " + e.message); }
+    finally { setLoading(false); }
+  };
+  React.useEffect(() => { if (initialQuery && initialQuery.trim()) run(1); /* eslint-disable-next-line */ }, [initialQuery]);
+  React.useEffect(() => { if (data) run(1); /* eslint-disable-next-line */ }, [target]);
+
+  const items = (data && data.items) || [];
+  const totalCount = parseInt(data && data.totalCount) || 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PER));
+  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
+  const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
+
+  return (
+    <div>
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">국가법령정보센터 검색</h1>
+          <div className="content-sub">법령·행정규칙 전체를 검색하고, 제목을 누르면 <b>실제 법령 원문</b>으로 바로 이동합니다. (출처: 국가법령정보센터)</div>
+        </div>
+      </div>
+
+      <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        <select value={target} onChange={e => setTarget(e.target.value)}
+          style={{ border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 10px", fontSize: 13.5, background: "var(--bg-elev)", color: "var(--fg)" }}>
+          <option value="law">법령</option>
+          <option value="admrul">행정규칙(고시·훈령·예규)</option>
+        </select>
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") run(1); }}
+          placeholder="예: 산업안전보건법, 휴게시설, 중대재해처벌법…"
+          style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
+        <button className="btn btn-primary" onClick={() => run(1)} disabled={loading}>{loading ? "검색 중…" : "검색"}</button>
+      </div>
+
+      {needKey && (
+        <div style={{ ...card, marginBottom: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 6 }}>🔑 국가법령정보센터 인증(OC) 설정이 필요합니다</div>
+          <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.75 }}>
+            1) <b>open.law.go.kr</b>(국가법령정보 공동활용)에서 <b>OPEN API 활용 신청</b> → 승인<br />
+            2) 발급된 <b>인증 ID(OC, 보통 이메일 앞부분)</b>를 서버 환경변수 <code>LAWGO_OC</code>로 등록<br />
+            설정만 되면 바로 검색이 활성화됩니다.
+          </div>
+        </div>
+      )}
+      {err && <div style={{ ...card, marginBottom: 16, borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c", fontSize: 13 }}>{err}</div>}
+
+      {data && !loading && (
+        <div style={card}>
+          <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 8 }}>전체 {totalCount.toLocaleString()}건</div>
+          {items.length === 0
+            ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>검색 결과가 없습니다.</div>
+            : items.map((it, i) => (
+              <div key={i} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  {it.lawType && <span className="chip chip-primary">{it.lawType}</span>}
+                  {it.link
+                    ? <a href={it.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }}>{it.name}</a>
+                    : <span style={{ fontSize: 15, fontWeight: 700 }}>{it.name}</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
+                  {[it.dept, it.effDate ? `시행 ${fmtDate(it.effDate)}` : ""].filter(Boolean).join("  ·  ")}
+                </div>
+              </div>
+            ))}
           {totalPages > 1 && (
             <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 14 }}>
               <button className="btn btn-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => run(page - 1)}>이전</button>
