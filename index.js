@@ -2713,6 +2713,52 @@ app.get('/api/substances/meta', (req, res) => {
   res.json(judge.meta());
 });
 
+// ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI 프록시) ──
+//   공개 API(apis.data.go.kr/B552468/srch/smartSearch)를 서버에서 호출해 CORS·인증키 노출 없이 중계.
+//   인증키는 환경변수 KOSHA_API_KEY(공공데이터포털 발급 serviceKey, URL 인코딩된 값 권장).
+app.get('/api/kosha-search', async (req, res) => {
+  try {
+    const key = process.env.KOSHA_API_KEY;
+    if (!key) return res.json({ ok: false, needKey: true, message: 'KOSHA_API_KEY 미설정' });
+    const searchValue = String(req.query.searchValue || '').trim();
+    if (!searchValue) return res.status(400).json({ ok: false, message: '검색어를 입력하세요.' });
+    const category = String(req.query.category || '0');
+    const pageNo = String(parseInt(req.query.pageNo) || 1);
+    const numOfRows = String(Math.min(parseInt(req.query.numOfRows) || 10, 50));
+    const params = `pageNo=${pageNo}&numOfRows=${numOfRows}&searchValue=${encodeURIComponent(searchValue)}&category=${encodeURIComponent(category)}&type=json`;
+    // serviceKey는 발급값 그대로 사용(이미 URL 인코딩된 키 가정 → 재인코딩하지 않음)
+    const url = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${key}&${params}`;
+    const r = await fetch(url);
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch (e) {
+      return res.json({ ok: false, message: '공공데이터포털 응답 형식 오류 — 인증키/활용신청 승인 상태를 확인하세요.', raw: String(text).slice(0, 300) });
+    }
+    const resp = data.response || {};
+    const head = resp.header || {};
+    if (head.resultCode && String(head.resultCode) !== '00') {
+      return res.json({ ok: false, message: `공공데이터포털 오류(${head.resultCode}): ${head.resultMsg || ''}`.trim() });
+    }
+    const body = resp.body || {};
+    const toArr = (x) => (x == null ? [] : (Array.isArray(x) ? x : [x]));
+    const items = toArr(body.items && body.items.item);
+    const media = toArr(body.total_media && (body.total_media.media || body.total_media));
+    res.json({
+      ok: true,
+      totalCount: body.totalCount || 0,
+      pageNo: body.pageNo || pageNo,
+      numOfRows: body.numOfRows || numOfRows,
+      categoryCount: body.categorycount || body.categoryCount || {},
+      associated: toArr(body.associated_word),
+      items, media,
+    });
+  } catch (e) {
+    console.error('[kosha-search]', e.message);
+    res.status(500).json({ ok: false, message: '검색 중 오류: ' + e.message });
+  }
+});
+
 // ── MSDS 관리대장 (사업장별 물질 목록) ──
 app.get('/api/msds-ledger', async (req, res) => {
   try {
