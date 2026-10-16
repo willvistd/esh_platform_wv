@@ -2715,10 +2715,10 @@ app.get('/api/substances/meta', (req, res) => {
 
 // ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI 프록시) ──
 //   공개 API(apis.data.go.kr/B552468/srch/smartSearch)를 서버에서 호출해 CORS·인증키 노출 없이 중계.
-//   인증키는 환경변수 KOSHA_API_KEY(공공데이터포털 발급 serviceKey, URL 인코딩된 값 권장).
+//   인증키 환경변수: law_key / LAW_KEY / KOSHA_API_KEY 중 아무거나(공공데이터포털 serviceKey, URL 인코딩된 값 권장).
 app.get('/api/kosha-search', async (req, res) => {
   try {
-    const key = process.env.KOSHA_API_KEY;
+    const key = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
     if (!key) return res.json({ ok: false, needKey: true, message: 'KOSHA_API_KEY 미설정' });
     const searchValue = String(req.query.searchValue || '').trim();
     if (!searchValue) return res.status(400).json({ ok: false, message: '검색어를 입력하세요.' });

@@ -548,7 +548,7 @@ function LawSmartSearch() {
           <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.75 }}>
             이 검색은 공공데이터포털(data.go.kr)의 <b>안전보건공단 안전보건법령 스마트검색</b> API를 사용합니다.<br />
             1) data.go.kr에서 해당 API <b>활용신청</b> → 인증키(serviceKey) 발급<br />
-            2) 발급받은 <b>인증키를 서버 환경변수 <code>KOSHA_API_KEY</code></b>로 등록(배포 설정)<br />
+            2) 발급받은 <b>인증키를 서버 환경변수 <code>law_key</code></b>로 등록(배포 설정)<br />
             설정 방법은 담당(개발)에게 전달해 주시면 바로 검색이 활성화됩니다.
           </div>
         </div>
