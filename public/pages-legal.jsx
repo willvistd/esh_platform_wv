@@ -677,6 +677,7 @@ function LawGoSearch({ initialQuery = "" }) {
           style={{ border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 10px", fontSize: 13.5, background: "var(--bg-elev)", color: "var(--fg)" }}>
           <option value="law">법령</option>
           <option value="admrul">행정규칙(고시·훈령·예규)</option>
+          <option value="prec">판례</option>
         </select>
         <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") run(1); }}
           placeholder="예: 산업안전보건법, 휴게시설, 중대재해처벌법…"
@@ -704,13 +705,17 @@ function LawGoSearch({ initialQuery = "" }) {
             : items.map((it, i) => (
               <div key={i} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  {it.lawType && <span className="chip chip-primary">{it.lawType}</span>}
+                  {target === "prec"
+                    ? (it.court && <span className="chip chip-primary">{it.court}</span>)
+                    : (it.lawType && <span className="chip chip-primary">{it.lawType}</span>)}
                   {it.link
                     ? <a href={it.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }}>{it.name}</a>
                     : <span style={{ fontSize: 15, fontWeight: 700 }}>{it.name}</span>}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
-                  {[it.dept, it.effDate ? `시행 ${fmtDate(it.effDate)}` : ""].filter(Boolean).join("  ·  ")}
+                  {target === "prec"
+                    ? [it.caseNo, it.caseType, it.judgeDate ? `선고 ${fmtDate(it.judgeDate)}` : ""].filter(Boolean).join("  ·  ")
+                    : [it.dept, it.effDate ? `시행 ${fmtDate(it.effDate)}` : ""].filter(Boolean).join("  ·  ")}
                 </div>
               </div>
             ))}
