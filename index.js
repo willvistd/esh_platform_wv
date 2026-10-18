@@ -2771,9 +2771,20 @@ app.get('/api/lawgo-search', async (req, res) => {
     const page = String(parseInt(req.query.page) || 1);
     const display = String(Math.min(parseInt(req.query.display) || 20, 50));
     const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) / prec(판례)
-    const url = `https://www.law.go.kr/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
-    const r = await fetch(url);
-    const xml = await r.text();
+    const base = (req.query.https === '1' ? 'https' : 'http') + '://www.law.go.kr';
+    const url = `${base}/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/xml,text/xml,*/*' } });
+    // EUC-KR 가능성 대비: 바이트로 받아 UTF-8 우선 디코드, 한글 태그가 깨지면 EUC-KR로 재디코드
+    const buf = Buffer.from(await r.arrayBuffer());
+    let xml = buf.toString('utf8');
+    if (!/<법령명한글>|<행정규칙명>|<사건명>|<totalCnt>/.test(xml)) {
+      try { const dec = new TextDecoder('euc-kr'); const alt = dec.decode(buf); if (/<법령명한글>|<행정규칙명>|<사건명>|<totalCnt>/.test(alt)) xml = alt; } catch (_) {}
+    }
+    // 진단 모드: 실제 응답 확인용 (?debug=1)
+    if (req.query.debug) {
+      return res.json({ ok: true, debug: true, status: r.status, contentType: r.headers.get('content-type') || '',
+        url: url.replace(encodeURIComponent(oc), '***').replace(oc, '***'), length: xml.length, sample: xml.slice(0, 1800) });
+    }
     // target별 블록/필드 매핑
     const map = {
       law:    { block: 'law',    serial: '법령일련번호',   name: '법령명한글',  link: '법령상세링크' },
@@ -2781,18 +2792,24 @@ app.get('/api/lawgo-search', async (req, res) => {
       prec:   { block: 'prec',   serial: '판례일련번호',   name: '사건명',      link: '판례상세링크' },
     };
     const tg = map[target] || map.law;
-    // 인증/권한 안내 페이지(법 데이터 블록이 없음)면 오류 반환
-    if (!new RegExp('<' + tg.serial + '>').test(xml)) {
-      if (/<\s*html|등록되지 않은|인증|권한|로그인/i.test(xml)) {
-        return res.json({ ok: false, message: '국가법령정보센터 인증(OC) 오류 — 공동활용 신청/승인 상태를 확인하세요.', raw: String(xml).slice(0, 200) });
-      }
-      // 블록은 없지만 정상(결과 0건)일 수 있음
-    }
     const pick = (b, tag) => {
       const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
       return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
     };
-    const blocks = xml.split(new RegExp('<' + tg.block + '>')).slice(1).map(b => b.split(new RegExp('</' + tg.block + '>'))[0]);
+    // 블록 추출 — 속성 유무 모두 허용(<law>, <law id="..">)
+    const blockRe = new RegExp('<' + tg.block + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + tg.block + '>', 'g');
+    const blocks = []; let bm; while ((bm = blockRe.exec(xml)) !== null) blocks.push(bm[1]);
+    // 결과 블록이 없음 → 인증/오류 안내 페이지일 가능성. 실제 응답 일부를 함께 반환해 원인 파악.
+    if (blocks.length === 0) {
+      const authIssue = /<\s*html|등록되지 않은|미등록|인증|권한|로그인|사용자|승인/i.test(xml);
+      return res.json({
+        ok: false,
+        message: authIssue
+          ? '국가법령정보센터에서 결과를 받지 못했습니다 — 인증(OC) 또는 공동활용 승인 상태를 확인하세요.'
+          : '검색 결과가 없거나 응답 형식이 예상과 다릅니다.',
+        raw: String(xml).slice(0, 300),
+      });
+    }
     const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
     const items = blocks.map(b => {
       let link = pick(b, tg.link);
