@@ -2792,9 +2792,10 @@ app.get('/api/lawgo-search', async (req, res) => {
       prec:   { block: 'prec',   serial: '판례일련번호',   name: '사건명',      link: '판례상세링크' },
     };
     const tg = map[target] || map.law;
+    const decodeEnt = (s) => String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
     const pick = (b, tag) => {
       const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
-      return m ? m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim() : '';
+      return m ? decodeEnt(m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : '';
     };
     // 블록 추출 — 속성 유무 모두 허용(<law>, <law id="..">)
     const blockRe = new RegExp('<' + tg.block + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + tg.block + '>', 'g');
