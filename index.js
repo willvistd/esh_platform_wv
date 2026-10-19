@@ -2823,6 +2823,7 @@ app.get('/api/lawgo-search', async (req, res) => {
           judgeDate: pick(b, '선고일자'),
           caseType: pick(b, '사건종류명'),
           judgeType: pick(b, '판결유형') || pick(b, '선고'),
+          id: pick(b, '판례일련번호'),
           link,
         };
       }
@@ -2832,6 +2833,8 @@ app.get('/api/lawgo-search', async (req, res) => {
         lawType: pick(b, '법령구분명') || pick(b, '행정규칙종류'),
         effDate: pick(b, '시행일자') || pick(b, '발령일자'),
         promNo: pick(b, '공포번호') || pick(b, '발령번호'),
+        mst: pick(b, '법령일련번호'),                      // 본문 조회용(법령)
+        id: pick(b, '법령ID') || pick(b, '행정규칙일련번호'), // 본문 조회용
         link,
       };
     }).filter(x => x.name);
@@ -2839,6 +2842,71 @@ app.get('/api/lawgo-search', async (req, res) => {
   } catch (e) {
     console.error('[lawgo-search]', e.message);
     res.status(500).json({ ok: false, message: '검색 중 오류: ' + e.message });
+  }
+});
+
+// ── 국가법령정보센터 본문(조문) 조회 — 앱 안에서 법령 내용 읽기 ──
+//   lawService.do(본문 API). '본문 XML' 활용 권한이 있어야 동작.
+app.get('/api/lawgo-detail', async (req, res) => {
+  try {
+    const oc = process.env.LAWGO_OC || process.env.lawgo_oc || process.env.LAW_GO_OC || process.env.LAW_OC;
+    if (!oc) return res.json({ ok: false, needKey: true, message: 'LAWGO_OC 미설정' });
+    const target = String(req.query.target || 'law');
+    const mst = String(req.query.mst || '').trim();
+    const id = String(req.query.id || '').trim();
+    if (!mst && !id) return res.status(400).json({ ok: false, message: '식별번호(mst/id)가 필요합니다.' });
+    const idParam = (target === 'law' && mst) ? `MST=${encodeURIComponent(mst)}` : `ID=${encodeURIComponent(id || mst)}`;
+    const url = `http://www.law.go.kr/DRF/lawService.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&${idParam}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/xml,text/xml,*/*' } });
+    const buf = Buffer.from(await r.arrayBuffer());
+    let xml = buf.toString('utf8');
+    if (!/<조문|<법령|<행정규칙|조문내용|판례내용|판시사항/.test(xml)) {
+      try { const alt = new TextDecoder('euc-kr').decode(buf); if (/<조문|<법령|조문내용/.test(alt)) xml = alt; } catch (_) {}
+    }
+    if (req.query.debug) {
+      return res.json({ ok: true, debug: true, status: r.status, contentType: r.headers.get('content-type') || '', length: xml.length, sample: xml.slice(0, 2500) });
+    }
+    const decodeEnt = (s) => String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
+    const pick = (b, tag) => { const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>')); return m ? decodeEnt(m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : ''; };
+    const name = pick(xml, '법령명_한글') || pick(xml, '법령명한글') || pick(xml, '행정규칙명') || pick(xml, '사건명');
+    const effDate = pick(xml, '시행일자') || pick(xml, '발령일자') || pick(xml, '선고일자');
+
+    // 판례: 판시사항/판결요지/전문
+    if (target === 'prec') {
+      const sections = [
+        ['판시사항', pick(xml, '판시사항')],
+        ['판결요지', pick(xml, '판결요지')],
+        ['참조조문', pick(xml, '참조조문')],
+        ['판례내용', pick(xml, '판례내용')],
+      ].filter(([, v]) => v);
+      if (sections.length === 0) {
+        return res.json({ ok: false, message: '판례 본문을 가져오지 못했습니다(본문 권한/인증 확인).', raw: xml.slice(0, 300) });
+      }
+      return res.json({ ok: true, name, effDate, prec: true, sections: sections.map(([t, v]) => ({ title: t, content: v })) });
+    }
+
+    // 법령/행정규칙: 조문단위
+    const articles = [];
+    const artRe = /<조문단위[^>]*>([\s\S]*?)<\/조문단위>/g; let m;
+    while ((m = artRe.exec(xml)) !== null) {
+      const blk = m[1];
+      const content = pick(blk, '조문내용');
+      if (content) articles.push({ no: pick(blk, '조문번호'), title: pick(blk, '조문제목'), content });
+    }
+    if (articles.length === 0) {
+      const cRe = /<조문내용[^>]*>([\s\S]*?)<\/조문내용>/g; let mm;
+      while ((mm = cRe.exec(xml)) !== null) { const c = decodeEnt(mm[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()); if (c) articles.push({ content: c }); }
+    }
+    // 부칙(있으면 마지막에 하나로)
+    const buchik = pick(xml, '부칙내용');
+    if (articles.length === 0) {
+      const authIssue = /html|등록되지|미등록|인증|권한|로그인|승인/i.test(xml);
+      return res.json({ ok: false, message: authIssue ? "본문 조회 권한('본문 XML')이 필요하거나 인증 문제입니다." : '본문을 가져오지 못했습니다.', raw: xml.slice(0, 300) });
+    }
+    res.json({ ok: true, name, effDate, count: articles.length, articles, buchik: buchik || '' });
+  } catch (e) {
+    console.error('[lawgo-detail]', e.message);
+    res.status(500).json({ ok: false, message: '본문 조회 오류: ' + e.message });
   }
 });
 
