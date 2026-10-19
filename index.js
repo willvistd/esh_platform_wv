@@ -2771,8 +2771,9 @@ app.get('/api/lawgo-search', async (req, res) => {
     const page = String(parseInt(req.query.page) || 1);
     const display = String(Math.min(parseInt(req.query.display) || 20, 50));
     const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) / prec(판례)
+    const search = req.query.search === '2' ? '2' : '1'; // 1=제목(법령명), 2=본문(내용)
     const base = (req.query.https === '1' ? 'https' : 'http') + '://www.law.go.kr';
-    const url = `${base}/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
+    const url = `${base}/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&search=${search}&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
     const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/xml,text/xml,*/*' } });
     // EUC-KR 가능성 대비: 바이트로 받아 UTF-8 우선 디코드, 한글 태그가 깨지면 EUC-KR로 재디코드
     const buf = Buffer.from(await r.arrayBuffer());
