@@ -586,10 +586,11 @@ function LawSmartSearch({ initialQuery = "" }) {
         <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 16, fontWeight: 800, cursor: "pointer", paddingBottom: 11, marginBottom: 11, borderBottom: "1px solid var(--line)" }}>
           <input type="checkbox" checked={allOn} onChange={e => setAll(e.target.checked)} /> 전체
         </label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "9px 10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "9px 10px", alignItems: "start" }}>
           {CATS.map(c => (
-            <label key={c.v} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer", color: "var(--fg)", whiteSpace: "nowrap" }}>
-              <input type="checkbox" checked={!!sel[c.v]} onChange={() => toggle(c.v)} /> {c.l}
+            <label key={c.v} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 13, cursor: "pointer", color: "var(--fg)" }}>
+              <input type="checkbox" checked={!!sel[c.v]} onChange={() => toggle(c.v)} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span style={{ minWidth: 0, wordBreak: "keep-all", lineHeight: 1.35 }}>{c.l}</span>
             </label>
           ))}
         </div>
