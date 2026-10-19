@@ -901,6 +901,8 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
 
 // ───────────────────────── 재해율 분석 (3단계) ─────────────────────────
 const iaYearOf = (a) => parseInt(iaDatePart(a.occurredAt).slice(0, 4)) || 0;
+// 출퇴근재해는 재해율 통계에서 제외
+const iaIsCommute = (a) => /출퇴근/.test(a.category || "");
 const iaRateFmt = (r) => r == null ? "—" : (r === 0 ? "0%" : r.toFixed(2) + "%");
 
 const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, onReload }) => {
@@ -933,15 +935,43 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
   };
   const analysisSites = React.useMemo(() => sites.map(s => ({ s, cls: classify(s) })).filter(x => x.cls !== "기타"), [sites, startYear, endYear]);
   const contSites = analysisSites.filter(x => x.cls === "연속").map(x => x.s);
+  // 해당 연도에 운영(계약기간이 연도와 겹침)한 사업장인지 — 운영중/종료 구분 없음
+  const operatedIn = (s, y) => { const st = iaDatePart(s.startAt), en = iaDatePart(s.expiresAt);
+    return (st.length !== 10 || st <= y + "-12-31") && (en.length !== 10 || en >= y + "-01-01"); };
 
   // 재해자수(연도·기준별)
-  const cntBy = (sid, y, b) => list.filter(a => a.siteId === sid && iaYearOf(a) === y && (b === "all" ? true : iaIsApproved(a.compensationStatus))).length;
+  const inStat = (a, y, b) => !iaIsCommute(a) && iaYearOf(a) === y && (b === "all" ? true : iaIsApproved(a.compensationStatus));
+  const cntBy = (sid, y, b) => list.filter(a => a.siteId === sid && inStat(a, y, b)).length;
   const rateOf = (sid, y, b) => { const n = getHc(sid, y); if (!n) return null; return cntBy(sid, y, b) / n * 100; };
   const topTypeOf = (sid) => { const m = {}; list.filter(a => a.siteId === sid).forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]).join("·") || "-"; };
 
-  // 평균 재해율(연속, 종료연도)
-  const avgRate = (() => { const rs = contSites.map(s => rateOf(s.id, endYear, basis)).filter(r => r != null); return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null; })();
+  // 연도별 전사 재해율(고용노동부 방식): 그해 운영한 모든 사업장(종료 포함)의 재해자수 합 ÷ 근로자수 합 × 100
+  const companyBy = years.map(y => {
+    const ops = sites.filter(s => operatedIn(s, y));
+    let workers = 0, n = 0, missing = 0;
+    ops.forEach(s => { const h = getHc(s.id, y); if (!h) { missing++; return; } workers += h; n += cntBy(s.id, y, basis); });
+    const unmatched = list.filter(a => !a.siteId && inStat(a, y, basis)).length;
+    return { y, workers, n, missing, unmatched, rate: workers ? n / workers * 100 : null };
+  });
+  const companyEnd = companyBy[companyBy.length - 1];
+
+  // 확인 필요 목록 — 전사 재해율이 정확하려면 정리해야 할 데이터
+  const isClosed = (s) => ["inactive", "종료", "비활성"].includes(s.상태 || s.status);
+  const checks = React.useMemo(() => {
+    // ① 사업장 미지정 재해(출퇴근 제외, 분석기간) — 본부·발생장소별로 묶음
+    const g = {};
+    list.filter(a => !a.siteId && !iaIsCommute(a) && iaYearOf(a) >= startYear && iaYearOf(a) <= endYear).forEach(a => {
+      const hq = (a.hqName || "").trim() || "본부 미지정", loc = (a.location || "").trim() || "(발생장소 없음)";
+      const k = hq + "|" + loc; (g[k] = g[k] || { hq, loc, n: 0, ys: new Set() }); g[k].n++; g[k].ys.add(iaYearOf(a)); });
+    const unmatched = Object.values(g).sort((a, b) => b.n - a.n);
+    // ② 계약일 누락: 시작일 없음(과거 연도도 운영으로 계산됨) / 종료 상태인데 종료일 없음(계속 운영으로 계산됨)
+    const noStart = sites.filter(s => iaDatePart(s.startAt).length !== 10);
+    const closedNoEnd = sites.filter(s => isClosed(s) && iaDatePart(s.expiresAt).length !== 10);
+    // ③ 운영 연도 근로자수 미입력
+    const noHc = sites.map(s => ({ s, ys: years.filter(y => operatedIn(s, y) && !getHc(s.id, y)) })).filter(x => x.ys.length);
+    return { unmatched, noStart, closedNoEnd, noHc };
+  }, [list, sites, hc, startYear, endYear]);
 
   // 공식 vs 전체 차이 큰 사업장 (범위 합계 기준)
   const gapSites = React.useMemo(() => analysisSites.map(({ s }) => {
@@ -1023,6 +1053,7 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
           {basis === "off"
             ? <>📊 <b>공식 기준</b>: 산재 <b>승인·요양중·치료종결</b> 건만 재해율에 반영 (고용노동부 공식 통계와 동일)</>
             : <>📊 <b>전체 기준</b>: 공상처리 포함 <b>모든 재해</b>를 재해율에 반영 (실제 위험 수준 파악용)</>}
+          {" "}· 출퇴근재해는 두 기준 모두 제외
         </div>
       </div>
 
@@ -1033,13 +1064,62 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
           { l: "3년 연속 계약", v: contSites.length, c: "#16a34a" },
           { l: "신규", v: analysisSites.filter(x => x.cls === "신규").length, c: "var(--fg)" },
           { l: "종료", v: analysisSites.filter(x => x.cls === "종료").length, c: "var(--fg)" },
-          { l: `평균 재해율(${endYear})`, v: iaRateFmt(avgRate), c: "#dc2626" },
+          { l: `전사 재해율(${endYear})`, v: iaRateFmt(companyEnd && companyEnd.rate), c: "#dc2626" },
         ].map(k => (
           <div key={k.l} className="card" style={{ padding: "13px 15px" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: k.c }}>{k.v}</div>
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>{k.l}</div>
           </div>
         ))}
+      </div>
+
+      {/* 연도별 전사 재해율 */}
+      <div style={card}>
+        <h3 style={h3}>연도별 전사 재해율</h3>
+        <p style={cs}>그해 운영한 모든 사업장(종료 사업장 포함)의 재해자수 합 ÷ 근로자수 합 × 100 · 출퇴근재해 제외</p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+            <thead><tr><th style={{ ...TH, textAlign: "left" }}>연도</th><th style={TH}>재해자수</th><th style={TH}>근로자수</th><th style={TH}>재해율</th><th style={{ ...TH, textAlign: "left" }}>비고</th></tr></thead>
+            <tbody>
+              {companyBy.map(r => (
+                <tr key={r.y}>
+                  <td style={{ ...TD, textAlign: "left", fontWeight: 700 }}>{r.y}</td>
+                  <td style={TD}>{r.n}명</td>
+                  <td style={TD}>{r.workers ? r.workers.toLocaleString() + "명" : "—"}</td>
+                  <td style={{ ...TD, fontWeight: 800, color: r.rate == null ? "var(--fg-4)" : "#dc2626" }}>{iaRateFmt(r.rate)}</td>
+                  <td style={{ ...TD, textAlign: "left", fontSize: 11.5, color: "#92400e" }}>
+                    {[r.missing ? `근로자수 미입력 사업장 ${r.missing}곳 제외` : "", r.unmatched ? `사업장 미지정 재해 ${r.unmatched}건 제외` : ""].filter(Boolean).join(" · ") || <span style={{ color: "var(--fg-4)" }}>-</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 확인 필요 */}
+      <div style={card}>
+        <h3 style={h3}>✔ 확인 필요 데이터</h3>
+        <p style={cs}>전사 재해율에서 빠지거나 잘못 계산되는 원인 ({startYear}~{endYear})</p>
+        {(() => {
+          const sec = (title, desc, n, body) => (
+            <details style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
+              <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700 }}>{title} <span style={{ color: n ? "#b91c1c" : "#16a34a" }}>{n ? `${n}건` : "없음"}</span></summary>
+              <div style={{ fontSize: 12, color: "var(--fg-3)", margin: "6px 0 8px" }}>{desc}</div>
+              {n ? body : null}
+            </details>);
+          const li = { fontSize: 12.5, padding: "4px 0", borderBottom: "1px dashed var(--line)" };
+          return <>
+            {sec("① 사업장 미지정 재해", "재해 수정에서 사업장을 연결하세요. 종료 사업장이면 사업장 관리에 '종료'로 등록 후 연결 (출퇴근재해 제외)", checks.unmatched.length,
+              checks.unmatched.map(x => <div key={x.hq + x.loc} style={li}><b>{x.loc}</b> <span style={{ color: "var(--fg-3)" }}>· {x.hq} · {[...x.ys].sort().join(", ")}</span> — {x.n}건</div>))}
+            {sec("② 계약 시작일 없는 사업장", "시작일이 없으면 분석기간 모든 연도에 운영한 것으로 계산됩니다", checks.noStart.length,
+              checks.noStart.map(s => <div key={s.id} style={li}><b>{siteName(s.id)}</b>{isClosed(s) && <span style={{ color: "var(--fg-3)" }}> · 종료</span>}</div>))}
+            {sec("③ 종료 상태인데 계약 종료일 없는 사업장", "종료일이 없으면 지금까지 계속 운영한 것으로 계산됩니다", checks.closedNoEnd.length,
+              checks.closedNoEnd.map(s => <div key={s.id} style={li}><b>{siteName(s.id)}</b></div>))}
+            {sec("④ 운영 연도 근로자수 미입력", "아래 '연도별 근로자 수'에 입력하세요. 미입력 사업장은 전사 재해율에서 통째로 빠집니다", checks.noHc.length,
+              checks.noHc.map(({ s, ys }) => <div key={s.id} style={li}><b>{siteName(s.id)}</b> <span style={{ color: "var(--fg-3)" }}>· {ys.join(", ")}</span></div>))}
+          </>;
+        })()}
       </div>
 
       {/* 공식 vs 전체 경고 */}
@@ -1057,7 +1137,7 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
       {/* 연속 사업장 비교 */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-          <div><h3 style={h3}>연속 계약 사업장 — 연도별 재해율</h3><p style={cs}>분석기간 내내 계약 유지된 사업장만 (재해율 = 재해자수 ÷ 근로자수 × 100)</p></div>
+          <div><h3 style={h3}>연속 계약 사업장 — 연도별 재해율</h3><p style={cs}>내부 비교용 · 분석기간 내내 계약 유지된 사업장만 (재해율 = 재해자수 ÷ 근로자수 × 100)</p></div>
           <div style={{ display: "flex", gap: 6 }}>
             <button style={pill(view === "table")} onClick={() => setView("table")}>표</button>
             <button style={pill(view === "chart")} onClick={() => setView("chart")}>그래프</button>
