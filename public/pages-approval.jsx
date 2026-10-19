@@ -85,18 +85,15 @@ const ApprovalCompose = ({ onNav, currentUser, categories }) => {
           </div>
           <div>
             <div className="field-label">보존연한</div>
-            <select className="field-select" value={form.preservePeriod} onChange={e => setForm(s => ({ ...s, preservePeriod: e.target.value }))}>
-              {["영구", "10년", "5년", "3년", "1년"].map(p => <option key={p}>{p}</option>)}
-            </select>
+            <KSelect value={form.preservePeriod} onChange={v => setForm(s => ({ ...s, preservePeriod: v }))} options={["영구", "10년", "5년", "3년", "1년"]} />
           </div>
         </div>
 
         {/* 카테고리 */}
         <div style={{ marginBottom: 16 }}>
           <div className="field-label">카테고리</div>
-          <select className="field-select" value={form.categoryId} onChange={e => setForm(s => ({ ...s, categoryId: e.target.value }))}>
-            {approvalCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <KSelect value={form.categoryId} onChange={v => setForm(s => ({ ...s, categoryId: v }))}
+            options={approvalCats.map(c => ({ value: String(c.id), label: c.name }))} />
         </div>
 
         {/* 제목 */}
@@ -146,13 +143,10 @@ const ApprovalCompose = ({ onNav, currentUser, categories }) => {
                   cursor: "pointer", color: "var(--fg-3)", fontSize: 14
                 }}>✕</button>
               )}
-              <select className="field-select" style={{ fontSize: 11, marginBottom: 8 }}
-                value={line.type} onChange={e => updateLine(i, "type", e.target.value)}
-                disabled={i === 0}>
-                <option value="기안">기안</option>
-                <option value="결재">결재</option>
-                <option value="합의">합의</option>
-              </select>
+              <div style={{ marginBottom: 8 }}>
+                <KSelect style={{ fontSize: 11 }} value={line.type} onChange={v => updateLine(i, "type", v)}
+                  disabled={i === 0} options={["기안", "결재", "합의"]} />
+              </div>
               {i === 0 ? (
                 <>
                   <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{line.userName}</div>
@@ -160,13 +154,10 @@ const ApprovalCompose = ({ onNav, currentUser, categories }) => {
                   <div style={{ marginTop: 8, fontSize: 11, color: "var(--primary)", fontWeight: 600 }}>기안</div>
                 </>
               ) : (
-                <select className="field-select" style={{ fontSize: 12 }}
-                  value={line.userId} onChange={e => updateLine(i, "userId", e.target.value)}>
-                  <option value="">결재자 선택</option>
-                  {users.filter(u => ["admin", "safety", "manager"].includes(u.role)).map(u => (
-                    <option key={u.id} value={String(u.id)}>{u.name} ({u.dept})</option>
-                  ))}
-                </select>
+                <KSelect searchable style={{ fontSize: 12 }} value={line.userId} onChange={v => updateLine(i, "userId", v)} placeholder="결재자 선택"
+                  options={[{ value: "", label: "결재자 선택" }, ...users.filter(u => ["admin", "safety", "manager"].includes(u.role)).map(u => (
+                    { value: String(u.id), label: `${u.name} (${u.dept})` }
+                  ))]} />
               )}
             </div>
           ))}

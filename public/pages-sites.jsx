@@ -324,23 +324,15 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
         <input className="field-input" style={{ width: 220 }}
           placeholder="사업장명, 담당자, 계약형태 검색"
           value={search} onChange={e => setSearch(e.target.value)} />
-        <select className="field-select" style={{ width: 160 }}
-          value={hqFilter} onChange={e => setHQFilter(e.target.value)}>
-          <option value="전체">전체 본부</option>
-          {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-        <select className="field-select" style={{ width: 120 }}
-          value={regionFilter} onChange={e => setRegionFilter(e.target.value)}>
-          <option>전체</option>
-          {REGIONS.map(r => <option key={r}>{r}</option>)}
-        </select>
-        <select className="field-select" style={{ width: 130 }}
-          value={contractFilter} onChange={e => setContractFilter(e.target.value)}
-          title="계약형태로 거르기">
-          <option value="전체">계약형태 전체</option>
-          <option value="파견제외">파견 제외</option>
-          <option value="파견만">파견만</option>
-        </select>
+        <div style={{ width: 160 }}><KSelect value={hqFilter} onChange={setHQFilter}
+          options={[{ value: "전체", label: "전체 본부" }, ...hqs.map(h => ({ value: String(h.id), label: h.name }))]} /></div>
+        <div style={{ width: 120 }}><KSelect value={regionFilter} onChange={setRegionFilter}
+          options={["전체", ...REGIONS]} /></div>
+        <div style={{ width: 140 }} title="계약형태로 거르기"><KSelect value={contractFilter} onChange={setContractFilter} options={[
+          { value: "전체", label: "계약형태 전체" },
+          { value: "파견제외", label: "파견 제외" },
+          { value: "파견만", label: "파견만" },
+        ]} /></div>
         <div style={{ flex: 1 }} />
         <div style={{ display: "inline-flex", padding: 3, background: "var(--bg-sunk)", borderRadius: 6 }}>
           <button className={`btn btn-sm ${view === "grouped" ? "btn-primary" : "btn-ghost"}`}
@@ -840,10 +832,10 @@ const HQFormModal = ({ title, initialData, onSave, onClose }) => {
           </div>
           <div className="field">
             <label className="field-label">상태</label>
-            <select className="field-select" value={form.status} onChange={e => upd("status", e.target.value)}>
-              <option value="active">활성</option>
-              <option value="inactive">비활성</option>
-            </select>
+            <KSelect value={form.status} onChange={v => upd("status", v)} options={[
+              { value: "active", label: "활성" },
+              { value: "inactive", label: "비활성" },
+            ]} />
           </div>
         </div>
         <div className="modal-ft" style={{ gap: 8 }}>
@@ -1010,10 +1002,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], d
           {form.구분 === "본사" ? (
             <div className="field">
               <label className="field-label">소속 본부 *</label>
-              <select className="field-select" value={form.hqId || ""} onChange={e => update("hqId", e.target.value)}>
-                <option value="">— 본부 선택 —</option>
-                {hqOptions.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
+              <KSelect value={form.hqId || ""} onChange={v => update("hqId", v)} placeholder="본부 선택"
+                options={[{ value: "", label: "본부 선택" }, ...hqOptions.map(h => ({ value: String(h.id), label: h.name }))]} />
               {allowedHQIds && allowedHQIds.length === 0 && (
                 <div style={{ fontSize: 12, color: "var(--danger)", marginTop: 6 }}>
                   ⚠️ 등록 가능한 본부가 없습니다. 관리자에게 본부 권한을 요청하세요.
@@ -1195,10 +1185,10 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], d
           </div>
           <div className="field">
             <label className="field-label">상태</label>
-            <select className="field-select" value={form.상태} onChange={e => update("상태", e.target.value)}>
-              <option value="active">운영중</option>
-              <option value="inactive">종료</option>
-            </select>
+            <KSelect value={form.상태} onChange={v => update("상태", v)} options={[
+              { value: "active", label: "운영중" },
+              { value: "inactive", label: "종료" },
+            ]} />
           </div>
           </div>
           </div>

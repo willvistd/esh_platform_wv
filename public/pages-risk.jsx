@@ -5122,15 +5122,12 @@ const RiskAssessmentView = ({ onNav, currentUser, fromRiskFlow }) => {
                 <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 6, color: "#166534" }}>
                   📋 기존 평가 복제 (선택사항)
                 </label>
-                <select value={cloneFromId} onChange={e => setCloneFromId(e.target.value)}
-                  style={{ width: "100%", padding: "7px 10px", border: "1px solid #86efac", borderRadius: 6, fontSize: 12, background: "#fff" }}>
-                  <option value="">빈 양식으로 시작</option>
-                  {cloneCandidates.map(c => (
-                    <option key={c.evalId} value={c.evalId}>
-                      {c.type === "occasional" ? `${c.date} (${c.사유 || "사유 없음"})` : `${c.year}년`} 데이터 복제하여 시작
-                    </option>
-                  ))}
-                </select>
+                <KSelect value={cloneFromId} onChange={setCloneFromId}
+                  style={{ padding: "7px 30px 7px 10px", border: "1px solid #86efac", fontSize: 12 }}
+                  options={[{ value: "", label: "빈 양식으로 시작" }, ...cloneCandidates.map(c => ({
+                    value: String(c.evalId),
+                    label: `${c.type === "occasional" ? `${c.date} (${c.사유 || "사유 없음"})` : `${c.year}년`} 데이터 복제하여 시작`,
+                  }))]} />
               </div>
             )}
 

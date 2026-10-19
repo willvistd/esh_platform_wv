@@ -156,10 +156,8 @@ const WorkerFeedbackForm = ({ onNav, currentUser }) => {
             <div className="wf-sec-title">소속 구분 <span className="wf-req">*</span></div>
           </div>
         </header>
-        <select className="field-select" value={form.hqId || ""} onChange={e => upd("hqId", e.target.value)}>
-          <option value="">답변을 선택해주세요</option>
-          {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <KSelect value={form.hqId || ""} onChange={v => upd("hqId", v)} placeholder="답변을 선택해주세요"
+          options={[{ value: "", label: "답변을 선택해주세요" }, ...hqs.map(h => ({ value: String(h.id), label: h.name }))]} />
       </section>
 
       {/* 3. 부서명/사업장명 */}
@@ -607,12 +605,12 @@ const WorkerFeedbackDetailModal = ({ feedback, onClose, onUpdate }) => {
 
           <div className="field">
             <label className="field-label">처리 상태</label>
-            <select className="field-select" value={status} onChange={e => setStatus(e.target.value)}>
-              <option value="new">신규</option>
-              <option value="reviewing">검토중</option>
-              <option value="resolved">조치 완료</option>
-              <option value="rejected">반려</option>
-            </select>
+            <KSelect value={status} onChange={setStatus} options={[
+              { value: "new", label: "신규" },
+              { value: "reviewing", label: "검토중" },
+              { value: "resolved", label: "조치 완료" },
+              { value: "rejected", label: "반려" },
+            ]} />
           </div>
 
           <div className="field">

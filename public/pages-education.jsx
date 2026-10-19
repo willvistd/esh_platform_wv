@@ -234,11 +234,8 @@ const EducationLogList = ({ onNav, currentUser, role }) => {
         <input className="field-input" style={{ width: 200 }}
           placeholder="사업장명, 강사명 검색"
           value={search} onChange={e => setSearch(e.target.value)} />
-        <select className="field-select" style={{ width: 260 }}
-          value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-          <option>전체</option>
-          {eduTypes.map(t => <option key={t.id}>{t.label}</option>)}
-        </select>
+        <div style={{ width: 260 }}><KSelect value={typeFilter} onChange={setTypeFilter}
+          options={["전체", ...eduTypes.map(t => t.label)]} /></div>
       </div>
       {loading ? (
         <div style={{ textAlign: "center", padding: 60, color: "var(--fg-3)" }}>
@@ -692,11 +689,9 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
           <h2 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>{eduType} 교육일지</h2>
           {/* 화면에서만 보이는 드롭다운 */}
           {!isView && (
-            <select className="edu-no-print"
-              style={{ marginTop: 10, fontSize: 13, border: "1px solid #ddd", padding: "4px 8px", borderRadius: 4 }}
-              value={eduType} onChange={e => setEduType(e.target.value)}>
-              {eduTypes.map(t => <option key={t.id} value={t.label}>{t.label}</option>)}
-            </select>
+            <div className="edu-no-print" style={{ marginTop: 10, width: 240 }}>
+              <KSelect value={eduType} onChange={setEduType} options={eduTypes.map(t => t.label)} />
+            </div>
           )}
         </div>
 

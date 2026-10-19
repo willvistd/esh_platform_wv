@@ -87,11 +87,11 @@ const CategoryView = ({ catId, view, onNav, onCompose, role, currentUser, catego
           ))}
         </div>
         <div style={{ flex: 1 }} />
-        <select className="field-select" style={{ width: "auto", height: 32, padding: "0 12px" }} value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="recent">최신순</option>
-          <option value="due">마감일순</option>
-          <option value="views">조회순</option>
-        </select>
+        <div style={{ width: 120 }}><KSelect style={{ padding: "6px 30px 6px 12px" }} value={sort} onChange={setSort} options={[
+          { value: "recent", label: "최신순" },
+          { value: "due", label: "마감일순" },
+          { value: "views", label: "조회순" },
+        ]} /></div>
         <div className="view-toggle">
           <button className={view === "list" ? "active" : ""} title="리스트" onClick={() => window.__setView?.("list")}><Icon name="list" size={14} /></button>
           <button className={view === "card" ? "active" : ""} title="카드"  onClick={() => window.__setView?.("card")}><Icon name="grid" size={14} /></button>
@@ -542,6 +542,7 @@ const SubmitModal = ({ post, role, onClose }) => {
   const [file, setFile] = React.useState(null);
   const [memo, setMemo] = React.useState("");
   const [dragging, setDragging] = React.useState(false);
+  const [dept, setDept] = React.useState(() => (window.WV_DATA.depts || [])[0] || "");
   const onDrop = (e) => {
     e.preventDefault();
     setDragging(false);
@@ -580,9 +581,7 @@ const SubmitModal = ({ post, role, onClose }) => {
 
           <div className="field" style={{ marginTop: 18 }}>
             <label className="field-label">제출 부서</label>
-            <select className="field-select">
-              {window.WV_DATA.depts.map(d => <option key={d}>{d}</option>)}
-            </select>
+            <KSelect value={dept} onChange={setDept} options={window.WV_DATA.depts} />
           </div>
           <div className="field">
             <label className="field-label">메모 (선택)</label>
@@ -887,9 +886,8 @@ const Compose = ({ catId, editPost, onCancel, onSubmit, role }) => {
       <div className="card" style={{ padding: 28, marginTop: 24 }}>
         <div className="field">
           <label className="field-label">카테고리</label>
-          <select className="field-select" value={form.categoryId} onChange={e => update("categoryId", e.target.value)}>
-            {D.categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <KSelect value={form.categoryId} onChange={v => update("categoryId", v)}
+            options={D.categories.map(c => ({ value: String(c.id), label: c.name }))} />
         </div>
 
         <div className="field">
@@ -905,11 +903,11 @@ const Compose = ({ catId, editPost, onCancel, onSubmit, role }) => {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="field">
             <label className="field-label">중요도</label>
-            <select className="field-select" value={form.priority} onChange={e => update("priority", e.target.value)}>
-              <option value="normal">일반</option>
-              <option value="high">중요</option>
-              <option value="urgent">긴급</option>
-            </select>
+            <KSelect value={form.priority} onChange={v => update("priority", v)} options={[
+              { value: "normal", label: "일반" },
+              { value: "high", label: "중요" },
+              { value: "urgent", label: "긴급" },
+            ]} />
           </div>
           <div className="field">
             <label className="field-label">마감일 (선택)</label>
