@@ -690,7 +690,7 @@ function LawGoSearch({ initialQuery = "" }) {
     setLoading(true); setErr(""); setNeedKey(false); setFType("전체");
     try {
       const results = await Promise.all(targets.map(async (t) => {
-        const sc = (t === "law" || t === "admrul") ? "2" : "1";  // 법령·행정규칙은 본문까지 폭넓게 검색
+        const sc = (t === "law" || t === "admrul" || t === "prec") ? "2" : "1";  // 법령·행정규칙·판례는 본문(전문)까지 폭넓게 검색
         try {
           const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${t}&search=${sc}&page=1&display=${disp}`);
           return { t, d: await res.json() };
