@@ -2786,59 +2786,37 @@ app.get('/api/lawgo-search', async (req, res) => {
       return res.json({ ok: true, debug: true, status: r.status, contentType: r.headers.get('content-type') || '',
         url: url.replace(encodeURIComponent(oc), '***').replace(oc, '***'), length: xml.length, sample: xml.slice(0, 1800) });
     }
-    // target별 블록/필드 매핑
-    const map = {
-      law:    { block: 'law',    serial: '법령일련번호',   name: '법령명한글',  link: '법령상세링크' },
-      admrul: { block: 'admrul', serial: '행정규칙일련번호', name: '행정규칙명',  link: '행정규칙상세링크' },
-      prec:   { block: 'prec',   serial: '판례일련번호',   name: '사건명',      link: '판례상세링크' },
-    };
-    const tg = map[target] || map.law;
+    // ── 범용 파서(자료형 무관) ──
     const decodeEnt = (s) => String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
-    const pick = (b, tag) => {
-      const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>'));
-      return m ? decodeEnt(m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : '';
-    };
-    // 블록 추출 — 속성 유무 모두 허용(<law>, <law id="..">)
-    const blockRe = new RegExp('<' + tg.block + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + tg.block + '>', 'g');
+    const clean = (s) => decodeEnt(String(s).replace(/<!\[CDATA\[|\]\]>/g, '').trim());
+    const pick = (b, tag) => { const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>')); return m ? clean(m[1]) : ''; };
+    const byTags = (b, tags) => { for (const t of tags) { const v = pick(b, t); if (v) return v; } return ''; };
+    const bySuffix = (b, suf) => { const m = b.match(new RegExp('<([^<>/\\s]*' + suf + ')>([\\s\\S]*?)</\\1>')); return m ? clean(m[2]) : ''; };
+    // 결과 항목 태그 자동 감지(각 항목이 id="N" 속성을 가짐)
+    const itemTagMap = { law: 'law', admrul: 'admrul', prec: 'prec', detc: 'Detc', expc: 'expc', decc: 'decc' };
+    let itemTag = (xml.match(/<([A-Za-z가-힣]+)\s+id="\d+">/) || [])[1] || itemTagMap[target] || 'law';
+    const blockRe = new RegExp('<' + itemTag + '(?:\\s[^>]*)?>([\\s\\S]*?)</' + itemTag + '>', 'g');
     const blocks = []; let bm; while ((bm = blockRe.exec(xml)) !== null) blocks.push(bm[1]);
-    // 결과 블록이 없음 → 인증/오류 안내 페이지일 가능성. 실제 응답 일부를 함께 반환해 원인 파악.
     if (blocks.length === 0) {
       const authIssue = /<\s*html|등록되지 않은|미등록|인증|권한|로그인|사용자|승인/i.test(xml);
       return res.json({
         ok: false,
         message: authIssue
-          ? '국가법령정보센터에서 결과를 받지 못했습니다 — 인증(OC) 또는 공동활용 승인 상태를 확인하세요.'
+          ? '국가법령정보센터에서 결과를 받지 못했습니다 — 인증(OC) 또는 공동활용 승인/해당 API 신청 상태를 확인하세요.'
           : '검색 결과가 없거나 응답 형식이 예상과 다릅니다.',
         raw: String(xml).slice(0, 300),
       });
     }
     const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
-    const items = blocks.map(b => {
-      let link = pick(b, tg.link);
-      if (link && link.startsWith('/')) link = 'https://www.law.go.kr' + link;
-      if (target === 'prec') {
-        return {
-          name: pick(b, '사건명') || pick(b, '사건번호'),
-          caseNo: pick(b, '사건번호'),
-          court: pick(b, '법원명'),
-          judgeDate: pick(b, '선고일자'),
-          caseType: pick(b, '사건종류명'),
-          judgeType: pick(b, '판결유형') || pick(b, '선고'),
-          id: pick(b, '판례일련번호'),
-          link,
-        };
-      }
-      return {
-        name: pick(b, tg.name) || pick(b, '법령명한글') || pick(b, '행정규칙명'),
-        dept: pick(b, '소관부처명'),
-        lawType: pick(b, '법령구분명') || pick(b, '행정규칙종류'),
-        effDate: pick(b, '시행일자') || pick(b, '발령일자'),
-        promNo: pick(b, '공포번호') || pick(b, '발령번호'),
-        mst: pick(b, '법령일련번호'),                      // 본문 조회용(법령)
-        id: pick(b, '법령ID') || pick(b, '행정규칙일련번호'), // 본문 조회용
-        link,
-      };
-    }).filter(x => x.name);
+    const items = blocks.map(b => ({
+      name: byTags(b, ['법령명한글', '행정규칙명', '사건명', '안건명', '제목', '법령명', '법령명한글명']),
+      org: byTags(b, ['법원명', '질의기관명', '회신기관명', '소관부처명', '처리기관명', '담당부처명']),
+      date: byTags(b, ['선고일자', '종국일자', '의결일자', '회신일자', '결정일자', '시행일자', '발령일자']),
+      caseNo: byTags(b, ['사건번호', '안건번호']),
+      kind: byTags(b, ['법령구분명', '사건종류명', '행정규칙종류', '사건종류', '해석구분']),
+      mst: pick(b, '법령일련번호'),
+      id: pick(b, '법령ID') || bySuffix(b, '일련번호'),
+    })).filter(x => x.name);
     res.json({ ok: true, target, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
   } catch (e) {
     console.error('[lawgo-search]', e.message);
@@ -2869,21 +2847,24 @@ app.get('/api/lawgo-detail', async (req, res) => {
     }
     const decodeEnt = (s) => String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ');
     const pick = (b, tag) => { const m = b.match(new RegExp('<' + tag + '>([\\s\\S]*?)</' + tag + '>')); return m ? decodeEnt(m[1].replace(/<!\[CDATA\[|\]\]>/g, '').trim()) : ''; };
-    const name = pick(xml, '법령명_한글') || pick(xml, '법령명한글') || pick(xml, '행정규칙명') || pick(xml, '사건명');
-    const effDate = pick(xml, '시행일자') || pick(xml, '발령일자') || pick(xml, '선고일자');
+    const name = pick(xml, '법령명_한글') || pick(xml, '법령명한글') || pick(xml, '행정규칙명') || pick(xml, '사건명') || pick(xml, '안건명');
+    const effDate = pick(xml, '시행일자') || pick(xml, '발령일자') || pick(xml, '선고일자') || pick(xml, '종국일자') || pick(xml, '의결일자') || pick(xml, '회신일자');
 
-    // 판례: 판시사항/판결요지/전문
-    if (target === 'prec') {
-      const sections = [
-        ['판시사항', pick(xml, '판시사항')],
-        ['판결요지', pick(xml, '판결요지')],
-        ['참조조문', pick(xml, '참조조문')],
-        ['판례내용', pick(xml, '판례내용')],
-      ].filter(([, v]) => v);
+    // 판례/헌재결정례/법령해석례/행정심판례: 섹션형 본문
+    if (['prec', 'detc', 'expc', 'decc'].includes(target)) {
+      const candidates = [
+        '판시사항', '판결요지', '참조조문', '참조판례', '판례내용', '전문',          // 판례
+        '쟁점', '결정요지', '종국결과', '주문', '이유', '재판관',                    // 헌재결정례
+        '질의요지', '회답', '이유', '안건명',                                        // 법령해석례
+        '재결요지', '청구취지', '주문', '이유',                                       // 행정심판례
+      ];
+      const seen = new Set(); const sections = [];
+      for (const t of candidates) { if (seen.has(t)) continue; seen.add(t); const v = pick(xml, t); if (v) sections.push({ title: t, content: v }); }
       if (sections.length === 0) {
-        return res.json({ ok: false, message: '판례 본문을 가져오지 못했습니다(본문 권한/인증 확인).', raw: xml.slice(0, 300) });
+        const authIssue = /html|등록되지|미등록|인증|권한|로그인|승인/i.test(xml);
+        return res.json({ ok: false, message: authIssue ? "본문 조회 권한('본문 XML')이 필요하거나 인증 문제입니다." : '본문을 가져오지 못했습니다(원문에서 확인하세요).', raw: xml.slice(0, 300) });
       }
-      return res.json({ ok: true, name, effDate, prec: true, sections: sections.map(([t, v]) => ({ title: t, content: v })) });
+      return res.json({ ok: true, name, effDate, prec: true, sections });
     }
 
     // 법령/행정규칙: 조문단위
