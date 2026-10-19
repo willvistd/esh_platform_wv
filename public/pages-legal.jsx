@@ -683,6 +683,14 @@ function LawGoSearch({ initialQuery = "" }) {
   const totalPages = Math.max(1, Math.ceil(totalCount / PER));
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
   const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
+  // 사용자용 정식 페이지 주소(API 주소 아님). 제목/사건번호 기반 단축 URL.
+  const webLink = (it) => {
+    if (!it) return "";
+    const n = encodeURIComponent(String(it.name || ""));
+    if (target === "prec") return it.caseNo ? `https://www.law.go.kr/판례/${encodeURIComponent(it.caseNo)}` : "https://www.law.go.kr";
+    if (target === "admrul") return `https://www.law.go.kr/행정규칙/${n}`;
+    return `https://www.law.go.kr/법령/${n}`;
+  };
 
   return (
     <div>
@@ -745,8 +753,8 @@ function LawGoSearch({ initialQuery = "" }) {
                       fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
                     {it.name}
                   </button>
-                  {it.link && <a href={it.link} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>}
+                  <a href={webLink(it)} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
                   {target === "prec"
@@ -779,7 +787,7 @@ function LawGoSearch({ initialQuery = "" }) {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                {reader.link && <a href={reader.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">원문 ↗</a>}
+                <a href={webLink(reader)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">원문 ↗</a>
                 <button className="btn btn-ghost btn-sm" onClick={() => setReader(null)}><Icon name="x" size={14} /></button>
               </div>
             </div>
