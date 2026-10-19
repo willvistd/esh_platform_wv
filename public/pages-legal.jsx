@@ -688,10 +688,11 @@ function LawGoSearch({ initialQuery = "" }) {
   const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
   // 사용자용 정식 페이지 주소(API 주소 아님). 제목/사건번호 기반 단축 URL.
   const PATHS = { law: "법령", admrul: "행정규칙", prec: "판례", detc: "헌재결정례", expc: "법령해석례", decc: "행정심판례" };
+  const TLABEL = { prec: "판례", detc: "헌재결정례", expc: "법령해석", decc: "행정심판례", nlrc: "노동위원회", eiac: "고용보험심사위" };
   const webLink = (it) => {
     if (!it) return "https://www.law.go.kr";
-    const path = PATHS[target] || "법령";
-    // 판례·헌재·심판은 사건번호, 그 외는 명칭 기준 단축 URL
+    const path = PATHS[target];
+    if (!path) return "https://www.law.go.kr";   // 위원회 결정문 등 단축URL 없는 유형 → 메인(본문은 앱 내 읽기)
     const keyRaw = (["prec", "detc", "decc"].includes(target) && it.caseNo) ? it.caseNo : it.name;
     return keyRaw ? `https://www.law.go.kr/${path}/${encodeURIComponent(String(keyRaw))}` : "https://www.law.go.kr";
   };
@@ -714,6 +715,8 @@ function LawGoSearch({ initialQuery = "" }) {
           <option value="detc">헌재결정례</option>
           <option value="expc">법령해석(행정해석)</option>
           <option value="decc">행정심판례</option>
+          <option value="nlrc">노동위원회 판정례</option>
+          <option value="eiac">고용보험심사위원회</option>
         </select>
         {/* 제목 / 본문(내용) 검색 선택 — 법령·행정규칙만 */}
         {(target === "law" || target === "admrul") && (
@@ -764,7 +767,7 @@ function LawGoSearch({ initialQuery = "" }) {
             : items.map((it, i) => (
               <div key={i} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  {(it.kind || it.org) && <span className="chip chip-primary">{it.kind || it.org}</span>}
+                  {(it.kind || it.org || TLABEL[target]) && <span className="chip chip-primary">{it.kind || it.org || TLABEL[target]}</span>}
                   {/* 제목 클릭 → 앱 안에서 본문 읽기 */}
                   <button onClick={() => openReader(it)}
                     style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left",

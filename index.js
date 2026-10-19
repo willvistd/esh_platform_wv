@@ -2810,9 +2810,9 @@ app.get('/api/lawgo-search', async (req, res) => {
     const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
     const items = blocks.map(b => ({
       name: byTags(b, ['법령명한글', '행정규칙명', '사건명', '안건명', '제목', '법령명', '법령명한글명']),
-      org: byTags(b, ['법원명', '질의기관명', '회신기관명', '소관부처명', '처리기관명', '담당부처명']),
-      date: byTags(b, ['선고일자', '종국일자', '의결일자', '회신일자', '결정일자', '시행일자', '발령일자']),
-      caseNo: byTags(b, ['사건번호', '안건번호']),
+      org: byTags(b, ['법원명', '질의기관명', '회신기관명', '소관부처명', '처리기관명', '담당부처명', '기관명']),
+      date: byTags(b, ['선고일자', '종국일자', '의결일자', '회신일자', '결정일자', '등록일', '결정일', '처리일자', '시행일자', '발령일자']),
+      caseNo: byTags(b, ['사건번호', '안건번호', '의안번호']),
       kind: byTags(b, ['법령구분명', '사건종류명', '행정규칙종류', '사건종류', '해석구분']),
       mst: pick(b, '법령일련번호'),
       id: pick(b, '법령ID') || bySuffix(b, '일련번호'),
@@ -2850,13 +2850,14 @@ app.get('/api/lawgo-detail', async (req, res) => {
     const name = pick(xml, '법령명_한글') || pick(xml, '법령명한글') || pick(xml, '행정규칙명') || pick(xml, '사건명') || pick(xml, '안건명');
     const effDate = pick(xml, '시행일자') || pick(xml, '발령일자') || pick(xml, '선고일자') || pick(xml, '종국일자') || pick(xml, '의결일자') || pick(xml, '회신일자');
 
-    // 판례/헌재결정례/법령해석례/행정심판례: 섹션형 본문
-    if (['prec', 'detc', 'expc', 'decc'].includes(target)) {
+    // 법령/행정규칙 외(판례·헌재·해석·심판·각 위원회 결정문): 섹션형 본문
+    if (!['law', 'admrul'].includes(target)) {
       const candidates = [
         '판시사항', '판결요지', '참조조문', '참조판례', '판례내용', '전문',          // 판례
         '쟁점', '결정요지', '종국결과', '주문', '이유', '재판관',                    // 헌재결정례
-        '질의요지', '회답', '이유', '안건명',                                        // 법령해석례
-        '재결요지', '청구취지', '주문', '이유',                                       // 행정심판례
+        '질의요지', '회답', '안건명',                                                // 법령해석례
+        '재결요지', '청구취지',                                                      // 행정심판례
+        '제목', '결정요지', '주문', '이유', '결정문내용', '재결내용', '의결내용', '내용', // 위원회 결정문(노동위 등)
       ];
       const seen = new Set(); const sections = [];
       for (const t of candidates) { if (seen.has(t)) continue; seen.add(t); const v = pick(xml, t); if (v) sections.push({ title: t, content: v }); }
