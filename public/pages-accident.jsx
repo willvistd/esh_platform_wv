@@ -878,6 +878,23 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
   });
   const companyEnd = companyBy[companyBy.length - 1];
 
+  // 확인 필요 목록 — 전사 재해율이 정확하려면 정리해야 할 데이터
+  const isClosed = (s) => s.상태 === "inactive" || s.상태 === "종료";
+  const checks = React.useMemo(() => {
+    // ① 사업장 미지정 재해(출퇴근 제외, 분석기간) — 본부·발생장소별로 묶음
+    const g = {};
+    list.filter(a => !a.siteId && !iaIsCommute(a) && iaYearOf(a) >= startYear && iaYearOf(a) <= endYear).forEach(a => {
+      const hq = (a.hqName || "").trim() || "본부 미지정", loc = (a.location || "").trim() || "(발생장소 없음)";
+      const k = hq + "|" + loc; (g[k] = g[k] || { hq, loc, n: 0, ys: new Set() }); g[k].n++; g[k].ys.add(iaYearOf(a)); });
+    const unmatched = Object.values(g).sort((a, b) => b.n - a.n);
+    // ② 계약일 누락: 시작일 없음(과거 연도도 운영으로 계산됨) / 종료 상태인데 종료일 없음(계속 운영으로 계산됨)
+    const noStart = sites.filter(s => iaDatePart(s.startAt).length !== 10);
+    const closedNoEnd = sites.filter(s => isClosed(s) && iaDatePart(s.expiresAt).length !== 10);
+    // ③ 운영 연도 근로자수 미입력
+    const noHc = sites.map(s => ({ s, ys: years.filter(y => operatedIn(s, y) && !getHc(s.id, y)) })).filter(x => x.ys.length);
+    return { unmatched, noStart, closedNoEnd, noHc };
+  }, [list, sites, hc, startYear, endYear]);
+
   // 공식 vs 전체 차이 큰 사업장 (범위 합계 기준)
   const gapSites = React.useMemo(() => analysisSites.map(({ s }) => {
     let hcSum = 0, allN = 0, offN = 0;
@@ -1000,6 +1017,31 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 확인 필요 */}
+      <div style={card}>
+        <h3 style={h3}>✔ 확인 필요 데이터</h3>
+        <p style={cs}>전사 재해율에서 빠지거나 잘못 계산되는 원인 ({startYear}~{endYear})</p>
+        {(() => {
+          const sec = (title, desc, n, body) => (
+            <details style={{ border: "1px solid var(--line)", borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
+              <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700 }}>{title} <span style={{ color: n ? "#b91c1c" : "#16a34a" }}>{n ? `${n}건` : "없음"}</span></summary>
+              <div style={{ fontSize: 12, color: "var(--fg-3)", margin: "6px 0 8px" }}>{desc}</div>
+              {n ? body : null}
+            </details>);
+          const li = { fontSize: 12.5, padding: "4px 0", borderBottom: "1px dashed var(--line)" };
+          return <>
+            {sec("① 사업장 미지정 재해", "재해 수정에서 사업장을 연결하세요. 종료 사업장이면 사업장 관리에 '종료'로 등록 후 연결 (출퇴근재해 제외)", checks.unmatched.length,
+              checks.unmatched.map(x => <div key={x.hq + x.loc} style={li}><b>{x.loc}</b> <span style={{ color: "var(--fg-3)" }}>· {x.hq} · {[...x.ys].sort().join(", ")}</span> — {x.n}건</div>))}
+            {sec("② 계약 시작일 없는 사업장", "시작일이 없으면 분석기간 모든 연도에 운영한 것으로 계산됩니다", checks.noStart.length,
+              checks.noStart.map(s => <div key={s.id} style={li}><b>{siteName(s.id)}</b>{isClosed(s) && <span style={{ color: "var(--fg-3)" }}> · 종료</span>}</div>))}
+            {sec("③ 종료 상태인데 계약 종료일 없는 사업장", "종료일이 없으면 지금까지 계속 운영한 것으로 계산됩니다", checks.closedNoEnd.length,
+              checks.closedNoEnd.map(s => <div key={s.id} style={li}><b>{siteName(s.id)}</b></div>))}
+            {sec("④ 운영 연도 근로자수 미입력", "아래 '연도별 근로자 수'에 입력하세요. 미입력 사업장은 전사 재해율에서 통째로 빠집니다", checks.noHc.length,
+              checks.noHc.map(({ s, ys }) => <div key={s.id} style={li}><b>{siteName(s.id)}</b> <span style={{ color: "var(--fg-3)" }}>· {ys.join(", ")}</span></div>))}
+          </>;
+        })()}
       </div>
 
       {/* 공식 vs 전체 경고 */}
