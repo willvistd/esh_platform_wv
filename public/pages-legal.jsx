@@ -638,6 +638,7 @@ function LawSearchPanel({ initialQuery = "" }) {
 function LawGoSearch({ initialQuery = "" }) {
   const [q, setQ] = React.useState(initialQuery || "");
   const [target, setTarget] = React.useState("law"); // law(법령) | admrul(행정규칙)
+  const [scope, setScope] = React.useState("1");      // 1=제목 검색, 2=본문(내용) 검색
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);
   const [err, setErr] = React.useState("");
@@ -653,7 +654,7 @@ function LawGoSearch({ initialQuery = "" }) {
   const openReader = async (it) => {
     setReader(it); setRData(null); setRErr(""); setRLoading(true);
     try {
-      const qs = `target=${target}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`;
+      const qs = `target=${target}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`;   // (본문 조회는 scope 무관)
       const res = await fetch(`/api/lawgo-detail?${qs}`);
       const d = await res.json();
       if (!d.ok) setRErr(d.needKey ? "국가법령정보센터 인증(OC) 설정이 필요합니다." : (d.message || "본문을 불러오지 못했습니다."));
@@ -668,7 +669,8 @@ function LawGoSearch({ initialQuery = "" }) {
     if (!query) { setErr("검색어를 입력하세요."); return; }
     setLoading(true); setErr(""); setNeedKey(false); setPage(p);
     try {
-      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${tg}&page=${p}&display=${PER}`);
+      const sc = tg === "prec" ? "1" : scope;   // 판례는 본문검색 미지원 → 제목
+      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${tg}&search=${sc}&page=${p}&display=${PER}`);
       const d = await res.json();
       if (!d.ok) { setData(null); if (d.needKey) setNeedKey(true); else setErr(d.message || "검색에 실패했습니다."); }
       else setData(d);
@@ -677,6 +679,7 @@ function LawGoSearch({ initialQuery = "" }) {
   };
   React.useEffect(() => { if (initialQuery && initialQuery.trim()) run(1); /* eslint-disable-next-line */ }, [initialQuery]);
   React.useEffect(() => { if (data) run(1); /* eslint-disable-next-line */ }, [target]);
+  React.useEffect(() => { if (data) run(1); /* eslint-disable-next-line */ }, [scope]);
 
   const items = (data && data.items) || [];
   const totalCount = parseInt(data && data.totalCount) || 0;
@@ -708,6 +711,19 @@ function LawGoSearch({ initialQuery = "" }) {
           <option value="admrul">행정규칙(고시·훈령·예규)</option>
           <option value="prec">판례</option>
         </select>
+        {/* 제목 / 본문(내용) 검색 선택 — 판례는 제목만 */}
+        {target !== "prec" && (
+          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
+            {[["1", "제목"], ["2", "본문"]].map(([v, label]) => (
+              <button key={v} onClick={() => setScope(v)}
+                style={{ border: "none", cursor: "pointer", padding: "9px 12px", fontSize: 13,
+                  fontWeight: scope === v ? 800 : 600, color: scope === v ? "#fff" : "var(--fg-2)",
+                  background: scope === v ? "var(--primary)" : "var(--bg-elev)" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") run(1); }}
           placeholder="예: 산업안전보건법, 휴게시설, 중대재해처벌법…"
           style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
