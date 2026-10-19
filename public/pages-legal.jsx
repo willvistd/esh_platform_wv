@@ -659,6 +659,52 @@ function LawGoSearch({ initialQuery = "" }) {
   const [rData, setRData] = React.useState(null);
   const [rLoading, setRLoading] = React.useState(false);
   const [rErr, setRErr] = React.useState("");
+  // 본문 미리보기(검색어 주변 문장) — 항목별 저장
+  const [prev, setPrev] = React.useState({});
+
+  // 상세 응답에서 본문 텍스트만 추출
+  const bodyText = (d) => {
+    if (!d) return "";
+    if (d.sections && d.sections.length) return d.sections.map(s => (s.title ? s.title + " " : "") + (s.content || "")).join("\n");
+    if (d.articles && d.articles.length) return d.articles.map(a => (a.title ? a.title + " " : "") + (a.content || "")).join("\n") + (d.buchik ? "\n" + d.buchik : "");
+    return "";
+  };
+  // 검색어 주변 발췌(앞뒤 radius 글자), 최대 max개
+  const makeSnippet = (text, query, radius = 95, max = 2) => {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+    if (!t) return [];
+    const terms = Array.from(new Set([String(query || "").trim(), ...String(query || "").trim().split(/\s+/)].filter(Boolean)));
+    const out = []; const used = [];
+    for (const term of terms) {
+      if (!term || out.length >= max) break;
+      let idx = t.indexOf(term);
+      while (idx !== -1 && out.length < max) {
+        if (!used.some(u => Math.abs(u - idx) < radius)) {
+          const s = Math.max(0, idx - radius), e = Math.min(t.length, idx + term.length + radius);
+          out.push({ pre: (s > 0 ? "…" : "") + t.slice(s, idx), hit: t.slice(idx, idx + term.length), post: t.slice(idx + term.length, e) + (e < t.length ? "…" : "") });
+          used.push(idx);
+        }
+        idx = t.indexOf(term, idx + term.length);
+      }
+    }
+    if (out.length === 0) out.push({ pre: "", hit: "", post: t.slice(0, radius * 2) + (t.length > radius * 2 ? "…" : ""), noHit: true });
+    return out;
+  };
+  const pkey = (it) => it._t + "|" + (it.mst || it.id || it.caseNo || it.name || "");
+  const togglePreview = (it) => {
+    const k = pkey(it); const cur = prev[k];
+    if (cur) { setPrev(p => ({ ...p, [k]: { ...p[k], open: !p[k].open } })); return; }
+    setPrev(p => ({ ...p, [k]: { open: true, loading: true } }));
+    (async () => {
+      try {
+        const res = await fetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
+        const d = await res.json();
+        if (!d || !d.ok) { setPrev(p => ({ ...p, [k]: { open: true, err: (d && d.needKey) ? "본문 열람 권한이 필요합니다." : ((d && d.message) || "본문을 불러오지 못했습니다.") } })); return; }
+        const snips = makeSnippet(bodyText(d), (data && data.query) || q);
+        setPrev(p => ({ ...p, [k]: { open: true, snips } }));
+      } catch (e) { setPrev(p => ({ ...p, [k]: { open: true, err: "미리보기 오류: " + e.message } })); }
+    })();
+  };
 
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
   const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
@@ -687,7 +733,7 @@ function LawGoSearch({ initialQuery = "" }) {
     const targets = TYPES.map(t => t.v).filter(v => sel[v]);
     if (!query) { setErr("검색어를 입력하세요."); return; }
     if (targets.length === 0) { setErr("자료 구분을 하나 이상 선택하세요."); return; }
-    setLoading(true); setErr(""); setNeedKey(false); setFType("전체");
+    setLoading(true); setErr(""); setNeedKey(false); setFType("전체"); setPrev({});
     try {
       const results = await Promise.all(targets.map(async (t) => {
         const sc = (t === "law" || t === "admrul" || t === "prec") ? "2" : "1";  // 법령·행정규칙·판례는 본문(전문)까지 폭넓게 검색
@@ -704,7 +750,7 @@ function LawGoSearch({ initialQuery = "" }) {
         (d.items || []).forEach(it => merged.push({ ...it, _t: t }));
       }
       merged.sort((a, b) => dateNum(b.date) - dateNum(a.date));
-      setData({ merged, counts });
+      setData({ merged, counts, query });
       if (merged.length === 0) {
         if (needKeyAny) setNeedKey(true);
         else if (errs.length) setErr(errs.join("  /  "));
@@ -780,7 +826,9 @@ function LawGoSearch({ initialQuery = "" }) {
 
           {shown.length === 0
             ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>검색 결과가 없습니다.</div>
-            : shown.map((it, i) => (
+            : shown.map((it, i) => {
+              const pv = prev[pkey(it)];
+              return (
               <div key={i} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span className="chip chip-primary">{TLABEL[it._t] || it.kind || it.org}</span>
@@ -788,14 +836,31 @@ function LawGoSearch({ initialQuery = "" }) {
                     style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left", fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
                     {it.name || it.caseNo || "(제목 없음)"}
                   </button>
+                  <button onClick={() => togglePreview(it)}
+                    style={{ fontSize: 11.5, cursor: "pointer", color: (pv && pv.open) ? "#fff" : "var(--fg-3)", background: (pv && pv.open) ? "var(--primary)" : "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: 6, padding: "2px 8px", fontFamily: "inherit" }}>
+                    {pv && pv.open ? "미리보기 접기" : "미리보기"}
+                  </button>
                   <a href={webLink(it)} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
                   {[it.org, it.caseNo, it.date ? fmtDate(it.date) : ""].filter(Boolean).join("  ·  ")}
                 </div>
+                {pv && pv.open && (
+                  <div style={{ marginTop: 8, padding: "10px 12px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: 8, fontSize: 13, lineHeight: 1.8 }}>
+                    {pv.loading && <span style={{ color: "var(--fg-3)" }}>본문에서 검색어 찾는 중…</span>}
+                    {pv.err && <span style={{ color: "#b45309" }}>{pv.err} <span style={{ color: "var(--fg-4)" }}>(제목을 눌러 본문 전체 보기 / 원문 ↗ 이용)</span></span>}
+                    {pv.snips && pv.snips.map((s, j) => (
+                      <div key={j} style={{ marginBottom: j < pv.snips.length - 1 ? 7 : 0, color: "var(--fg-2)" }}>
+                        {s.noHit
+                          ? <span><span style={{ color: "var(--fg-4)", fontSize: 12 }}>[검색어가 본문에 직접 없어 앞부분 표시] </span>{s.post}</span>
+                          : <span>{s.pre}<mark style={{ background: "#fde68a", color: "#1f2937", fontWeight: 700, padding: "0 1px", borderRadius: 2 }}>{s.hit}</mark>{s.post}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
+            ); })}
 
           {/* 더 보기 — 자료형별 가져오는 개수 증가 */}
           {merged.length > 0 && (
