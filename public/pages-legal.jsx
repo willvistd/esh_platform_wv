@@ -688,7 +688,7 @@ function LawGoSearch({ initialQuery = "" }) {
   const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
   // 사용자용 정식 페이지 주소(API 주소 아님). 제목/사건번호 기반 단축 URL.
   const PATHS = { law: "법령", admrul: "행정규칙", prec: "판례", detc: "헌재결정례", expc: "법령해석례", decc: "행정심판례" };
-  const TLABEL = { prec: "판례", detc: "헌재결정례", expc: "법령해석", decc: "행정심판례", nlrc: "노동위원회", eiac: "고용보험심사위" };
+  const TLABEL = { prec: "판례", detc: "헌재결정례", expc: "법령해석", decc: "행정심판례", nlrc: "노동위원회", iaciac: "산재재심사", eiac: "고용보험심사위" };
   const webLink = (it) => {
     if (!it) return "https://www.law.go.kr";
     const path = PATHS[target];
@@ -716,6 +716,7 @@ function LawGoSearch({ initialQuery = "" }) {
           <option value="expc">법령해석(행정해석)</option>
           <option value="decc">행정심판례</option>
           <option value="nlrc">노동위원회 판정례</option>
+          <option value="iaciac">산재재심사 재결례</option>
           <option value="eiac">고용보험심사위원회</option>
         </select>
         {/* 제목 / 본문(내용) 검색 선택 — 법령·행정규칙만 */}
