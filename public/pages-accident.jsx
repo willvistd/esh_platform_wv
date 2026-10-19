@@ -823,6 +823,8 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
 
 // ───────────────────────── 재해율 분석 (3단계) ─────────────────────────
 const iaYearOf = (a) => parseInt(iaDatePart(a.occurredAt).slice(0, 4)) || 0;
+// 출퇴근재해는 재해율 통계에서 제외
+const iaIsCommute = (a) => /출퇴근/.test(a.category || "");
 const iaRateFmt = (r) => r == null ? "—" : (r === 0 ? "0%" : r.toFixed(2) + "%");
 
 const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, onReload }) => {
@@ -855,15 +857,26 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
   };
   const analysisSites = React.useMemo(() => sites.map(s => ({ s, cls: classify(s) })).filter(x => x.cls !== "기타"), [sites, startYear, endYear]);
   const contSites = analysisSites.filter(x => x.cls === "연속").map(x => x.s);
+  // 해당 연도에 운영(계약기간이 연도와 겹침)한 사업장인지 — 운영중/종료 구분 없음
+  const operatedIn = (s, y) => { const st = iaDatePart(s.startAt), en = iaDatePart(s.expiresAt);
+    return (st.length !== 10 || st <= y + "-12-31") && (en.length !== 10 || en >= y + "-01-01"); };
 
   // 재해자수(연도·기준별)
-  const cntBy = (sid, y, b) => list.filter(a => a.siteId === sid && iaYearOf(a) === y && (b === "all" ? true : iaIsApproved(a.compensationStatus))).length;
+  const inStat = (a, y, b) => !iaIsCommute(a) && iaYearOf(a) === y && (b === "all" ? true : iaIsApproved(a.compensationStatus));
+  const cntBy = (sid, y, b) => list.filter(a => a.siteId === sid && inStat(a, y, b)).length;
   const rateOf = (sid, y, b) => { const n = getHc(sid, y); if (!n) return null; return cntBy(sid, y, b) / n * 100; };
   const topTypeOf = (sid) => { const m = {}; list.filter(a => a.siteId === sid).forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 2).map(e => e[0]).join("·") || "-"; };
 
-  // 평균 재해율(연속, 종료연도)
-  const avgRate = (() => { const rs = contSites.map(s => rateOf(s.id, endYear, basis)).filter(r => r != null); return rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null; })();
+  // 연도별 전사 재해율(고용노동부 방식): 그해 운영한 모든 사업장(종료 포함)의 재해자수 합 ÷ 근로자수 합 × 100
+  const companyBy = years.map(y => {
+    const ops = sites.filter(s => operatedIn(s, y));
+    let workers = 0, n = 0, missing = 0;
+    ops.forEach(s => { const h = getHc(s.id, y); if (!h) { missing++; return; } workers += h; n += cntBy(s.id, y, basis); });
+    const unmatched = list.filter(a => !a.siteId && inStat(a, y, basis)).length;
+    return { y, workers, n, missing, unmatched, rate: workers ? n / workers * 100 : null };
+  });
+  const companyEnd = companyBy[companyBy.length - 1];
 
   // 공식 vs 전체 차이 큰 사업장 (범위 합계 기준)
   const gapSites = React.useMemo(() => analysisSites.map(({ s }) => {
@@ -945,6 +958,7 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
           {basis === "off"
             ? <>📊 <b>공식 기준</b>: 산재 <b>승인·요양중·치료종결</b> 건만 재해율에 반영 (고용노동부 공식 통계와 동일)</>
             : <>📊 <b>전체 기준</b>: 공상처리 포함 <b>모든 재해</b>를 재해율에 반영 (실제 위험 수준 파악용)</>}
+          {" "}· 출퇴근재해는 두 기준 모두 제외
         </div>
       </div>
 
@@ -955,13 +969,37 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
           { l: "3년 연속 계약", v: contSites.length, c: "#16a34a" },
           { l: "신규", v: analysisSites.filter(x => x.cls === "신규").length, c: "var(--fg)" },
           { l: "종료", v: analysisSites.filter(x => x.cls === "종료").length, c: "var(--fg)" },
-          { l: `평균 재해율(${endYear})`, v: iaRateFmt(avgRate), c: "#dc2626" },
+          { l: `전사 재해율(${endYear})`, v: iaRateFmt(companyEnd && companyEnd.rate), c: "#dc2626" },
         ].map(k => (
           <div key={k.l} className="card" style={{ padding: "13px 15px" }}>
             <div style={{ fontSize: 22, fontWeight: 800, color: k.c }}>{k.v}</div>
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>{k.l}</div>
           </div>
         ))}
+      </div>
+
+      {/* 연도별 전사 재해율 */}
+      <div style={card}>
+        <h3 style={h3}>연도별 전사 재해율</h3>
+        <p style={cs}>그해 운영한 모든 사업장(종료 사업장 포함)의 재해자수 합 ÷ 근로자수 합 × 100 · 출퇴근재해 제외</p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 420 }}>
+            <thead><tr><th style={{ ...TH, textAlign: "left" }}>연도</th><th style={TH}>재해자수</th><th style={TH}>근로자수</th><th style={TH}>재해율</th><th style={{ ...TH, textAlign: "left" }}>비고</th></tr></thead>
+            <tbody>
+              {companyBy.map(r => (
+                <tr key={r.y}>
+                  <td style={{ ...TD, textAlign: "left", fontWeight: 700 }}>{r.y}</td>
+                  <td style={TD}>{r.n}명</td>
+                  <td style={TD}>{r.workers ? r.workers.toLocaleString() + "명" : "—"}</td>
+                  <td style={{ ...TD, fontWeight: 800, color: r.rate == null ? "var(--fg-4)" : "#dc2626" }}>{iaRateFmt(r.rate)}</td>
+                  <td style={{ ...TD, textAlign: "left", fontSize: 11.5, color: "#92400e" }}>
+                    {[r.missing ? `근로자수 미입력 사업장 ${r.missing}곳 제외` : "", r.unmatched ? `사업장 미지정 재해 ${r.unmatched}건 제외` : ""].filter(Boolean).join(" · ") || <span style={{ color: "var(--fg-4)" }}>-</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 공식 vs 전체 경고 */}
@@ -979,7 +1017,7 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
       {/* 연속 사업장 비교 */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-          <div><h3 style={h3}>연속 계약 사업장 — 연도별 재해율</h3><p style={cs}>분석기간 내내 계약 유지된 사업장만 (재해율 = 재해자수 ÷ 근로자수 × 100)</p></div>
+          <div><h3 style={h3}>연속 계약 사업장 — 연도별 재해율</h3><p style={cs}>내부 비교용 · 분석기간 내내 계약 유지된 사업장만 (재해율 = 재해자수 ÷ 근로자수 × 100)</p></div>
           <div style={{ display: "flex", gap: 6 }}>
             <button style={pill(view === "table")} onClick={() => setView("table")}>표</button>
             <button style={pill(view === "chart")} onClick={() => setView("chart")}>그래프</button>
