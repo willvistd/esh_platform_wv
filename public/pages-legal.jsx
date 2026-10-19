@@ -636,26 +636,45 @@ function LawSearchPanel({ initialQuery = "" }) {
 
 // ── 국가법령정보센터(law.go.kr) 법령 검색 — 실제 법령 원문으로 딥링크 ──
 function LawGoSearch({ initialQuery = "" }) {
+  // 자료 구분(HRDB식 체크박스). 판례·해석류 기본 선택, 법령/행정규칙은 선택 시 추가.
+  const TYPES = [
+    { v: "prec", l: "판례" }, { v: "detc", l: "헌재결정례" }, { v: "expc", l: "법령해석" },
+    { v: "decc", l: "행정심판례" }, { v: "nlrc", l: "노동위원회" }, { v: "iaciac", l: "산재재심사" },
+    { v: "eiac", l: "고용보험심사위" }, { v: "law", l: "법령" }, { v: "admrul", l: "행정규칙" },
+  ];
+  const TLABEL = TYPES.reduce((m, t) => (m[t.v] = t.l, m), {});
+  const PATHS = { law: "법령", admrul: "행정규칙", prec: "판례", detc: "헌재결정례", expc: "법령해석례", decc: "행정심판례" };
+  const defaultSel = () => { const o = {}; TYPES.forEach(t => o[t.v] = !["law", "admrul"].includes(t.v)); return o; };
+
   const [q, setQ] = React.useState(initialQuery || "");
-  const [target, setTarget] = React.useState("law"); // law(법령) | admrul(행정규칙)
-  const [scope, setScope] = React.useState("1");      // 1=제목 검색, 2=본문(내용) 검색
+  const [sel, setSel] = React.useState(defaultSel);
+  const [scope, setScope] = React.useState("1");      // 법령·행정규칙 제목/본문
+  const [limit, setLimit] = React.useState(20);        // 자료형별 가져올 개수
   const [loading, setLoading] = React.useState(false);
-  const [data, setData] = React.useState(null);
+  const [data, setData] = React.useState(null);        // { merged:[], counts:{} }
   const [err, setErr] = React.useState("");
   const [needKey, setNeedKey] = React.useState(false);
-  const [page, setPage] = React.useState(1);
-  const PER = 20;
+  const [fType, setFType] = React.useState("전체");    // 결과 목록 분류 필터(클라이언트)
   // 본문 읽기 모달
-  const [reader, setReader] = React.useState(null);     // 열려있는 항목(item)
+  const [reader, setReader] = React.useState(null);
   const [rData, setRData] = React.useState(null);
   const [rLoading, setRLoading] = React.useState(false);
   const [rErr, setRErr] = React.useState("");
 
+  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
+  const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
+  const dateNum = (s) => parseInt(String(s || "").replace(/[^0-9]/g, "").slice(0, 8) || "0") || 0;
+  const webLink = (it) => {
+    const tp = it && it._t; const path = PATHS[tp];
+    if (!path) return "https://www.law.go.kr";
+    const keyRaw = (["prec", "detc", "decc"].includes(tp) && it.caseNo) ? it.caseNo : it.name;
+    return keyRaw ? `https://www.law.go.kr/${path}/${encodeURIComponent(String(keyRaw))}` : "https://www.law.go.kr";
+  };
+
   const openReader = async (it) => {
     setReader(it); setRData(null); setRErr(""); setRLoading(true);
     try {
-      const qs = `target=${target}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`;   // (본문 조회는 scope 무관)
-      const res = await fetch(`/api/lawgo-detail?${qs}`);
+      const res = await fetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
       const d = await res.json();
       if (!d.ok) setRErr(d.needKey ? "국가법령정보센터 인증(OC) 설정이 필요합니다." : (d.message || "본문을 불러오지 못했습니다."));
       else setRData(d);
@@ -663,131 +682,141 @@ function LawGoSearch({ initialQuery = "" }) {
     finally { setRLoading(false); }
   };
 
-  const run = async (p = 1, overrideQ, overrideTarget) => {
+  const run = async (overrideQ, lim) => {
     const query = String(overrideQ != null ? overrideQ : q).trim();
-    const tg = overrideTarget != null ? overrideTarget : target;
+    const disp = lim || limit;
+    const targets = TYPES.map(t => t.v).filter(v => sel[v]);
     if (!query) { setErr("검색어를 입력하세요."); return; }
-    setLoading(true); setErr(""); setNeedKey(false); setPage(p);
+    if (targets.length === 0) { setErr("자료 구분을 하나 이상 선택하세요."); return; }
+    setLoading(true); setErr(""); setNeedKey(false); setFType("전체");
     try {
-      const sc = (tg === "law" || tg === "admrul") ? scope : "1";   // 본문검색은 법령·행정규칙만
-      const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${tg}&search=${sc}&page=${p}&display=${PER}`);
-      const d = await res.json();
-      if (!d.ok) { setData(null); if (d.needKey) setNeedKey(true); else setErr(d.message || "검색에 실패했습니다."); }
-      else setData(d);
+      const results = await Promise.all(targets.map(async (t) => {
+        const sc = (t === "law" || t === "admrul") ? scope : "1";
+        try {
+          const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${t}&search=${sc}&page=1&display=${disp}`);
+          return { t, d: await res.json() };
+        } catch (e) { return { t, d: { ok: false, message: e.message } }; }
+      }));
+      const merged = []; const counts = {}; let needKeyAny = false; const errs = [];
+      for (const { t, d } of results) {
+        if (d && d.needKey) { needKeyAny = true; continue; }
+        if (!d || !d.ok) { errs.push(`${TLABEL[t] || t}: ${(d && d.message) || "오류"}`); continue; }
+        counts[t] = d.totalCount || 0;
+        (d.items || []).forEach(it => merged.push({ ...it, _t: t }));
+      }
+      merged.sort((a, b) => dateNum(b.date) - dateNum(a.date));
+      setData({ merged, counts });
+      if (merged.length === 0) {
+        if (needKeyAny) setNeedKey(true);
+        else if (errs.length) setErr(errs.join("  /  "));
+      }
     } catch (e) { setData(null); setErr("검색 중 오류: " + e.message); }
     finally { setLoading(false); }
   };
-  React.useEffect(() => { if (initialQuery && initialQuery.trim()) run(1); /* eslint-disable-next-line */ }, [initialQuery]);
-  React.useEffect(() => { if (data) run(1); /* eslint-disable-next-line */ }, [target]);
-  React.useEffect(() => { if (data) run(1); /* eslint-disable-next-line */ }, [scope]);
+  React.useEffect(() => { if (initialQuery && initialQuery.trim()) run(initialQuery); /* eslint-disable-next-line */ }, [initialQuery]);
 
-  const items = (data && data.items) || [];
-  const totalCount = parseInt(data && data.totalCount) || 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / PER));
-  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
-  const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
-  // 사용자용 정식 페이지 주소(API 주소 아님). 제목/사건번호 기반 단축 URL.
-  const PATHS = { law: "법령", admrul: "행정규칙", prec: "판례", detc: "헌재결정례", expc: "법령해석례", decc: "행정심판례" };
-  const TLABEL = { prec: "판례", detc: "헌재결정례", expc: "법령해석", decc: "행정심판례", nlrc: "노동위원회", iaciac: "산재재심사", eiac: "고용보험심사위" };
-  const webLink = (it) => {
-    if (!it) return "https://www.law.go.kr";
-    const path = PATHS[target];
-    if (!path) return "https://www.law.go.kr";   // 위원회 결정문 등 단축URL 없는 유형 → 메인(본문은 앱 내 읽기)
-    const keyRaw = (["prec", "detc", "decc"].includes(target) && it.caseNo) ? it.caseNo : it.name;
-    return keyRaw ? `https://www.law.go.kr/${path}/${encodeURIComponent(String(keyRaw))}` : "https://www.law.go.kr";
-  };
+  const toggle = (v) => setSel(s => ({ ...s, [v]: !s[v] }));
+  const allOn = TYPES.every(t => sel[t.v]);
+  const setAll = (on) => { const o = {}; TYPES.forEach(t => o[t.v] = on); setSel(o); };
+  const lawTypeChecked = sel.law || sel.admrul;
+
+  const merged = (data && data.merged) || [];
+  const counts = (data && data.counts) || {};
+  const totalCount = Object.values(counts).reduce((a, b) => a + (parseInt(b) || 0), 0);
+  const shown = fType === "전체" ? merged : merged.filter(it => it._t === fType);
 
   return (
     <div>
       <div className="content-hd">
         <div>
           <h1 className="content-title">국가법령정보센터 검색</h1>
-          <div className="content-sub">법령·행정규칙·<b>판례·헌재결정·행정해석·행정심판</b>을 통합 검색하고, 제목을 누르면 <b>앱에서 본문을 바로 읽을 수 있습니다.</b> (출처: 국가법령정보센터)</div>
+          <div className="content-sub">구분을 <b>체크</b>해서 판례·헌재결정·행정해석·행정심판·노동위·산재재심사 등을 <b>한 번에</b> 검색합니다. 제목을 누르면 앱에서 본문을 바로 읽어요. (출처: 국가법령정보센터)</div>
         </div>
       </div>
 
-      <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <select value={target} onChange={e => setTarget(e.target.value)}
-          style={{ border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 10px", fontSize: 13.5, background: "var(--bg-elev)", color: "var(--fg)" }}>
-          <option value="law">법령</option>
-          <option value="admrul">행정규칙(고시·훈령·예규)</option>
-          <option value="prec">판례</option>
-          <option value="detc">헌재결정례</option>
-          <option value="expc">법령해석(행정해석)</option>
-          <option value="decc">행정심판례</option>
-          <option value="nlrc">노동위원회 판정례</option>
-          <option value="iaciac">산재재심사 재결례</option>
-          <option value="eiac">고용보험심사위원회</option>
-        </select>
-        {/* 제목 / 본문(내용) 검색 선택 — 법령·행정규칙만 */}
-        {(target === "law" || target === "admrul") && (
-          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
-            {[["1", "제목"], ["2", "본문"]].map(([v, label]) => (
-              <button key={v} onClick={() => setScope(v)}
-                style={{ border: "none", cursor: "pointer", padding: "9px 12px", fontSize: 13,
-                  fontWeight: scope === v ? 800 : 600, color: scope === v ? "#fff" : "var(--fg-2)",
-                  background: scope === v ? "var(--primary)" : "var(--bg-elev)" }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") run(1); }}
-          placeholder="예: 산업안전보건법, 휴게시설, 중대재해처벌법…"
-          style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
-        <button className="btn btn-primary" onClick={() => run(1)} disabled={loading}>{loading ? "검색 중…" : "검색"}</button>
-        {/* 자주 쓰는 노동·산재 법령 빠른 검색 */}
-        <div style={{ flexBasis: "100%", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginTop: 2 }}>
-          <span style={{ fontSize: 11.5, color: "var(--fg-4)", marginRight: 2 }}>빠른 검색:</span>
-          {["근로기준법", "산업안전보건법", "산업재해보상보험법", "노동조합 및 노동관계조정법", "파견근로자 보호 등에 관한 법률", "기간제 및 단시간근로자 보호 등에 관한 법률", "최저임금법", "남녀고용평등과 일ㆍ가정 양립 지원에 관한 법률", "근로자퇴직급여 보장법", "중대재해 처벌 등에 관한 법률"].map(nm => (
-            <button key={nm} className="chip" style={{ cursor: "pointer" }}
-              onClick={() => { setTarget("law"); setQ(nm); run(1, nm, "law"); }}>
-              {nm.length > 10 ? nm.slice(0, 9) + "…" : nm}
-            </button>
+      {/* 구분 체크박스 */}
+      <div style={{ ...card, marginBottom: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center" }}>
+          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>
+            <input type="checkbox" checked={allOn} onChange={e => setAll(e.target.checked)} /> 전체
+          </label>
+          <span style={{ width: 1, height: 16, background: "var(--line)" }} />
+          {TYPES.map(t => (
+            <label key={t.v} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, cursor: "pointer", color: "var(--fg)" }}>
+              <input type="checkbox" checked={!!sel[t.v]} onChange={() => toggle(t.v)} /> {t.l}
+            </label>
           ))}
         </div>
       </div>
 
+      {/* 검색창 */}
+      <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        {lawTypeChecked && (
+          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
+            {[["1", "제목"], ["2", "본문"]].map(([v, label]) => (
+              <button key={v} onClick={() => setScope(v)} title="법령·행정규칙 검색 범위"
+                style={{ border: "none", cursor: "pointer", padding: "9px 12px", fontSize: 13,
+                  fontWeight: scope === v ? 800 : 600, color: scope === v ? "#fff" : "var(--fg-2)",
+                  background: scope === v ? "var(--primary)" : "var(--bg-elev)" }}>{label}</button>
+            ))}
+          </div>
+        )}
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { setLimit(20); run(null, 20); } }}
+          placeholder="예: 부당해고, 업무상 재해, 실업급여, 휴게시설…"
+          style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
+        <button className="btn btn-primary" onClick={() => { setLimit(20); run(null, 20); }} disabled={loading}>{loading ? "검색 중…" : "검색"}</button>
+      </div>
+
       {needKey && (
         <div style={{ ...card, marginBottom: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 6 }}>🔑 국가법령정보센터 인증(OC) 설정이 필요합니다</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 6 }}>🔑 국가법령정보센터 인증(OC)/해당 API 신청이 필요합니다</div>
           <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.75 }}>
-            1) <b>open.law.go.kr</b>(국가법령정보 공동활용)에서 <b>OPEN API 활용 신청</b> → 승인<br />
-            2) 발급된 <b>인증 ID(OC, 보통 이메일 앞부분)</b>를 서버 환경변수 <code>LAWGO_OC</code>로 등록<br />
-            설정만 되면 바로 검색이 활성화됩니다.
+            선택한 구분 중 일부는 open.law.go.kr에서 해당 API(목록·본문 XML) 신청/승인이 필요합니다. (인증 ID는 <code>LAWGO_OC</code>)
           </div>
         </div>
       )}
-      {err && <div style={{ ...card, marginBottom: 16, borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c", fontSize: 13 }}>{err}</div>}
+      {err && <div style={{ ...card, marginBottom: 16, borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c", fontSize: 13, lineHeight: 1.7 }}>{err}</div>}
 
       {data && !loading && (
         <div style={card}>
-          <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 8 }}>전체 {totalCount.toLocaleString()}건</div>
-          {items.length === 0
+          {/* 분류별 건수 필터 칩 */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 10 }}>
+            <button onClick={() => setFType("전체")} className={"chip" + (fType === "전체" ? " chip-primary" : "")}
+              style={{ cursor: "pointer", fontWeight: fType === "전체" ? 700 : 500 }}>전체 <b style={{ marginLeft: 4 }}>{totalCount.toLocaleString()}</b></button>
+            {TYPES.filter(t => counts[t.v] != null).map(t => (
+              <button key={t.v} onClick={() => setFType(t.v)} className={"chip" + (fType === t.v ? " chip-primary" : "")}
+                style={{ cursor: "pointer", fontWeight: fType === t.v ? 700 : 500 }}>
+                {t.l} <b style={{ marginLeft: 4 }}>{(counts[t.v] || 0).toLocaleString()}</b>
+              </button>
+            ))}
+          </div>
+
+          {shown.length === 0
             ? <div style={{ padding: "28px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>검색 결과가 없습니다.</div>
-            : items.map((it, i) => (
+            : shown.map((it, i) => (
               <div key={i} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  {(it.kind || it.org || TLABEL[target]) && <span className="chip chip-primary">{it.kind || it.org || TLABEL[target]}</span>}
-                  {/* 제목 클릭 → 앱 안에서 본문 읽기 */}
+                  <span className="chip chip-primary">{TLABEL[it._t] || it.kind || it.org}</span>
                   <button onClick={() => openReader(it)}
-                    style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left",
-                      fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
+                    style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left", fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
                     {it.name || it.caseNo || "(제목 없음)"}
                   </button>
                   <a href={webLink(it)} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>
                 </div>
                 <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
-                  {[(it.kind && it.org) ? it.org : "", it.caseNo, it.date ? fmtDate(it.date) : ""].filter(Boolean).join("  ·  ")}
+                  {[it.org, it.caseNo, it.date ? fmtDate(it.date) : ""].filter(Boolean).join("  ·  ")}
                 </div>
               </div>
             ))}
-          {totalPages > 1 && (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 10, marginTop: 14 }}>
-              <button className="btn btn-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => run(page - 1)}>이전</button>
-              <span style={{ fontSize: 13, color: "var(--fg-3)" }}>{page} / {totalPages}</span>
-              <button className="btn btn-secondary btn-sm" disabled={page >= totalPages || loading} onClick={() => run(page + 1)}>다음</button>
+
+          {/* 더 보기 — 자료형별 가져오는 개수 증가 */}
+          {merged.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 14 }}>
+              <button className="btn btn-secondary btn-sm" disabled={loading}
+                onClick={() => { const nl = limit + 20; setLimit(nl); run(null, nl); }}>
+                더 보기 (분류별 {limit}건씩 → {limit + 20}건)
+              </button>
             </div>
           )}
         </div>
@@ -801,9 +830,9 @@ function LawGoSearch({ initialQuery = "" }) {
             style={{ width: "100%", maxWidth: 760, maxHeight: "86vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(rData && rData.name) || reader.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(rData && rData.name) || reader.name || reader.caseNo}</div>
                 <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 2 }}>
-                  {[reader.kind || reader.org, reader.caseNo, (rData && rData.effDate) ? fmtDate(rData.effDate) : (reader.date ? fmtDate(reader.date) : "")].filter(Boolean).join("  ·  ")}
+                  {[TLABEL[reader._t], reader.caseNo, (rData && rData.effDate) ? fmtDate(rData.effDate) : (reader.date ? fmtDate(reader.date) : "")].filter(Boolean).join("  ·  ")}
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
@@ -843,5 +872,4 @@ function LawGoSearch({ initialQuery = "" }) {
     </div>
   );
 }
-
 Object.assign(window, { LegalCheckerView });
