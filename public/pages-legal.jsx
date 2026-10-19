@@ -648,7 +648,6 @@ function LawGoSearch({ initialQuery = "" }) {
 
   const [q, setQ] = React.useState(initialQuery || "");
   const [sel, setSel] = React.useState(defaultSel);
-  const [scope, setScope] = React.useState("1");      // 법령·행정규칙 제목/본문
   const [limit, setLimit] = React.useState(20);        // 자료형별 가져올 개수
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);        // { merged:[], counts:{} }
@@ -691,7 +690,7 @@ function LawGoSearch({ initialQuery = "" }) {
     setLoading(true); setErr(""); setNeedKey(false); setFType("전체");
     try {
       const results = await Promise.all(targets.map(async (t) => {
-        const sc = (t === "law" || t === "admrul") ? scope : "1";
+        const sc = (t === "law" || t === "admrul") ? "2" : "1";  // 법령·행정규칙은 본문까지 폭넓게 검색
         try {
           const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${t}&search=${sc}&page=1&display=${disp}`);
           return { t, d: await res.json() };
@@ -718,7 +717,6 @@ function LawGoSearch({ initialQuery = "" }) {
   const toggle = (v) => setSel(s => ({ ...s, [v]: !s[v] }));
   const allOn = TYPES.every(t => sel[t.v]);
   const setAll = (on) => { const o = {}; TYPES.forEach(t => o[t.v] = on); setSel(o); };
-  const lawTypeChecked = sel.law || sel.admrul;
 
   const merged = (data && data.merged) || [];
   const counts = (data && data.counts) || {};
@@ -750,16 +748,6 @@ function LawGoSearch({ initialQuery = "" }) {
 
       {/* 검색창 */}
       <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        {lawTypeChecked && (
-          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
-            {[["1", "제목"], ["2", "본문"]].map(([v, label]) => (
-              <button key={v} onClick={() => setScope(v)} title="법령·행정규칙 검색 범위"
-                style={{ border: "none", cursor: "pointer", padding: "9px 12px", fontSize: 13,
-                  fontWeight: scope === v ? 800 : 600, color: scope === v ? "#fff" : "var(--fg-2)",
-                  background: scope === v ? "var(--primary)" : "var(--bg-elev)" }}>{label}</button>
-            ))}
-          </div>
-        )}
         <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { setLimit(20); run(null, 20); } }}
           placeholder="예: 부당해고, 업무상 재해, 실업급여, 휴게시설…"
           style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
