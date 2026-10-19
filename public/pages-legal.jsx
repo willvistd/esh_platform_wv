@@ -709,11 +709,69 @@ function LawGoSearch({ initialQuery = "" }) {
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
   const fmtDate = (s) => { const t = String(s || "").replace(/[^0-9]/g, ""); return t.length === 8 ? `${t.slice(0, 4)}.${t.slice(4, 6)}.${t.slice(6, 8)}` : (s || ""); };
   const dateNum = (s) => parseInt(String(s || "").replace(/[^0-9]/g, "").slice(0, 8) || "0") || 0;
+  // 원문 링크 — 법령/행정규칙은 한글주소(지원됨), 판례·해석·심판 등은 상세페이지(일련번호 기반)
+  // ※ 판례 등은 한글주소(/판례/사건번호)를 지원하지 않아 404가 나므로 상세페이지로 연결
+  const DETAIL_PAGE = {
+    prec: ["precInfoP", "precSeq"], detc: ["detcInfoP", "detcSeq"], expc: ["expcInfoP", "expcSeq"],
+    decc: ["deccInfoP", "deccSeq"], nlrc: ["nlrcInfoP", "nlrcSeq"], iaciac: ["iaciacInfoP", "iaciacSeq"], eiac: ["eiacInfoP", "eiacSeq"],
+  };
   const webLink = (it) => {
-    const tp = it && it._t; const path = PATHS[tp];
-    if (!path) return "https://www.law.go.kr";
-    const keyRaw = (["prec", "detc", "decc"].includes(tp) && it.caseNo) ? it.caseNo : it.name;
-    return keyRaw ? `https://www.law.go.kr/${path}/${encodeURIComponent(String(keyRaw))}` : "https://www.law.go.kr";
+    const tp = it && it._t;
+    if (tp === "law" || tp === "admrul") {
+      return it.name ? `https://www.law.go.kr/${PATHS[tp]}/${encodeURIComponent(String(it.name))}` : "https://www.law.go.kr";
+    }
+    const m = DETAIL_PAGE[tp];
+    if (m && it.id) return `https://www.law.go.kr/LSW/${m[0]}.do?${m[1]}=${encodeURIComponent(String(it.id))}`;
+    return "https://www.law.go.kr";
+  };
+  // 판결문/결정문 본문을 읽기 좋게 정리(【항목】·번호 앞에서 줄바꿈)
+  const prettyLegal = (s) => {
+    let t = String(s || "").replace(/\r/g, "").replace(/ /g, " ");
+    t = t.replace(/[ \t]{2,}/g, " ");
+    t = t.replace(/\s*【\s*([^】]+?)\s*】\s*/g, "\n\n【$1】\n");          // 【주문】 【이유】 【질의】 【회시】 등
+    t = t.replace(/\s+(\d{1,2}\.\s)/g, "\n$1");                          // 1.  2.
+    t = t.replace(/\s+([가나다라마바사아자차카타파하]\.\s)/g, "\n$1");   // 가. 나. 다.
+    t = t.replace(/\s*([①-⑮⑯-⑳])\s*/g, "\n$1 ");                        // ① ② …
+    t = t.replace(/\s+(\(\s*\d{1,2}\s*\)\s)/g, "\n$1");                  // (1) (2)
+    t = t.replace(/\n{3,}/g, "\n\n").trim();
+    return t;
+  };
+  const isSummaryTitle = (t) => /판시사항|판결요지|결정요지|재결요지|회답|회신|회시|요지/.test(String(t || ""));
+  const renderLegalBody = (txt, muted) => prettyLegal(txt).split("\n").map((ln, i) => {
+    const line = ln.trim();
+    const isHd = /^【.+】$/.test(line);
+    if (!line) return <div key={i} style={{ height: 8 }} />;
+    return <div key={i} style={{ fontWeight: isHd ? 800 : 400, color: isHd ? "var(--fg)" : (muted ? "var(--fg-2)" : "var(--fg)"), margin: isHd ? "8px 0 2px" : "0 0 3px", fontSize: isHd ? 13 : 13.5, lineHeight: 1.85 }}>{line}</div>;
+  });
+  // 인쇄/PDF 저장용 창 열기
+  const printReader = () => {
+    if (!rData) return;
+    const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const toHtml = (txt) => esc(prettyLegal(txt)).split("\n").map(l => {
+      const t = l.trim();
+      if (!t) return "<div style='height:8px'></div>";
+      return /^【.+】$/.test(t) ? `<div class='hd'>${t}</div>` : `<div class='ln'>${t}</div>`;
+    }).join("");
+    const title = (rData.name) || (reader && (reader.name || reader.caseNo)) || "문서";
+    const meta = [TLABEL[reader && reader._t], reader && reader.caseNo, (rData.effDate ? fmtDate(rData.effDate) : (reader && reader.date ? fmtDate(reader.date) : ""))].filter(Boolean).join("  ·  ");
+    let body = "";
+    if (rData.prec && rData.sections) body = rData.sections.map(s => `<h2>${esc(s.title)}</h2>${toHtml(s.content)}`).join("");
+    else if (rData.articles) {
+      body = rData.articles.map(a => `<h2>${a.no ? "제" + esc(a.no) + "조" : ""}${a.title ? "(" + esc(a.title) + ")" : ""}</h2>${toHtml(a.content)}`).join("");
+      if (rData.buchik) body += `<h2>부칙</h2>${toHtml(rData.buchik)}`;
+    }
+    const w = window.open("", "_blank", "width=860,height=900");
+    if (!w) { setRErr("팝업이 차단되어 PDF 창을 열 수 없습니다. 브라우저에서 팝업을 허용해주세요."); return; }
+    w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${esc(title)}</title>
+<style>body{font-family:'Malgun Gothic','Apple SD Gothic Neo','맑은 고딕',sans-serif;max-width:800px;margin:34px auto;padding:0 26px;color:#1f2937;}
+h1{font-size:19px;margin:0 0 5px;line-height:1.5;} .meta{font-size:12px;color:#6b7280;margin-bottom:22px;border-bottom:1px solid #e5e7eb;padding-bottom:12px;}
+h2{font-size:14px;color:#1d4ed8;margin:22px 0 8px;} .hd{font-weight:800;margin:9px 0 3px;font-size:13px;} .ln{font-size:13.5px;line-height:1.9;margin-bottom:3px;}
+.src{margin-top:30px;font-size:11px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:10px;}
+@media print{body{margin:0;max-width:none;}}</style></head>
+<body><h1>${esc(title)}</h1><div class="meta">${esc(meta)}</div>${body}
+<div class="src">출처: 국가법령정보센터 (law.go.kr) · 윌앤비전 안전보건플랫폼</div></body></html>`);
+    w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch (e) {} }, 350);
   };
 
   const openReader = async (it) => {
@@ -888,6 +946,7 @@ function LawGoSearch({ initialQuery = "" }) {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                {rData && <button className="btn btn-secondary btn-sm" onClick={printReader} title="판결문/결정문을 PDF로 저장하거나 인쇄">인쇄 · PDF</button>}
                 <a href={webLink(reader)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">원문 ↗</a>
                 <button className="btn btn-ghost btn-sm" onClick={() => setReader(null)}><Icon name="x" size={14} /></button>
               </div>
@@ -897,18 +956,25 @@ function LawGoSearch({ initialQuery = "" }) {
               {rErr && <div style={{ fontSize: 13, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.7 }}>
                 {rErr}<br /><span style={{ color: "var(--fg-3)", fontSize: 12 }}>※ 본문 읽기는 공동활용에서 <b>'본문 XML'</b> 권한이 필요합니다. 우측 상단 <b>원문 ↗</b>으로 바로 볼 수 있어요.</span>
               </div>}
-              {rData && rData.prec && (rData.sections || []).map((s, i) => (
-                <div key={i} style={{ marginBottom: 18 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--primary)", marginBottom: 6 }}>{s.title}</div>
-                  <div style={{ fontSize: 13.5, lineHeight: 1.8, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{s.content}</div>
-                </div>
-              ))}
+              {rData && rData.prec && (rData.sections || []).map((s, i) => {
+                const hi = isSummaryTitle(s.title);
+                return (
+                  <div key={i} style={hi
+                    ? { marginBottom: 16, padding: "12px 14px", background: "var(--primary-soft, #eef3ff)", border: "1px solid var(--line)", borderRadius: 10 }
+                    : { marginBottom: 18 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--primary)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      {hi ? "⭐ " : ""}{s.title}{hi ? <span style={{ fontSize: 11, fontWeight: 600, color: "var(--fg-4)" }}>핵심 요지</span> : null}
+                    </div>
+                    <div>{renderLegalBody(s.content)}</div>
+                  </div>
+                );
+              })}
               {rData && !rData.prec && (rData.articles || []).map((a, i) => (
                 <div key={i} style={{ marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid var(--line-2)" }}>
                   {(a.no || a.title) && <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--primary)", marginBottom: 5 }}>
                     {a.no ? `제${a.no}조` : ""}{a.title ? `(${a.title})` : ""}
                   </div>}
-                  <div style={{ fontSize: 13.5, lineHeight: 1.85, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{a.content}</div>
+                  <div>{renderLegalBody(a.content)}</div>
                 </div>
               ))}
               {rData && !rData.prec && rData.buchik && (
