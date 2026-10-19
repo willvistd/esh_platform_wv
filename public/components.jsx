@@ -405,6 +405,59 @@ const SearchSelect = ({ options = [], value, onChange, placeholder = "검색 또
   );
 };
 
+// ─── KSelect : 네이티브 select 대체 공용 드롭다운 (라운드 박스 + 회색 음영, 앱 전역 통일용)
+//   options: ["값"] 또는 [{value,label,disabled,sep}]  ·  searchable=true면 초성 검색 입력
+const KSelect = ({ options = [], value, onChange, placeholder = "선택", style = {}, menuStyle = {}, searchable = false, disabled = false }) => {
+  const opts = options.map(o => (o && typeof o === "object") ? o : { value: o, label: String(o) });
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const wrapRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setQ(""); } };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const sel = opts.find(o => String(o.value) === String(value) && !o.sep);
+  const qt = q.trim(); const kw = qt.toLowerCase();
+  const cho = searchable && typeof isChosungQuery === "function" && isChosungQuery(qt);
+  const choKw = qt.replace(/\s/g, "");
+  const list = (!searchable || !kw) ? opts : opts.filter(o => {
+    if (o.sep) return false;
+    const l = String(o.label);
+    if (l.toLowerCase().includes(kw)) return true;
+    if (cho && typeof toChosung === "function") return toChosung(l).includes(choKw);
+    return false;
+  });
+  const box = { width: "100%", padding: "9px 30px 9px 12px", border: "1px solid var(--line, #d5dce6)", borderRadius: 8, fontSize: 13.5, boxSizing: "border-box", background: "var(--bg-elev, #fff)", color: sel ? "var(--fg, #111)" : "var(--fg-4, #9aa4b2)", cursor: disabled ? "not-allowed" : "pointer", textAlign: "left", fontFamily: "inherit", opacity: disabled ? 0.6 : 1, ...style };
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      {searchable && open
+        ? <input autoFocus type="text" value={q} onChange={e => setQ(e.target.value)} placeholder={sel ? sel.label : placeholder} style={{ ...box, color: "var(--fg, #111)", cursor: "text" }} />
+        : <button type="button" disabled={disabled} onClick={() => !disabled && setOpen(o => !o)} style={box}>{sel ? sel.label : placeholder}</button>}
+      <span aria-hidden="true" style={{ position: "absolute", right: 11, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#999", fontSize: 10 }}>▼</span>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 2px)", left: 0, right: 0, zIndex: 1300, maxHeight: 280, overflowY: "auto", background: "var(--bg-elev, #fff)", border: "1px solid var(--line, #d5dce6)", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,.16)", ...menuStyle }}>
+          {list.length === 0 ? (
+            <div style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--fg-3, #888)" }}>결과 없음</div>
+          ) : list.map((o, i) => {
+            if (o.sep) return <div key={"sep" + i} style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "var(--fg-4, #9aa4b2)", background: "var(--bg-sunk, #f3f5f9)", borderTop: "1px solid var(--line-2, #eef1f5)", textAlign: "center" }}>{o.label}</div>;
+            const on = String(o.value) === String(value);
+            return (
+              <div key={String(o.value) + i} onClick={() => { if (o.disabled) return; onChange && onChange(o.value); setOpen(false); setQ(""); }}
+                style={{ padding: "8px 12px", fontSize: 13.5, cursor: o.disabled ? "default" : "pointer", background: on ? "var(--bg-sunk, #f3f5f9)" : "transparent", fontWeight: on ? 700 : 400, color: o.disabled ? "var(--fg-4,#9aa4b2)" : "var(--fg, #111)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                onMouseEnter={e => { if (!on && !o.disabled) e.currentTarget.style.background = "var(--bg-sunk, #f3f5f9)"; }}
+                onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
+                {o.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 // ─── TopBar with search + compose button (역할 스위처는 보안상 제거됨 — 로그인 권한으로 대체)
 // 검색: searchableItems prop으로 받은 모든 항목에서 keyword 매칭, 드롭다운으로 결과 표시

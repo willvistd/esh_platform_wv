@@ -254,18 +254,14 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
       {tab === "list" && (<>
       {/* 필터 */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        <select className="field-input" style={{ width: "auto" }} value={fHq} onChange={e => setFHq(e.target.value)}>
-          <option>전체</option>{hqOptions.map(nm => <option key={nm}>{nm}</option>)}
-        </select>
-        <select className="field-input" style={{ width: "auto" }} value={fType} onChange={e => setFType(e.target.value)}>
-          <option value="전체">발생형태 전체</option>{IA_ACC_TYPES.map(t => <option key={t}>{t}</option>)}
-        </select>
-        <select className="field-input" style={{ width: "auto" }} value={fSev} onChange={e => setFSev(e.target.value)}>
-          <option value="전체">재해정도 전체</option>{IA_SEVERITIES.map(t => <option key={t}>{t}</option>)}
-        </select>
-        <select className="field-input" style={{ width: "auto" }} value={fComp} onChange={e => setFComp(e.target.value)}>
-          {["전체", "해당없음", "기한 내", "기한 초과", "미입력"].map(t => <option key={t}>{t}</option>)}
-        </select>
+        <div style={{ width: 200 }}><KSelect searchable value={fHq} onChange={setFHq}
+          options={["전체", ...hqOptions]} /></div>
+        <div style={{ width: 170 }}><KSelect value={fType} onChange={setFType}
+          options={[{ value: "전체", label: "발생형태 전체" }, ...IA_ACC_TYPES]} /></div>
+        <div style={{ width: 150 }}><KSelect value={fSev} onChange={setFSev}
+          options={[{ value: "전체", label: "재해정도 전체" }, ...IA_SEVERITIES]} /></div>
+        <div style={{ width: 130 }}><KSelect value={fComp} onChange={setFComp}
+          options={["전체", "해당없음", "기한 내", "기한 초과", "미입력"]} /></div>
       </div>
 
       {loading ? (
@@ -558,11 +554,10 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>본부 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(관리 조직)</span></label>
-              <select className="field-input" value={hqNames.includes(f.hqName) ? f.hqName : (f.hqName ? "__other__" : "")} onChange={e => onHqChange(e.target.value)}>
-                <option value="">— 본부 선택 —</option>
-                {hqNames.map(h => <option key={h} value={h}>{h}</option>)}
-                {f.hqName && !hqNames.includes(f.hqName) && <option value="__other__">{f.hqName} (목록 외)</option>}
-              </select>
+              <KSelect searchable value={hqNames.includes(f.hqName) ? f.hqName : (f.hqName ? "__other__" : "")} onChange={onHqChange}
+                placeholder="— 본부 선택 —"
+                options={[{ value: "", label: "— 본부 선택 —" }, ...hqNames.map(h => ({ value: h, label: h })),
+                  ...(f.hqName && !hqNames.includes(f.hqName) ? [{ value: "__other__", label: `${f.hqName} (목록 외)` }] : [])]} />
             </div>
             <div>
               <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장은 선택, 미등록은 직접 입력)</span></label>
@@ -613,22 +608,20 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>고용형태</label>
-              <select className="field-input" value={f.employmentType} onChange={e => upd("employmentType", e.target.value)}>{IA_EMP_TYPES.map(t => <option key={t}>{t}</option>)}</select>
+              <KSelect value={f.employmentType} onChange={v => upd("employmentType", v)} options={IA_EMP_TYPES} />
             </div>
             <div>
               <label style={L}>발생형태 *</label>
-              <select className="field-input" value={f.accidentType} onChange={e => upd("accidentType", e.target.value)}>
-                <option value="">— 선택 —</option>{IA_ACC_TYPES.map(t => <option key={t}>{t}</option>)}
-              </select>
+              <KSelect searchable value={f.accidentType} onChange={v => upd("accidentType", v)} placeholder="— 선택 —"
+                options={[{ value: "", label: "— 선택 —" }, ...IA_ACC_TYPES]} />
             </div>
           </div>
 
           <div style={half}>
             <div>
               <label style={L}>재해정도 *</label>
-              <select className="field-input" value={f.severity} onChange={e => upd("severity", e.target.value)}>
-                <option value="">— 선택 —</option>{IA_SEVERITIES.map(t => <option key={t}>{t}</option>)}
-              </select>
+              <KSelect value={f.severity} onChange={v => upd("severity", v)} placeholder="— 선택 —"
+                options={[{ value: "", label: "— 선택 —" }, ...IA_SEVERITIES]} />
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: 16, paddingBottom: 8 }}>
               <label style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, color: f.isSerious ? "#dc2626" : "var(--fg-2)" }}>
@@ -661,7 +654,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
           <div>
             <label style={L}>산재 처리 상태</label>
-            <select className="field-input" value={f.compensationStatus} onChange={e => upd("compensationStatus", e.target.value)}>{IA_COMP_STATUS.map(t => <option key={t}>{t}</option>)}</select>
+            <KSelect value={f.compensationStatus} onChange={v => upd("compensationStatus", v)} options={IA_COMP_STATUS} />
           </div>
 
           {/* 사후 조치 */}
@@ -1037,10 +1030,10 @@ const AccidentRateView = ({ list, sites, siteMap, hqMap, headcounts, canWrite, o
       {/* 컨트롤 */}
       <div style={card}>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
-          <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 시작연도</label>
-            <select className="field-input" style={{ width: 110 }} value={startYear} onChange={e => setStartYear(Math.min(+e.target.value, endYear))}>{yearOpts.map(y => <option key={y}>{y}</option>)}</select></div>
-          <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 종료연도</label>
-            <select className="field-input" style={{ width: 110 }} value={endYear} onChange={e => setEndYear(Math.max(+e.target.value, startYear))}>{yearOpts.map(y => <option key={y}>{y}</option>)}</select></div>
+          <div style={{ width: 110 }}><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 시작연도</label>
+            <KSelect value={startYear} onChange={v => setStartYear(Math.min(+v, endYear))} options={yearOpts} /></div>
+          <div style={{ width: 110 }}><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>분석 종료연도</label>
+            <KSelect value={endYear} onChange={v => setEndYear(Math.max(+v, startYear))} options={yearOpts} /></div>
           <div><label style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", display: "block", marginBottom: 4 }}>재해율 기준</label>
             <div style={{ display: "flex", gap: 6 }}>
               <button style={pill(basis === "off")} onClick={() => setBasis("off")}>공식 기준</button>
