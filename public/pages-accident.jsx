@@ -362,6 +362,83 @@ const IADetail = ({ label, v, full }) => (
   </div>
 );
 
+// 사업장 콤보박스 — 검색(초성 포함) + 직접 입력(미등록 현장) + 종료 사업장 하단 분리
+function AccSiteCombo({ options = [], allSites = [], hqMap = {}, scoped = false, siteId = "", customName = "", onPickSite, onCustom, onClearSite }) {
+  const [open, setOpen] = React.useState(false);
+  const [q, setQ] = React.useState("");
+  const wrapRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) { setOpen(false); setQ(""); } };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+  const isEnded = (s) => { const v = s.상태 || s.status; return v === "inactive" || v === "종료" || v === "비활성"; };
+  const selected = allSites.find(s => String(s.id) === String(siteId));
+  const nameOf = (s) => ((!scoped && hqMap[String(s.hqId)]?.name) ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명;
+  const qt = q.trim(); const kw = qt.toLowerCase();
+  const cho = (typeof isChosungQuery === "function") && isChosungQuery(qt);
+  const choKw = qt.replace(/\s/g, "");
+  const match = (s) => {
+    if (!kw) return true;
+    const nm = String(s.사업장명 || "");
+    if (nm.toLowerCase().includes(kw)) return true;
+    if (cho && typeof toChosung === "function") return toChosung(nm).includes(choKw);
+    return false;
+  };
+  const filtered = options.filter(match);
+  const active = filtered.filter(s => !isEnded(s));
+  const ended = filtered.filter(isEnded);
+  const exact = options.some(s => String(s.사업장명).trim() === qt);
+  const inputVal = open ? q : (selected ? selected.사업장명 : (customName || ""));
+  const rowStyle = (on, muted) => ({ padding: "8px 12px", fontSize: 13, cursor: "pointer", background: on ? "var(--primary-soft, #eef3ff)" : "transparent", fontWeight: on ? 700 : 400, color: muted ? "var(--fg-3)" : "var(--fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" });
+  const Row = (s) => {
+    const on = String(s.id) === String(siteId);
+    return (
+      <div key={s.id} onClick={() => { onPickSite && onPickSite(String(s.id)); setOpen(false); setQ(""); }}
+        style={rowStyle(on, isEnded(s))}
+        onMouseEnter={e => { if (!on) e.currentTarget.style.background = "var(--bg-sunk, #f3f5f9)"; }}
+        onMouseLeave={e => { if (!on) e.currentTarget.style.background = on ? "var(--primary-soft,#eef3ff)" : "transparent"; }}>
+        {nameOf(s)}{isEnded(s) ? "  (종료)" : ""}
+      </div>
+    );
+  };
+  return (
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <input type="text" className="field-input" value={inputVal}
+        onChange={e => { setQ(e.target.value); if (!open) setOpen(true); }}
+        onFocus={() => { setOpen(true); setQ(""); }}
+        onKeyDown={e => { if (e.key === "Enter" && qt && !exact) { onCustom && onCustom(qt); setOpen(false); setQ(""); e.preventDefault(); } }}
+        placeholder="사업장 검색 또는 직접 입력(미등록 현장)" />
+      <span aria-hidden="true" style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "#999", fontSize: 10 }}>▼</span>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 2px)", left: 0, right: 0, zIndex: 1200, maxHeight: 260, overflowY: "auto", background: "var(--bg-elev, #fff)", border: "1px solid var(--line, #d5dce6)", borderRadius: 7, boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
+          {qt && !exact && (
+            <div onClick={() => { onCustom && onCustom(qt); setOpen(false); setQ(""); }}
+              style={{ padding: "9px 12px", fontSize: 13, cursor: "pointer", fontWeight: 700, color: "var(--primary)", borderBottom: "1px solid var(--line-2, #eef1f5)" }}>
+              ✎ "{qt}" 직접 입력 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(미등록 현장)</span>
+            </div>
+          )}
+          <div onClick={() => { onClearSite && onClearSite(); setOpen(false); setQ(""); }}
+            style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", color: "var(--fg-3)" }}>
+            — 미등록 현장(선택 안 함) —
+          </div>
+          {active.map(Row)}
+          {ended.length > 0 && (
+            <div style={{ padding: "6px 12px", fontSize: 11, fontWeight: 700, color: "var(--fg-4)", background: "var(--bg-sunk, #f3f5f9)", borderTop: "1px solid var(--line-2, #eef1f5)", textAlign: "center" }}>
+              ─── 종료 사업장 ───
+            </div>
+          )}
+          {ended.map(Row)}
+          {active.length + ended.length === 0 && qt && (
+            <div style={{ padding: "10px 12px", fontSize: 12.5, color: "var(--fg-3)" }}>등록 사업장 없음 · 위 "직접 입력"으로 추가</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 등록/수정 모달 ──
 const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, onSaved }) => {
   const isEdit = !!initial;
@@ -487,11 +564,12 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
               </select>
             </div>
             <div>
-              <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장이면 선택)</span></label>
-              <select className="field-input" value={f.siteId} onChange={e => onSiteChange(e.target.value)}>
-                <option value="">— 미등록 현장(파견·고객사 등) —</option>
-                {siteOptions.map(s => <option key={s.id} value={s.id}>{(!f.hqName && hqMap[String(s.hqId)]?.name ? `[${hqMap[String(s.hqId)].name}] ` : "") + s.사업장명}</option>)}
-              </select>
+              <label style={L}>사업장 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(등록 사업장은 선택, 미등록은 직접 입력)</span></label>
+              <AccSiteCombo options={siteOptions} allSites={sites} hqMap={hqMap} scoped={!!f.hqName}
+                siteId={f.siteId} customName={f.location}
+                onPickSite={(id) => onSiteChange(id)}
+                onCustom={(txt) => setF(s => ({ ...s, siteId: "", location: txt }))}
+                onClearSite={() => setF(s => ({ ...s, siteId: "" }))} />
             </div>
           </div>
 
