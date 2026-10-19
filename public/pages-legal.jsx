@@ -773,7 +773,7 @@ function LawGoSearch({ initialQuery = "" }) {
                   <button onClick={() => openReader(it)}
                     style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left",
                       fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
-                    {it.name}
+                    {it.name || it.caseNo || "(제목 없음)"}
                   </button>
                   <a href={webLink(it)} target="_blank" rel="noopener noreferrer"
                     style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>
