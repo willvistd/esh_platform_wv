@@ -2808,15 +2808,22 @@ app.get('/api/lawgo-search', async (req, res) => {
       });
     }
     const totalMatch = xml.match(/<totalCnt>(\d+)<\/totalCnt>/);
-    const items = blocks.map(b => ({
-      name: byTags(b, ['법령명한글', '행정규칙명', '사건명', '안건명', '제목', '법령명', '법령명한글명']),
-      org: byTags(b, ['법원명', '질의기관명', '회신기관명', '소관부처명', '처리기관명', '담당부처명', '기관명']),
-      date: byTags(b, ['선고일자', '종국일자', '의결일자', '회신일자', '결정일자', '등록일', '결정일', '처리일자', '시행일자', '발령일자']),
-      caseNo: byTags(b, ['사건번호', '안건번호', '의안번호']),
-      kind: byTags(b, ['법령구분명', '사건종류명', '행정규칙종류', '사건종류', '해석구분']),
-      mst: pick(b, '법령일련번호'),
-      id: pick(b, '법령ID') || bySuffix(b, '일련번호'),
-    })).filter(x => x.name);
+    const items = blocks.map(b => {
+      const caseNo = byTags(b, ['사건번호', '안건번호', '의안번호']);
+      // 제목: 알려진 후보 → '…명'/'…제목'으로 끝나는 임의 태그 → 사건번호 순으로 폭넓게
+      let name = byTags(b, ['법령명한글', '행정규칙명', '사건명', '안건명', '제목', '법령명', '사건명칭', '민원표제', '안건표제']);
+      if (!name) { const m = b.match(/<([^<>/\s]*(?:제목|명))>([\s\S]*?)<\/\1>/); if (m && !/기관명|부처명|법원명|신청인|피신청/.test(m[1])) name = clean(m[2]); }
+      if (!name) name = caseNo;
+      return {
+        name,
+        org: byTags(b, ['법원명', '질의기관명', '회신기관명', '소관부처명', '처리기관명', '담당부처명', '기관명']),
+        date: byTags(b, ['선고일자', '종국일자', '의결일자', '회신일자', '결정일자', '등록일', '결정일', '처리일자', '재결일자', '시행일자', '발령일자']),
+        caseNo,
+        kind: byTags(b, ['법령구분명', '사건종류명', '행정규칙종류', '사건종류', '해석구분']),
+        mst: pick(b, '법령일련번호'),
+        id: pick(b, '법령ID') || bySuffix(b, '일련번호'),
+      };
+    }).filter(x => x.name || x.caseNo || x.id);
     res.json({ ok: true, target, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
   } catch (e) {
     console.error('[lawgo-search]', e.message);
