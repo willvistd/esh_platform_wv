@@ -734,15 +734,14 @@ function LawGoSearch({ initialQuery = "" }) {
         </div>
       </div>
 
-      {/* 구분 체크박스 */}
+      {/* 구분 체크박스 — 전체(상단 가운데) + 하위 항목 격자 정렬 */}
       <div style={{ ...card, marginBottom: 12 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 16px", alignItems: "center" }}>
-          <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, cursor: "pointer" }}>
-            <input type="checkbox" checked={allOn} onChange={e => setAll(e.target.checked)} /> 전체
-          </label>
-          <span style={{ width: 1, height: 16, background: "var(--line)" }} />
+        <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 16, fontWeight: 800, cursor: "pointer", paddingBottom: 11, marginBottom: 11, borderBottom: "1px solid var(--line)" }}>
+          <input type="checkbox" checked={allOn} onChange={e => setAll(e.target.checked)} /> 전체
+        </label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: "9px 10px" }}>
           {TYPES.map(t => (
-            <label key={t.v} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, cursor: "pointer", color: "var(--fg)" }}>
+            <label key={t.v} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, cursor: "pointer", color: "var(--fg)", whiteSpace: "nowrap" }}>
               <input type="checkbox" checked={!!sel[t.v]} onChange={() => toggle(t.v)} /> {t.l}
             </label>
           ))}
