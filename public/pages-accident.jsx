@@ -34,7 +34,7 @@ const iaDaysBetween = (a, b) => {
 // 재해조사표 준수 계산: 해당없음 / 기한 내 / 기한 초과(+N일) / 미입력
 // 출퇴근재해는 산업재해조사표 제출 대상이 아니므로 정도와 관계없이 해당없음
 const iaReportCompliance = (acc) => {
-  const required = acc.category !== "출퇴근재해" && (acc.severity === "사망" || acc.severity === "3일 이상 휴업");
+  const required = !/출퇴근/.test(acc.category || "") && (acc.severity === "사망" || acc.severity === "3일 이상 휴업");
   if (!required) return { key: "na", label: "해당없음", required: false };
   const occ = iaDatePart(acc.occurredAt);
   const deadline = occ ? iaAddOneMonth(occ) : "";
