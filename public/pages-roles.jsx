@@ -343,12 +343,12 @@ const RoleAddModal = ({ onClose, onSave }) => {
           </div>
           <div className="field">
             <label className="field-label">구분</label>
-            <select className="field-select" value={form.kind} onChange={e => setForm({...form, kind: e.target.value})}>
-              <option value="system">시스템관리자</option>
-              <option value="internal">사내직원</option>
-              <option value="external-general">외부일반</option>
-              <option value="external-partner">외부파트너</option>
-            </select>
+            <KSelect value={form.kind} onChange={v => setForm({...form, kind: v})} options={[
+              { value: "system", label: "시스템관리자" },
+              { value: "internal", label: "사내직원" },
+              { value: "external-general", label: "외부일반" },
+              { value: "external-partner", label: "외부파트너" },
+            ]} />
           </div>
           <div className="field">
             <label className="field-label">컬러</label>
@@ -472,9 +472,8 @@ const AccountPermissionModal = ({ user, onClose, onSave }) => {
           {/* Role selector */}
           <div className="field">
             <label className="field-label">역할 변경</label>
-            <select className="field-select" value={roleId} onChange={e => { setRoleId(e.target.value); if (!useOverride) setOverrides(new Set(D.roleMenus[e.target.value] || [])); }}>
-              {D.roles.map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
-            </select>
+            <KSelect value={roleId} onChange={v => { setRoleId(v); if (!useOverride) setOverrides(new Set(D.roleMenus[v] || [])); }}
+              options={D.roles.map(r => ({ value: String(r.id), label: `${r.name} · ${r.desc}` }))} />
             <div className="meta" style={{marginTop: 6}}>
               <span className="role-dot" style={{background: role?.color, width: 8, height: 8, display: "inline-block", marginRight: 6, verticalAlign: "middle"}} />
               기본 접근 메뉴: <b>{(D.roleMenus[roleId] || []).length}개</b>

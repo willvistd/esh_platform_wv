@@ -209,10 +209,7 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <select className="field-select" style={{ width: 150, height: 36, padding: "0 10px" }}
-            value={period} onChange={e => setPeriod(e.target.value)} title="조회할 분기 선택">
-            {periodOptions().map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <div style={{ width: 150 }} title="조회할 분기 선택"><KSelect value={period} onChange={setPeriod} options={periodOptions()} /></div>
           <button className="btn btn-secondary"
             onClick={() => alert("CSV 내보내기 (개발 예정)")}>
             <Icon name="download" size={14} /> CSV 내보내기
@@ -289,11 +286,8 @@ const SubmissionsView = ({ onNav, role, currentUser }) => {
         action={
           isCrossHQ && accessibleHQs.length > 1 ? (
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <select className="field-select" style={{ width: 180, height: 32, padding: "0 10px" }}
-                value={matrixHQFilter} onChange={e => setMatrixHQFilter(e.target.value)}>
-                <option value="전체">전체 본부</option>
-                {accessibleHQs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-              </select>
+              <div style={{ width: 180 }}><KSelect style={{ padding: "6px 30px 6px 12px" }} value={matrixHQFilter} onChange={setMatrixHQFilter}
+                options={[{ value: "전체", label: "전체 본부" }, ...accessibleHQs.map(h => ({ value: String(h.id), label: h.name }))]} /></div>
             </div>
           ) : null
         }
@@ -994,17 +988,11 @@ const NewSubmissionModal = ({ sites, hqs, currentUser, preset, onClose, onSubmit
           {/* 사업장 선택 */}
           <div className="field">
             <label className="field-label">사업장 *</label>
-            <select className="field-select" value={siteId} onChange={e => setSiteId(e.target.value)}>
-              <option value="">— 사업장 선택 —</option>
-              {orderedSites.map(s => {
+            <KSelect searchable value={siteId} onChange={setSiteId} placeholder="사업장 선택"
+              options={[{ value: "", label: "사업장 선택" }, ...orderedSites.map(s => {
                 const hq = hqs.find(h => String(h.id) === String(s.hqId));
-                return (
-                  <option key={s.id} value={s.id}>
-                    {hq ? `[${hq.code || hq.name}] ` : ""}{s.사업장명}
-                  </option>
-                );
-              })}
-            </select>
+                return { value: String(s.id), label: `${hq ? `[${hq.code || hq.name}] ` : ""}${s.사업장명}` };
+              })]} />
             {userHQ && (
               <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 4 }}>
                 💡 본인 본부의 사업장이 상단에 우선 표시됩니다.
@@ -1138,19 +1126,15 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
       })}
       {/* 추가 + 저장 */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-        <select value={addVal} onChange={(e) => setAddVal(e.target.value)}
-          style={{ fontFamily: "inherit", fontSize: 12, padding: "7px 8px", border: "1px solid var(--line)", borderRadius: 8, background: "var(--bg)", color: "var(--fg)" }}>
-          <optgroup label="게시판 링크">
-            <option value="board:">이 카테고리 게시판</option>
-            {cats.filter((x) => x.id !== cat.id).map((x) => <option key={x.id} value={"board:" + x.id}>{x.name} 게시판</option>)}
-          </optgroup>
-          <optgroup label="기능 페이지">
-            {TOOLS.map((t) => <option key={t.key} value={"tool:" + t.key}>{t.defaultLabel}</option>)}
-          </optgroup>
-          <optgroup label="외부 링크">
-            <option value="link:">외부 링크 (URL)</option>
-          </optgroup>
-        </select>
+        <div style={{ width: 220 }}><KSelect style={{ fontSize: 12, padding: "7px 30px 7px 8px" }} value={addVal} onChange={setAddVal} options={[
+          { sep: true, label: "게시판 링크" },
+          { value: "board:", label: "이 카테고리 게시판" },
+          ...cats.filter((x) => x.id !== cat.id).map((x) => ({ value: "board:" + x.id, label: `${x.name} 게시판` })),
+          { sep: true, label: "기능 페이지" },
+          ...TOOLS.map((t) => ({ value: "tool:" + t.key, label: t.defaultLabel })),
+          { sep: true, label: "외부 링크" },
+          { value: "link:", label: "외부 링크 (URL)" },
+        ]} /></div>
         <button className="btn btn-secondary btn-sm" onClick={add}><Icon name="plus" size={12} /> 항목 추가</button>
         <div style={{ flex: 1 }} />
         {msg && <span style={{ fontSize: 11, color: msg.startsWith("저장 완료") ? "#166534" : "#dc2626" }}>{msg}</span>}
@@ -1807,10 +1791,9 @@ const ManageUsersView = ({ currentUser }) => {
                     {u.status === "inactive" && <span className="chip chip-rejected"><span className="chip-dot" /> 비활성</span>}
                   </div>
                   <div onClick={e => e.stopPropagation()}>
-                    <select className="field-select" style={{ padding: "6px 8px", fontSize: 12, height: "auto" }}
-                      value={u.role} onChange={e => setRole(u.id, e.target.value)}>
-                      {D.roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
+                    <KSelect style={{ padding: "6px 28px 6px 8px", fontSize: 12 }}
+                      value={u.role} onChange={v => setRole(u.id, v)}
+                      options={D.roles.map(r => ({ value: String(r.id), label: r.name }))} />
                   </div>
                   <div onClick={e => e.stopPropagation()} style={{display: "flex", gap: 4, justifyContent: "flex-end"}}>
                     <button className="btn btn-secondary btn-sm" title="권한 편집"
@@ -2283,10 +2266,8 @@ const EditUserModal = ({ user, onClose, onSave }) => {
           {/* 소속 본부 */}
           <div className="field">
             <label className="field-label">소속 본부</label>
-            <select className="field-select" value={form.hqId || ""} onChange={e => upd("hqId", e.target.value)}>
-              <option value="">— 본부 선택 (없으면 전사) —</option>
-              {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-            </select>
+            <KSelect value={form.hqId || ""} onChange={v => upd("hqId", v)} placeholder="본부 선택 (없으면 전사)"
+              options={[{ value: "", label: "본부 선택 (없으면 전사)" }, ...hqs.map(h => ({ value: String(h.id), label: h.name }))]} />
           </div>
 
           {/* 담당 사업장 — 본부 선택 시 활성화 */}
@@ -2338,17 +2319,16 @@ const EditUserModal = ({ user, onClose, onSave }) => {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div className="field">
               <label className="field-label">권한</label>
-              <select className="field-select" value={form.role} onChange={e => upd("role", e.target.value)}>
-                {(D?.roles || []).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
+              <KSelect value={form.role} onChange={v => upd("role", v)}
+                options={(D?.roles || []).map(r => ({ value: String(r.id), label: r.name }))} />
             </div>
             <div className="field">
               <label className="field-label">상태</label>
-              <select className="field-select" value={form.status} onChange={e => upd("status", e.target.value)}>
-                <option value="active">활성</option>
-                <option value="dormant">휴면</option>
-                <option value="inactive">비활성</option>
-              </select>
+              <KSelect value={form.status} onChange={v => upd("status", v)} options={[
+                { value: "active", label: "활성" },
+                { value: "dormant", label: "휴면" },
+                { value: "inactive", label: "비활성" },
+              ]} />
             </div>
           </div>
         </div>
@@ -2625,10 +2605,8 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div className="field">
           <label className="field-label">{mode === "team" ? "역할 (팀 공용)" : mode === "site" ? "권한 (현장대리인)" : "권한"}</label>
-          <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}
-            disabled={mode === "site"}>
-            {(mode === "team" ? teamRoles : mode === "site" ? siteRoles : individualRoles).map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
-          </select>
+          <KSelect value={form.role} onChange={v => update("role", v)} disabled={mode === "site"}
+            options={(mode === "team" ? teamRoles : mode === "site" ? siteRoles : individualRoles).map(r => ({ value: String(r.id), label: `${r.name} · ${r.desc}` }))} />
         </div>
         <div className="field">
           <label className="field-label">부서</label>
@@ -2640,11 +2618,9 @@ const InviteForm = ({ onSave, onCancel, roles, depts, currentUser }) => {
       {/* 소속 본부 */}
       <div className="field">
         <label className="field-label">소속 본부{isSiteRole ? " *" : ""}</label>
-        <select className="field-select" value={form.hqId || ""}
-          onChange={e => setForm(f => ({ ...f, hqId: e.target.value, ...(isSiteRole ? { siteIds: "", name: "" } : {}) }))}>
-          <option value="">— 본부 선택 —</option>
-          {hqs.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
+        <KSelect value={form.hqId || ""} placeholder="본부 선택"
+          onChange={v => setForm(f => ({ ...f, hqId: v, ...(isSiteRole ? { siteIds: "", name: "" } : {}) }))}
+          options={[{ value: "", label: "본부 선택" }, ...hqs.map(h => ({ value: String(h.id), label: h.name }))]} />
       </div>
 
       {/* 현장대리인: 본부 선택 후 그 본부의 사업장을 단일 선택 (이름 자동) */}
@@ -2796,16 +2772,13 @@ const InviteFormV2 = ({ onSave, onCancel, roles, sites = [], currentUserRole = "
       </div>
       <div className="field">
         <label className="field-label">권한</label>
-        <select className="field-select" value={form.role} onChange={e => update("role", e.target.value)}>
-          {allowedRoles.map(r => <option key={r.id} value={r.id}>{r.name} — {r.desc}</option>)}
-        </select>
+        <KSelect value={form.role} onChange={v => update("role", v)}
+          options={allowedRoles.map(r => ({ value: String(r.id), label: `${r.name} · ${r.desc}` }))} />
       </div>
       <div className="field">
         <label className="field-label">담당 사업장</label>
-        <select className="field-select" value={form.siteIds} onChange={e => update("siteIds", e.target.value)}>
-          <option value="">사업장 선택</option>
-          {allowedSites.map(s => <option key={s.id} value={s.id}>{s["사업장명"]}</option>)}
-        </select>
+        <KSelect searchable value={form.siteIds} onChange={v => update("siteIds", v)} placeholder="사업장 선택"
+          options={[{ value: "", label: "사업장 선택" }, ...allowedSites.map(s => ({ value: String(s.id), label: s["사업장명"] }))]} />
       </div>
       <div className="modal-ft">
         <button className="btn btn-secondary" onClick={onCancel}>취소</button>

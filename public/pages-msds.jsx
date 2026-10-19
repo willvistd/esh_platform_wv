@@ -80,13 +80,11 @@ const MsdsInlineEdit = ({ value, onChange, placeholder, rows, isSelect, bold, ce
     if (isSelect) {
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <select value={draft} onChange={e => setDraft(e.target.value)} autoFocus
-            style={{ padding: '3px 8px', border: '1.5px solid var(--primary)', borderRadius: 5,
-              fontSize: 'inherit', fontFamily: 'inherit', fontWeight: 'inherit' }}>
-            <option value="">없음 (미표기)</option>
-            <option value="위험">위험</option>
-            <option value="경고">경고</option>
-          </select>
+          <div style={{ width: 150 }}>
+            <KSelect value={draft} onChange={setDraft}
+              style={{ padding: '4px 28px 4px 8px', border: '1.5px solid var(--primary)', borderRadius: 5, fontSize: 'inherit', fontWeight: 'inherit' }}
+              options={[{ value: "", label: "없음 (미표기)" }, "위험", "경고"]} />
+          </div>
           <button className="msds-edit-ok" onClick={confirm}>확인</button>
           <button className="msds-edit-cancel" onClick={cancel}>취소</button>
         </div>
@@ -1095,14 +1093,13 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                   </div>
                   {allowedSites.length === 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>담당 사업장이 없습니다. 관리자에게 문의하세요.</span>}
                 </label>
-                <label style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
-                  <select className="field-select" value={saveDept} onChange={e => setSaveDept(e.target.value)}
-                    style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13 }}>
-                    <option value="">선택 안 함</option>
-                    {MSDS_DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                <div style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
+                  <div style={{ marginTop: 4, fontWeight: 400 }}>
+                    <KSelect value={saveDept} onChange={setSaveDept} style={{ fontSize: 13 }}
+                      options={[{ value: "", label: "선택 안 함" }, ...MSDS_DEPTS]} />
+                  </div>
                   <span style={{ fontSize: 11, color: 'var(--fg-3, #667085)', fontWeight: 400 }}>팀을 지정하면 관리대장에서 팀별로 구분·출력할 수 있어요.</span>
-                </label>
+                </div>
                 <label style={{ fontSize: 12.5, fontWeight: 700 }}>사용용도
                   <input className="field-input" value={saveUsage} onChange={e => setSaveUsage(e.target.value)} placeholder="예: 바닥 전용 세척제"
                     style={{ width: '100%', marginTop: 4, padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
@@ -1460,11 +1457,8 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
         </div>
         <div className="ledger-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {siteNames.length > 1 && (
-            <select className="field-select" value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
-              style={{ padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 7, fontSize: 13 }}>
-              <option>전체</option>
-              {siteNames.map(n => <option key={n}>{n}</option>)}
-            </select>
+            <div style={{ width: 220 }}><KSelect searchable value={siteFilter} onChange={setSiteFilter}
+              style={{ padding: '7px 30px 7px 10px', fontSize: 13 }} options={["전체", ...siteNames]} /></div>
           )}
           <PrintButton />
         </div>
@@ -1577,12 +1571,12 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
                 이 사업장 관리대장에 저장된 내용을 직접 수정합니다.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <label style={{ ...lb, gridColumn: '1 / -1' }}>부서(팀)
-                  <select className="field-select" value={editForm['부서'] || ''} onChange={e => ef('부서', e.target.value)} style={inp}>
-                    <option value="">미분류</option>
-                    {MSDS_DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </label>
+                <div style={{ ...lb, gridColumn: '1 / -1' }}>부서(팀)
+                  <div style={{ marginTop: 4, fontWeight: 400 }}>
+                    <KSelect value={editForm['부서'] || ''} onChange={v => ef('부서', v)} style={{ fontSize: 13 }}
+                      options={[{ value: "", label: "미분류" }, ...MSDS_DEPTS]} />
+                  </div>
+                </div>
                 <div style={{ gridColumn: '1 / -1' }}>{field('제품명', '예: 무광 마감제')}</div>
                 {field('제조회사')}
                 {field('개정일자', '예: 2023.05.01')}
@@ -1811,11 +1805,8 @@ const MsdsHazardListView = ({ onNav, currentUser, role }) => {
         </div>
         <div className="hz-no-print" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {siteNames.length > 1 && (
-            <select className="field-select" value={siteFilter} onChange={e => setSiteFilter(e.target.value)}
-              style={{ padding: '7px 10px', border: '1px solid var(--line)', borderRadius: 7, fontSize: 13 }}>
-              <option>전체</option>
-              {siteNames.map(n => <option key={n}>{n}</option>)}
-            </select>
+            <div style={{ width: 220 }}><KSelect searchable value={siteFilter} onChange={setSiteFilter}
+              style={{ padding: '7px 30px 7px 10px', fontSize: 13 }} options={["전체", ...siteNames]} /></div>
           )}
           <PrintButton />
         </div>
