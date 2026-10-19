@@ -644,6 +644,23 @@ function LawGoSearch({ initialQuery = "" }) {
   const [needKey, setNeedKey] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const PER = 20;
+  // 본문 읽기 모달
+  const [reader, setReader] = React.useState(null);     // 열려있는 항목(item)
+  const [rData, setRData] = React.useState(null);
+  const [rLoading, setRLoading] = React.useState(false);
+  const [rErr, setRErr] = React.useState("");
+
+  const openReader = async (it) => {
+    setReader(it); setRData(null); setRErr(""); setRLoading(true);
+    try {
+      const qs = `target=${target}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`;
+      const res = await fetch(`/api/lawgo-detail?${qs}`);
+      const d = await res.json();
+      if (!d.ok) setRErr(d.needKey ? "국가법령정보센터 인증(OC) 설정이 필요합니다." : (d.message || "본문을 불러오지 못했습니다."));
+      else setRData(d);
+    } catch (e) { setRErr("본문 조회 오류: " + e.message); }
+    finally { setRLoading(false); }
+  };
 
   const run = async (p = 1, overrideQ, overrideTarget) => {
     const query = String(overrideQ != null ? overrideQ : q).trim();
@@ -672,7 +689,7 @@ function LawGoSearch({ initialQuery = "" }) {
       <div className="content-hd">
         <div>
           <h1 className="content-title">국가법령정보센터 검색</h1>
-          <div className="content-sub">법령·행정규칙 전체를 검색하고, 제목을 누르면 <b>실제 법령 원문</b>으로 바로 이동합니다. (출처: 국가법령정보센터)</div>
+          <div className="content-sub">법령·행정규칙·판례 전체를 검색하고, 제목을 누르면 <b>앱에서 조문(본문)을 바로 읽을 수 있습니다.</b> (출처: 국가법령정보센터)</div>
         </div>
       </div>
 
@@ -722,9 +739,14 @@ function LawGoSearch({ initialQuery = "" }) {
                   {target === "prec"
                     ? (it.court && <span className="chip chip-primary">{it.court}</span>)
                     : (it.lawType && <span className="chip chip-primary">{it.lawType}</span>)}
-                  {it.link
-                    ? <a href={it.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }}>{it.name}</a>
-                    : <span style={{ fontSize: 15, fontWeight: 700 }}>{it.name}</span>}
+                  {/* 제목 클릭 → 앱 안에서 본문 읽기 */}
+                  <button onClick={() => openReader(it)}
+                    style={{ border: "none", background: "transparent", cursor: "pointer", padding: 0, textAlign: "left",
+                      fontSize: 15, fontWeight: 700, color: "var(--primary)", fontFamily: "inherit" }}>
+                    {it.name}
+                  </button>
+                  {it.link && <a href={it.link} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 11.5, color: "var(--fg-4)", textDecoration: "none", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px" }}>원문 ↗</a>}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--fg-4)", marginTop: 3 }}>
                   {target === "prec"
@@ -740,6 +762,54 @@ function LawGoSearch({ initialQuery = "" }) {
               <button className="btn btn-secondary btn-sm" disabled={page >= totalPages || loading} onClick={() => run(page + 1)}>다음</button>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 본문 읽기 모달 */}
+      {reader && (
+        <div onClick={() => setReader(null)}
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "32px 16px", overflowY: "auto" }}>
+          <div onClick={e => e.stopPropagation()} className="card"
+            style={{ width: "100%", maxWidth: 760, maxHeight: "86vh", display: "flex", flexDirection: "column", padding: 0, overflow: "hidden" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "16px 20px", borderBottom: "1px solid var(--line)" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{(rData && rData.name) || reader.name}</div>
+                <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 2 }}>
+                  {[reader.lawType, (rData && rData.effDate) ? `시행 ${fmtDate(rData.effDate)}` : (reader.effDate ? `시행 ${fmtDate(reader.effDate)}` : "")].filter(Boolean).join("  ·  ")}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                {reader.link && <a href={reader.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">원문 ↗</a>}
+                <button className="btn btn-ghost btn-sm" onClick={() => setReader(null)}><Icon name="x" size={14} /></button>
+              </div>
+            </div>
+            <div style={{ overflowY: "auto", padding: "16px 20px" }}>
+              {rLoading && <div style={{ padding: "40px 0", textAlign: "center", color: "var(--fg-3)" }}>본문 불러오는 중…</div>}
+              {rErr && <div style={{ fontSize: 13, color: "#b91c1c", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", lineHeight: 1.7 }}>
+                {rErr}<br /><span style={{ color: "var(--fg-3)", fontSize: 12 }}>※ 본문 읽기는 공동활용에서 <b>'본문 XML'</b> 권한이 필요합니다. 우측 상단 <b>원문 ↗</b>으로 바로 볼 수 있어요.</span>
+              </div>}
+              {rData && rData.prec && (rData.sections || []).map((s, i) => (
+                <div key={i} style={{ marginBottom: 18 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--primary)", marginBottom: 6 }}>{s.title}</div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.8, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{s.content}</div>
+                </div>
+              ))}
+              {rData && !rData.prec && (rData.articles || []).map((a, i) => (
+                <div key={i} style={{ marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid var(--line-2)" }}>
+                  {(a.no || a.title) && <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--primary)", marginBottom: 5 }}>
+                    {a.no ? `제${a.no}조` : ""}{a.title ? `(${a.title})` : ""}
+                  </div>}
+                  <div style={{ fontSize: 13.5, lineHeight: 1.85, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{a.content}</div>
+                </div>
+              ))}
+              {rData && !rData.prec && rData.buchik && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: "var(--fg-3)", marginBottom: 5 }}>부칙</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.8, whiteSpace: "pre-wrap", color: "var(--fg-2)" }}>{rData.buchik}</div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
