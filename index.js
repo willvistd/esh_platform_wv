@@ -2907,18 +2907,18 @@ app.get('/api/ai-legal', async (req, res) => {
       } catch (e) { /* 근거 수집 실패해도 계속 진행 */ }
     }
 
-    // 1-2) 질의회시(행정해석 Q&A) 자료 — 업로드된 legal_qa에서 키워드 매칭 상위 6건(실무 근거로 우선 배치)
+    // 1-2) 질의회시(행정해석 Q&A) — 업로드된 legal_qa에서 매칭 상위 4건을 '보충 해석'으로 법령 뒤에 추가
     try {
       const terms = q.replace(/[%_]/g, ' ').split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2).slice(0, 6);
       if (terms.length) {
         const conds = []; const vals = [];
         terms.forEach(t => { vals.push('%' + t + '%'); const i = vals.length; conds.push(`(title ILIKE $${i} OR question ILIKE $${i} OR answer ILIKE $${i} OR law ILIKE $${i})`); });
-        const qr = await pool.query(`SELECT title, question, answer, law, "sourceDate", "sourceOrg" FROM legal_qa WHERE ${conds.join(' OR ')} LIMIT 6`, vals);
+        const qr = await pool.query(`SELECT title, question, answer, law, "sourceDate", "sourceOrg" FROM legal_qa WHERE ${conds.join(' OR ')} LIMIT 4`, vals);
         qr.rows.forEach(row => {
-          const body = `[질의] ${String(row.question || '').slice(0, 900)}\n[회시] ${String(row.answer || '').slice(0, 1200)}`;
-          sources.unshift({   // 질의회시를 근거 목록 앞쪽에 배치
+          const body = `[질의] ${String(row.question || '').slice(0, 800)}\n[회시] ${String(row.answer || '').slice(0, 1000)}`;
+          sources.push({   // 법령 근거 뒤(보충 자료)로 배치
             title: (row.title || '질의회시') + (row.sourceDate ? ` (${row.sourceDate})` : ''),
-            category: '질의회시',
+            category: '질의회시(보충)',
             content: (row.law ? `관련법령: ${row.law}\n` : '') + body,
             link: '',
           });
@@ -2940,6 +2940,8 @@ app.get('/api/ai-legal', async (req, res) => {
       '**주요 기준(원문 요지)**\n해당 조문·별표의 핵심 기준 항목을 번호로 그대로 정리(크기·수치·주기·표지·담당자 지정 등).\n\n' +
       '**실무 조치사항**\n담당자가 실제로 해야 할 일을 번호나 가운뎃점(·)으로 정리.\n\n' +
       '작성 규칙:\n' +
+      '- 근거의 중심은 반드시 법령·조문(산업안전보건법·시행령·시행규칙·기준규칙·중대재해처벌법 등)으로 삼으세요. "근거 법령"과 "주요 기준"은 법령·조문·별표에서 뽑아 작성합니다.\n' +
+      '- "질의회시(보충)" 자료는 법령 해석을 돕는 보충 참고용입니다. 질의회시만으로 답하지 말고, 관련 있을 때만 "실무 조치사항" 뒤에 **참고 질의회시** 소제목으로 짧게 덧붙이세요(없으면 생략).\n' +
       '- 자료에 있는 내용만 사용하고, 추측하지 마세요. 숫자·기준·조문번호는 자료에 있는 그대로 정확히.\n' +
       '- 쉽고 명확한 한국어. 대시(—) 기호는 쓰지 말고 가운뎃점(·)이나 번호를 사용.\n' +
       '- 자료에 없으면 "제공된 자료에서는 확인되지 않습니다"라고 밝히세요.\n' +
