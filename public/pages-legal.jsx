@@ -1157,21 +1157,31 @@ function LegalAIView({ initialQuery = "" }) {
   const [res, setRes] = React.useState(null);   // { answer, sources } | { noSource }
   const [err, setErr] = React.useState("");
   const [needKey, setNeedKey] = React.useState(false);
+  const [fmt, setFmt] = React.useState("summary");   // summary | mail
+  const [copied, setCopied] = React.useState(false);
 
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
   const EXAMPLES = ["휴게시설 설치 의무가 있나요?", "밀폐공간 작업 전 조치사항은?", "특별안전보건교육 대상과 시간은?", "사다리 작업 안전기준은?", "중대재해처벌법 적용 범위는?"];
 
-  const ask = async (overrideQ) => {
+  const ask = async (overrideQ, overrideFmt) => {
     const query = String(overrideQ != null ? overrideQ : q).trim();
+    const useFmt = overrideFmt || fmt;
     if (!query) { setErr("질문을 입력하세요."); return; }
-    setLoading(true); setErr(""); setNeedKey(false); setRes(null);
+    setLoading(true); setErr(""); setNeedKey(false); setRes(null); setCopied(false);
     try {
-      const r = await fetch(`/api/ai-legal?q=${encodeURIComponent(query)}`);
+      const r = await fetch(`/api/ai-legal?q=${encodeURIComponent(query)}&format=${useFmt}`);
       const d = await r.json();
       if (!d.ok) { if (d.needKey) setNeedKey(true); else setErr(d.message || "답변을 생성하지 못했습니다."); return; }
       setRes(d);
     } catch (e) { setErr("AI 처리 오류: " + e.message); }
     finally { setLoading(false); }
+  };
+  // 답변 텍스트 복사(마크다운 ** 제거)
+  const copyAnswer = () => {
+    const txt = String((res && res.answer) || "").replace(/\*\*(.+?)\*\*/g, "$1");
+    const done = () => { setCopied(true); setTimeout(() => setCopied(false), 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done).catch(() => {});
+    else { try { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); done(); } catch (e) {} }
   };
 
   // 한 줄 안의 **굵게** 처리
@@ -1227,6 +1237,19 @@ function LegalAIView({ initialQuery = "" }) {
           placeholder="예: 휴게시설 설치 의무가 있나요? 어떤 기준으로 설치해야 하나요?"
           rows={3}
           style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "11px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }} />
+        {/* 답변 형식 선택 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: "var(--fg-4)", fontWeight: 700 }}>답변 형식</span>
+          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
+            {[["summary", "요약 정리"], ["mail", "공유 메일"]].map(([v, label]) => (
+              <button key={v} onClick={() => setFmt(v)} type="button"
+                style={{ border: "none", cursor: "pointer", padding: "6px 12px", fontSize: 12.5,
+                  fontWeight: fmt === v ? 800 : 600, color: fmt === v ? "#fff" : "var(--fg-2)",
+                  background: fmt === v ? "var(--primary)" : "var(--bg-elev)" }}>{label}</button>
+            ))}
+          </div>
+          <span style={{ fontSize: 11.5, color: "var(--fg-4)" }}>{fmt === "mail" ? "담당자에게 보낼 법령 공유 메일 형식" : "결론·근거·실무 정리 형식"}</span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {EXAMPLES.map(ex => (
@@ -1257,7 +1280,10 @@ function LegalAIView({ initialQuery = "" }) {
       {res && !loading && res.answer && (
         <>
           <div style={{ ...card, marginBottom: 14, borderLeft: "4px solid var(--primary)" }}>
-            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--primary)", marginBottom: 10 }}>🤖 AI 정리 결과</div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--primary)" }}>🤖 AI 정리 결과</div>
+              <button onClick={copyAnswer} className="btn btn-secondary btn-sm" style={{ fontSize: 12, padding: "3px 10px" }}>{copied ? "복사됨 ✓" : "복사"}</button>
+            </div>
             {renderSections(res.answer)}
           </div>
           {(res.sources || []).length > 0 && (
