@@ -2436,7 +2436,7 @@ const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za
 // 특정 모델 고정이 필요하면 환경변수 GEMINI_MODEL 로 지정.
 const GEMINI_MODELS = process.env.GEMINI_MODEL
   ? [process.env.GEMINI_MODEL]
-  : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+  : ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
