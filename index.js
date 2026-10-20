@@ -2946,14 +2946,15 @@ app.get('/api/ai-legal', async (req, res) => {
       '- 맨 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙이세요.\n\n' +
       '[질문]\n' + q + '\n\n[자료]\n' + context;
 
-    // 최신 모델 우선, 접근 불가/구버전 중단 시 하위 모델로 자동 폴백(GEMINI_MODELS 공용 목록 사용)
-    const models = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
-      ? GEMINI_MODELS : [process.env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
-    let answer = '', lastErr = '', overloaded = false;
+    // 모델 폴백을 넓게: latest 별칭(가장 덜 붐빔) 우선 → 공용 목록 → 2.5-flash. 중복 제거.
+    const base = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
+      ? GEMINI_MODELS : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+    const models = [...new Set(['gemini-flash-latest', ...base, 'gemini-2.5-flash'])];
+    let answer = '', lastErr = '', overloaded = false, quota = false;
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     outer:
     for (const model of models) {
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 2; attempt++) {
         try {
           const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
           const gr = await fetch(gurl, {
@@ -2964,17 +2965,20 @@ app.get('/api/ai-legal', async (req, res) => {
           const gd = await gr.json();
           if (gd.error) {
             lastErr = gd.error.message || '';
-            const over = /high demand|overload|unavailable|try again|429|503|quota|rate/i.test(lastErr);
-            if (over) { overloaded = true; if (attempt < 2) { await sleep(1500 * (attempt + 1)); continue; } break; } // 재시도 후 다음 모델
+            const isQuota = /quota|resource_exhausted|billing|limit exceeded|daily/i.test(lastErr);
+            const over = /high demand|overload|unavailable|try again|429|503|rate/i.test(lastErr);
+            if (isQuota) { quota = true; break; }             // 일일/요금 한도 → 다음 모델 시도(다른 모델은 한도 남아있을 수 있음)
+            if (over) { overloaded = true; if (attempt < 1) { await sleep(1800); continue; } break; }
             break; // 모델 중단/미지원 등 → 다음 모델
           }
           answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
           if (answer) break outer;
-          break; // 빈 응답 → 다음 모델
-        } catch (e) { lastErr = e.message; if (attempt < 2) await sleep(1200); }
+          break;
+        } catch (e) { lastErr = e.message; if (attempt < 1) await sleep(1000); }
       }
     }
     if (!answer) {
+      if (quota && !overloaded) return res.json({ ok: false, message: 'Gemini 일일 사용량(무료 한도)을 초과한 것 같아요. 잠시 후(또는 다음날) 다시 시도하거나, API 키의 요금제를 확인해 주세요.', sources });
       if (overloaded) return res.json({ ok: false, overloaded: true, message: 'AI 서버가 일시적으로 혼잡합니다. 20~30초 뒤 다시 질문해 주세요.', sources });
       return res.json({ ok: false, message: 'Gemini 오류: ' + String(lastErr).slice(0, 200), sources });
     }
