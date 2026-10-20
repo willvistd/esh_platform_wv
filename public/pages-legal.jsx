@@ -1145,14 +1145,43 @@ function LegalAIView({ initialQuery = "" }) {
     finally { setLoading(false); }
   };
 
-  // 간단 마크다운(굵게 **..**, 머리글 #) 렌더
-  const renderMd = (txt) => String(txt || "").split("\n").map((ln, i) => {
-    const isHead = /^#{1,6}\s/.test(ln);
-    const clean = isHead ? ln.replace(/^#{1,6}\s/, "") : ln;
-    const parts = clean.split(/(\*\*[^*]+\*\*)/g).map((p, j) => /^\*\*[^*]+\*\*$/.test(p) ? <b key={j}>{p.slice(2, -2)}</b> : p);
-    if (!ln.trim()) return <div key={i} style={{ height: 8 }} />;
-    return <div key={i} style={{ margin: "0 0 6px", fontWeight: isHead ? 800 : 400, fontSize: isHead ? 15 : 14, lineHeight: 1.9, color: "var(--fg)" }}>{isHead ? clean : parts}</div>;
-  });
+  // 한 줄 안의 **굵게** 처리
+  const inlineBold = (ln, key) => {
+    const parts = String(ln).split(/(\*\*[^*]+\*\*)/g).map((p, j) => /^\*\*[^*]+\*\*$/.test(p) ? <b key={j}>{p.slice(2, -2)}</b> : p);
+    return <span key={key}>{parts}</span>;
+  };
+  // AI 답변을 소제목(**..**) 기준으로 섹션 블록으로 분리 렌더(질의회시 DB처럼 구분)
+  const renderSections = (txt) => {
+    const lines = String(txt || "").split("\n");
+    const headRe = /^\s*(?:#{1,6}\s*)?\*\*(.+?)\*\*\s*[:：]?\s*$/;
+    const blocks = []; const foot = []; let cur = null;
+    for (const ln of lines) {
+      const t = ln.trim();
+      if (/^※/.test(t)) { foot.push(t); continue; }
+      const m = t.match(headRe);
+      if (m) { cur = { title: m[1].trim(), body: [] }; blocks.push(cur); }
+      else if (cur) { cur.body.push(ln); }
+      else if (t) { cur = { title: "", body: [ln] }; blocks.push(cur); }
+    }
+    return (
+      <>
+        {blocks.map((b, i) => {
+          const first = i === 0 && b.title;
+          return (
+            <div key={i} style={first
+              ? { marginBottom: 12, padding: "12px 14px", background: "var(--primary-soft, #eef3ff)", border: "1px solid var(--line)", borderRadius: 10 }
+              : { marginBottom: 14, paddingBottom: 12, borderBottom: i < blocks.length - 1 ? "1px solid var(--line-2)" : "none" }}>
+              {b.title && <div style={{ fontSize: 13, fontWeight: 800, color: "var(--primary)", marginBottom: 6 }}>{first ? "✅ " : ""}{b.title}</div>}
+              {b.body.map((ln, j) => ln.trim()
+                ? <div key={j} style={{ fontSize: 14, lineHeight: 1.85, color: "var(--fg)", margin: "0 0 4px" }}>{inlineBold(ln, j)}</div>
+                : <div key={j} style={{ height: 6 }} />)}
+            </div>
+          );
+        })}
+        {foot.length > 0 && <div style={{ marginTop: 10, fontSize: 12, color: "var(--fg-4)", lineHeight: 1.6, fontStyle: "italic" }}>{foot.join(" ")}</div>}
+      </>
+    );
+  };
 
   return (
     <div>
@@ -1200,7 +1229,7 @@ function LegalAIView({ initialQuery = "" }) {
         <>
           <div style={{ ...card, marginBottom: 14, borderLeft: "4px solid var(--primary)" }}>
             <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--primary)", marginBottom: 10 }}>🤖 AI 정리 결과</div>
-            {renderMd(res.answer)}
+            {renderSections(res.answer)}
           </div>
           {(res.sources || []).length > 0 && (
             <div style={card}>
