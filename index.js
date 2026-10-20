@@ -2942,22 +2942,35 @@ app.get('/api/ai-legal', async (req, res) => {
     // 최신 모델 우선, 접근 불가/구버전 중단 시 하위 모델로 자동 폴백(GEMINI_MODELS 공용 목록 사용)
     const models = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
       ? GEMINI_MODELS : [process.env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
-    let answer = '', lastErr = '';
+    let answer = '', lastErr = '', overloaded = false;
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    outer:
     for (const model of models) {
-      try {
-        const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
-        const gr = await fetch(gurl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.25, maxOutputTokens: 2400 } }),
-        });
-        const gd = await gr.json();
-        if (gd.error) { lastErr = gd.error.message || ''; continue; } // 모델 중단/미지원 → 다음 모델
-        answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
-        if (answer) break;
-      } catch (e) { lastErr = e.message; }
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
+          const gr = await fetch(gurl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.25, maxOutputTokens: 2400 } }),
+          });
+          const gd = await gr.json();
+          if (gd.error) {
+            lastErr = gd.error.message || '';
+            const over = /high demand|overload|unavailable|try again|429|503|quota|rate/i.test(lastErr);
+            if (over) { overloaded = true; if (attempt < 2) { await sleep(1500 * (attempt + 1)); continue; } break; } // 재시도 후 다음 모델
+            break; // 모델 중단/미지원 등 → 다음 모델
+          }
+          answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
+          if (answer) break outer;
+          break; // 빈 응답 → 다음 모델
+        } catch (e) { lastErr = e.message; if (attempt < 2) await sleep(1200); }
+      }
     }
-    if (!answer) return res.json({ ok: false, message: 'Gemini 오류: ' + String(lastErr).slice(0, 200), sources });
+    if (!answer) {
+      if (overloaded) return res.json({ ok: false, overloaded: true, message: 'AI 서버가 일시적으로 혼잡합니다. 20~30초 뒤 다시 질문해 주세요.', sources });
+      return res.json({ ok: false, message: 'Gemini 오류: ' + String(lastErr).slice(0, 200), sources });
+    }
     res.json({ ok: true, answer, sources });
   } catch (e) {
     console.error('[ai-legal]', e.message);
