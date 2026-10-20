@@ -241,7 +241,8 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
     <div className="content" style={{ maxWidth: 920 }}>
       {/* 탭: 법적의무 자동판정 / 안전보건법령 검색 */}
       <div style={{ display: "flex", gap: 6, marginBottom: 18, borderBottom: "1px solid var(--line)" }}>
-        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"], ["ai", "AI 근거 정리"]].map(([k, label]) => (
+        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"], ["ai", "AI 근거 정리"],
+          ...(["admin", "safety", "manager"].includes(currentUser && currentUser.role) ? [["qa", "질의회시 DB"]] : [])].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ border: "none", background: "transparent", cursor: "pointer", padding: "10px 16px", fontSize: 14,
               fontWeight: tab === k ? 800 : 600, color: tab === k ? "var(--primary)" : "var(--fg-3)",
@@ -253,6 +254,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
 
       {tab === "search" && <LawSearchPanel initialQuery={initialLawQuery} />}
       {tab === "ai" && <LegalAIView initialQuery={initialLawQuery} />}
+      {tab === "qa" && <LegalQAManager currentUser={currentUser} />}
 
       {tab === "checker" && (<>
       <div className="content-hd">
@@ -1218,6 +1220,112 @@ function LegalAIView({ initialQuery = "" }) {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// ── 질의회시 DB 관리 (PDF 업로드 → 자동 추출 → AI 근거 정리에 반영) ──
+function LegalQAManager({ currentUser }) {
+  const [items, setItems] = React.useState([]);
+  const [q, setQ] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [up, setUp] = React.useState(null);   // { total, done, saved, cur, errs }
+  const [msg, setMsg] = React.useState("");
+  const fileRef = React.useRef(null);
+  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
+
+  const load = async (query) => {
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/legal-qa${query ? "?q=" + encodeURIComponent(query) : ""}`);
+      const d = await r.json();
+      setItems(d.ok ? (d.items || []) : []);
+    } catch (e) { setItems([]); }
+    finally { setLoading(false); }
+  };
+  React.useEffect(() => { load(""); /* eslint-disable-next-line */ }, []);
+
+  const actor = (window.WV_ACTOR ? window.WV_ACTOR.get(currentUser) : "") || (currentUser && currentUser.name) || "";
+  const onFiles = async (fileList) => {
+    const files = Array.from(fileList || []).filter(f => /\.pdf$/i.test(f.name));
+    if (!files.length) { setMsg("PDF 파일을 선택하세요."); return; }
+    setMsg(""); let saved = 0; const errs = [];
+    setUp({ total: files.length, done: 0, saved: 0, cur: files[0].name, errs });
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      setUp(u => ({ ...u, done: i, cur: f.name }));
+      try {
+        const fd = new FormData(); fd.append("file", f); fd.append("createdBy", actor);
+        const r = await fetch("/api/legal-qa/upload", { method: "POST", body: fd });
+        const d = await r.json();
+        if (!d.ok) errs.push(`${f.name}: ${d.needKey ? "Gemini 키 미설정" : (d.message || "실패")}`);
+        else saved += (d.saved || 0);
+      } catch (e) { errs.push(`${f.name}: ${e.message}`); }
+    }
+    setUp(null);
+    setMsg(`업로드 완료 · 총 ${saved}건 저장${errs.length ? ` · 실패 ${errs.length}건` : ""}${errs.length ? "\n" + errs.join("\n") : ""}`);
+    if (fileRef.current) fileRef.current.value = "";
+    load(q);
+  };
+
+  const del = async (id) => {
+    if (!window.confirm("이 질의회시를 삭제할까요?")) return;
+    try { await fetch(`/api/legal-qa/${id}`, { method: "DELETE" }); setItems(x => x.filter(it => it.id !== id)); } catch (e) {}
+  };
+
+  return (
+    <div>
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">질의회시 DB</h1>
+          <div className="content-sub">질의회시(행정해석) PDF를 올리면 AI가 질의·회시·관련법령을 자동 추출해 저장하고, <b>AI 근거 정리</b>가 이 자료를 근거로 활용합니다.</div>
+        </div>
+      </div>
+
+      <div style={{ ...card, marginBottom: 14, borderStyle: "dashed", textAlign: "center", padding: "26px 16px" }}>
+        <input ref={fileRef} type="file" accept="application/pdf" multiple style={{ display: "none" }}
+          onChange={e => onFiles(e.target.files)} />
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>📄 질의회시 PDF 업로드</div>
+        <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 12, lineHeight: 1.6 }}>
+          여러 개 한 번에 선택 가능 · 한 PDF 안에 여러 건이 있어도 자동으로 나눠서 저장돼요.
+        </div>
+        <button className="btn btn-primary" disabled={!!up} onClick={() => fileRef.current && fileRef.current.click()}>
+          {up ? "추출 중…" : "PDF 선택"}
+        </button>
+        {up && (
+          <div style={{ marginTop: 12, fontSize: 13, color: "var(--fg-2)" }}>
+            {up.done + 1} / {up.total} 처리 중… <span style={{ color: "var(--fg-4)" }}>{up.cur}</span>
+            <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 3 }}>PDF 1개당 10~30초 걸릴 수 있어요.</div>
+          </div>
+        )}
+      </div>
+
+      {msg && <div style={{ ...card, marginBottom: 14, fontSize: 13, color: "var(--fg-2)", whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{msg}</div>}
+
+      <div style={{ ...card }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") load(q); }}
+            placeholder="저장된 질의회시 검색(질의·회시·법령)"
+            style={{ flex: "1 1 220px", minWidth: 160, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "8px 11px", fontSize: 13.5, background: "var(--bg-elev)", color: "var(--fg)" }} />
+          <button className="btn btn-secondary btn-sm" onClick={() => load(q)}>검색</button>
+          <span style={{ fontSize: 12.5, color: "var(--fg-4)", marginLeft: "auto" }}>총 {items.length.toLocaleString()}건</span>
+        </div>
+        {loading ? <div style={{ padding: "26px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13 }}>불러오는 중…</div>
+          : items.length === 0 ? <div style={{ padding: "26px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>저장된 질의회시가 없습니다. PDF를 업로드해 주세요.</div>
+            : items.map(it => (
+              <div key={it.id} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="chip chip-primary">질의회시</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0 }}>{it.title || "(제목 없음)"}</span>
+                  <span style={{ fontSize: 11.5, color: "var(--fg-4)" }}>{[it.sourceOrg, it.sourceDate].filter(Boolean).join(" · ")}</span>
+                  <button onClick={() => del(it.id)} style={{ border: "1px solid var(--line)", background: "var(--bg-elev)", color: "#b91c1c", borderRadius: 6, padding: "2px 8px", fontSize: 11.5, cursor: "pointer" }}>삭제</button>
+                </div>
+                {it.law && <div style={{ fontSize: 12, color: "var(--primary)", marginTop: 4 }}>관련법령: {it.law}</div>}
+                {it.question && <div style={{ fontSize: 12.5, color: "var(--fg-2)", marginTop: 4, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><b>질의</b> {it.question}</div>}
+                {it.answer && <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginTop: 2, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><b>회시</b> {it.answer}</div>}
+              </div>
+            ))}
+      </div>
     </div>
   );
 }
