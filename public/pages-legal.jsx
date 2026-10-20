@@ -764,7 +764,7 @@ function LawGoSearch({ initialQuery = "" }) {
   ];
   const TLABEL = TYPES.reduce((m, t) => (m[t.v] = t.l, m), {});
   const PATHS = { law: "법령", admrul: "행정규칙", prec: "판례", detc: "헌재결정례", expc: "법령해석례", decc: "행정심판례" };
-  const defaultSel = () => { const o = {}; TYPES.forEach(t => o[t.v] = !["law", "admrul"].includes(t.v)); return o; };
+  const defaultSel = () => { const o = {}; TYPES.forEach(t => o[t.v] = true); return o; };   // 전체 체크(법령·행정규칙 포함)
 
   const [q, setQ] = React.useState(initialQuery || "");
   const [sel, setSel] = React.useState(defaultSel);
@@ -1237,19 +1237,6 @@ function LegalAIView({ initialQuery = "" }) {
           placeholder="예: 휴게시설 설치 의무가 있나요? 어떤 기준으로 설치해야 하나요?"
           rows={3}
           style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "11px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }} />
-        {/* 답변 형식 선택 */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 12, color: "var(--fg-4)", fontWeight: 700 }}>답변 형식</span>
-          <div style={{ display: "flex", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", overflow: "hidden" }}>
-            {[["summary", "요약 정리"], ["mail", "공유 메일"]].map(([v, label]) => (
-              <button key={v} onClick={() => setFmt(v)} type="button"
-                style={{ border: "none", cursor: "pointer", padding: "6px 12px", fontSize: 12.5,
-                  fontWeight: fmt === v ? 800 : 600, color: fmt === v ? "#fff" : "var(--fg-2)",
-                  background: fmt === v ? "var(--primary)" : "var(--bg-elev)" }}>{label}</button>
-            ))}
-          </div>
-          <span style={{ fontSize: 11.5, color: "var(--fg-4)" }}>{fmt === "mail" ? "담당자에게 보낼 법령 공유 메일 형식" : "결론·근거·실무 정리 형식"}</span>
-        </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {EXAMPLES.map(ex => (
