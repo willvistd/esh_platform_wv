@@ -1302,24 +1302,74 @@ function LegalQAManager({ currentUser }) {
   React.useEffect(() => { load(""); /* eslint-disable-next-line */ }, []);
 
   const actor = (window.WV_ACTOR ? window.WV_ACTOR.get(currentUser) : "") || (currentUser && currentUser.name) || "";
+  const PAGES_PER_CHUNK = 6;   // 큰 PDF를 이 페이지 수로 쪼개 업로드(타임아웃 방지)
+
+  // 큰 PDF를 페이지 단위로 쪼갬. 라이브러리 없거나 작은 PDF면 null(원본 그대로 업로드).
+  const splitPdf = async (file) => {
+    const L = window.PDFLib;
+    if (!L || !L.PDFDocument) return null;
+    const bytes = await file.arrayBuffer();
+    const src = await L.PDFDocument.load(bytes, { ignoreEncryption: true });
+    const total = src.getPageCount();
+    if (total <= PAGES_PER_CHUNK) return null;
+    const base = file.name.replace(/\.pdf$/i, "");
+    const chunks = [];
+    for (let start = 0; start < total; start += PAGES_PER_CHUNK) {
+      const end = Math.min(start + PAGES_PER_CHUNK, total);
+      const doc = await L.PDFDocument.create();
+      const idx = []; for (let p = start; p < end; p++) idx.push(p);
+      const pages = await doc.copyPages(src, idx);
+      pages.forEach(pg => doc.addPage(pg));
+      const out = await doc.save();
+      chunks.push(new File([out], `${base} (p${start + 1}-${end}).pdf`, { type: "application/pdf" }));
+    }
+    return chunks;
+  };
+
+  const uploadOne = async (file) => {
+    const fd = new FormData(); fd.append("file", file); fd.append("createdBy", actor);
+    const r = await fetch("/api/legal-qa/upload", { method: "POST", body: fd });
+    const txt = await r.text();
+    let d;
+    try { d = JSON.parse(txt); }
+    catch (e) {
+      // 서버가 JSON이 아닌 오류(타임아웃/용량)로 응답한 경우
+      throw new Error(r.status === 413 ? "조각이 너무 큽니다" : (r.status === 504 || r.status >= 500 ? "처리 시간 초과(조각을 더 작게 자동 분할 중)" : "서버 응답 오류"));
+    }
+    if (!d.ok) throw new Error(d.needKey ? "Gemini 키 미설정" : (d.message || "실패"));
+    return d.saved || 0;
+  };
+
   const onFiles = async (fileList) => {
     const files = Array.from(fileList || []).filter(f => /\.pdf$/i.test(f.name));
     if (!files.length) { setMsg("PDF 파일을 선택하세요."); return; }
-    setMsg(""); let saved = 0; const errs = [];
-    setUp({ total: files.length, done: 0, saved: 0, cur: files[0].name, errs });
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      setUp(u => ({ ...u, done: i, cur: f.name }));
+    setMsg("");
+    setUp({ total: 0, done: 0, saved: 0, cur: "PDF 분석 중…" });
+    // 1) 큰 PDF는 조각으로 분할
+    const units = [];
+    for (const f of files) {
       try {
-        const fd = new FormData(); fd.append("file", f); fd.append("createdBy", actor);
-        const r = await fetch("/api/legal-qa/upload", { method: "POST", body: fd });
-        const d = await r.json();
-        if (!d.ok) errs.push(`${f.name}: ${d.needKey ? "Gemini 키 미설정" : (d.message || "실패")}`);
-        else saved += (d.saved || 0);
-      } catch (e) { errs.push(`${f.name}: ${e.message}`); }
+        const chunks = await splitPdf(f);
+        if (chunks && chunks.length) units.push(...chunks);
+        else units.push(f);
+      } catch (e) { units.push(f); }
     }
+    // 2) 동시 3개씩 업로드
+    let saved = 0, done = 0; const errs = [];
+    setUp({ total: units.length, done: 0, saved: 0, cur: units[0] ? units[0].name : "" });
+    let idx = 0;
+    const worker = async () => {
+      while (idx < units.length) {
+        const u = units[idx++];
+        try { saved += await uploadOne(u); }
+        catch (e) { errs.push(`${u.name}: ${e.message}`); }
+        done++;
+        setUp({ total: units.length, done, saved, cur: `${done} / ${units.length} 처리 완료` });
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
     setUp(null);
-    setMsg(`업로드 완료 · 총 ${saved}건 저장${errs.length ? ` · 실패 ${errs.length}건` : ""}${errs.length ? "\n" + errs.join("\n") : ""}`);
+    setMsg(`업로드 완료 · 총 ${saved}건 저장${errs.length ? ` · 실패 ${errs.length}건` : ""}${errs.length ? "\n" + errs.slice(0, 8).join("\n") : ""}`);
     if (fileRef.current) fileRef.current.value = "";
     load(q);
   };
@@ -1357,8 +1407,10 @@ function LegalQAManager({ currentUser }) {
         </button>
         {up && (
           <div style={{ marginTop: 12, fontSize: 13, color: "var(--fg-2)" }}>
-            {up.done + 1} / {up.total} 처리 중… <span style={{ color: "var(--fg-4)" }}>{up.cur}</span>
-            <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 3 }}>PDF 1개당 10~30초 걸릴 수 있어요.</div>
+            {up.total > 0
+              ? <><b>{up.done}</b> / {up.total} 조각 처리 중… <span style={{ color: "var(--primary)" }}>저장 {up.saved}건</span></>
+              : <span>{up.cur}</span>}
+            <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 3 }}>큰 PDF(질의회시집)는 자동으로 여러 조각으로 나눠 올려요. 분량이 많으면 몇 분 걸릴 수 있어요.</div>
           </div>
         )}
       </div>
