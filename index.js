@@ -2874,6 +2874,13 @@ app.get('/api/ai-legal', async (req, res) => {
     const q = String(req.query.q || req.query.question || '').trim();
     if (!q) return res.status(400).json({ ok: false, message: '질문을 입력하세요.' });
 
+    // 약칭 자동 확장(검색 정확도) — 중처법→중대재해처벌법 등
+    const normQ = q
+      .replace(/중처법/g, '중대재해처벌법')
+      .replace(/산안법/g, '산업안전보건법')
+      .replace(/안전보건법(?!령|규칙)/g, '산업안전보건법')
+      .replace(/기준규칙/g, '안전보건기준규칙');
+
     const stripTags = (s) => String(s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
     // 1) 근거 자료 수집 — KOSHA 안전보건법령 스마트검색(전체 분류)
@@ -2882,7 +2889,7 @@ app.get('/api/ai-legal', async (req, res) => {
     const koshaKey = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
     if (koshaKey) {
       try {
-        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=25&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
+        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=25&searchValue=${encodeURIComponent(normQ)}&category=0&type=json`;
         const kr = await fetch(kurl);
         const kd = JSON.parse(await kr.text());
         const body = (kd.response && kd.response.body) || {};
@@ -2907,14 +2914,21 @@ app.get('/api/ai-legal', async (req, res) => {
       } catch (e) { /* 근거 수집 실패해도 계속 진행 */ }
     }
 
-    // 1-2) 질의회시(행정해석 Q&A) — 업로드된 legal_qa에서 매칭 상위 4건을 '보충 해석'으로 법령 뒤에 추가
+    // 1-2) 질의회시(행정해석 Q&A) — 질문 키워드가 충분히 맞는 것만 보충으로 추가(일반어 하나로 엉뚱한 자료 끌려오는 것 방지)
     try {
-      const terms = q.replace(/[%_]/g, ' ').split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2).slice(0, 6);
+      const terms = normQ.replace(/[%_]/g, ' ').split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2).slice(0, 6);
       if (terms.length) {
         const conds = []; const vals = [];
         terms.forEach(t => { vals.push('%' + t + '%'); const i = vals.length; conds.push(`(title ILIKE $${i} OR question ILIKE $${i} OR answer ILIKE $${i} OR law ILIKE $${i})`); });
-        const qr = await pool.query(`SELECT title, question, answer, law, "sourceDate", "sourceOrg" FROM legal_qa WHERE ${conds.join(' OR ')} LIMIT 4`, vals);
-        qr.rows.forEach(row => {
+        const qr = await pool.query(`SELECT title, question, answer, law, "sourceDate", "sourceOrg" FROM legal_qa WHERE ${conds.join(' OR ')} LIMIT 30`, vals);
+        // 질문 키워드가 몇 개나 담겼는지 점수화 → 여러 개 맞는 것만(일반어 1개 매칭은 제외)
+        const need = terms.length <= 1 ? 1 : 2;
+        const scored = qr.rows.map(row => {
+          const hay = `${row.title || ''} ${row.question || ''} ${row.answer || ''} ${row.law || ''}`.toLowerCase();
+          const score = terms.filter(t => hay.includes(t.toLowerCase())).length;
+          return { row, score };
+        }).filter(x => x.score >= need).sort((a, b) => b.score - a.score).slice(0, 3);
+        scored.forEach(({ row }) => {
           const body = `[질의] ${String(row.question || '').slice(0, 800)}\n[회시] ${String(row.answer || '').slice(0, 1000)}`;
           sources.push({   // 법령 근거 뒤(보충 자료)로 배치
             title: (row.title || '질의회시') + (row.sourceDate ? ` (${row.sourceDate})` : ''),
