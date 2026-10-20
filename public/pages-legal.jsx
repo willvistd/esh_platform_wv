@@ -519,7 +519,7 @@ function LawSmartSearch({ initialQuery = "" }) {
 
   const [q, setQ] = React.useState(initialQuery || "");
   const [sel, setSel] = React.useState(defaultSel);
-  const [display, setDisplay] = React.useState(10);   // 분류별 가져올 개수
+  const [display, setDisplay] = React.useState(20);   // 분류별 가져올 개수
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState(null);        // { merged, counts, media, totalCount }
   const [err, setErr] = React.useState("");
@@ -565,6 +565,9 @@ function LawSmartSearch({ initialQuery = "" }) {
           (d.media || []).forEach(m => media.push({ ...m, category: m.category || v }));
         }
       }
+      // 공식 법령(법·령·규칙·기준규칙·중처법·취업제한) → 고시·예규 → KOSHA GUIDE → 미디어 순으로 정렬(핵심 법령이 위로)
+      const PRIO = { "1": 1, "2": 2, "3": 3, "4": 4, "8": 5, "9": 6, "11": 7, "5": 8, "7": 9, "6": 10 };
+      merged.sort((a, b) => (PRIO[String(a.category)] || 99) - (PRIO[String(b.category)] || 99));
       setData({ merged, counts, media, totalCount: total, query });
       if (merged.length === 0 && media.length === 0) {
         if (needKeyAny) setNeedKey(true);
@@ -673,10 +676,10 @@ function LawSmartSearch({ initialQuery = "" }) {
 
       {/* 검색 입력 */}
       <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { setDisplay(10); run(null, 10); } }}
+        <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { setDisplay(20); run(null, 20); } }}
           placeholder="예: 사다리, 밀폐공간, 특별교육…"
           style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
-        <button className="btn btn-primary" onClick={() => { setDisplay(10); run(null, 10); }} disabled={loading}>
+        <button className="btn btn-primary" onClick={() => { setDisplay(20); run(null, 20); }} disabled={loading}>
           {loading ? "검색 중…" : "검색"}
         </button>
       </div>
