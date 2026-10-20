@@ -241,7 +241,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
     <div className="content" style={{ maxWidth: 920 }}>
       {/* 탭: 법적의무 자동판정 / 안전보건법령 검색 */}
       <div style={{ display: "flex", gap: 6, marginBottom: 18, borderBottom: "1px solid var(--line)" }}>
-        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"], ["ai", "AI 근거 정리"],
+        {[["checker", "법적의무 자동판정"], ["search", "법령 검색"], ["ai", "AI 에게 질문하기"],
           ...(["admin", "safety", "manager"].includes(currentUser && currentUser.role) ? [["qa", "질의회시 DB"]] : [])].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ border: "none", background: "transparent", cursor: "pointer", padding: "10px 16px", fontSize: 14,
