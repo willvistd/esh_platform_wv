@@ -2840,6 +2840,15 @@ app.get('/api/kosha-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
     const toArr = (x) => (x == null ? [] : (Array.isArray(x) ? x : [x]));
     const items = toArr(body.items && body.items.item);
     const media = toArr(body.total_media && (body.total_media.media || body.total_media));
+    // 진단용: KOSHA가 실제로 무엇을 반환하는지 확인(별표 색인 여부 등)
+    if (req.query.debug === '1') {
+      return res.json({
+        ok: true, debug: true, category, totalCount: body.totalCount || 0,
+        categoryCount: body.categorycount || body.categoryCount || {},
+        associated: toArr(body.associated_word),
+        titles: items.slice(0, 25).map(it => ({ cat: it.category, title: String(it.title || '').replace(/<[^>]*>/g, '') })),
+      });
+    }
     res.json({
       ok: true,
       totalCount: body.totalCount || 0,
