@@ -1413,7 +1413,7 @@ function LegalQAManager({ currentUser }) {
         {up && (
           <div style={{ marginTop: 12, fontSize: 13, color: "var(--fg-2)" }}>
             {up.total > 0
-              ? <><b>{up.done}</b> / {up.total} 조각 처리 중… <span style={{ color: "var(--primary)" }}>저장 {up.saved}건</span></>
+              ? <><b>{up.done}</b> / {up.total} 조각 처리 중 <span style={{ color: "var(--primary)" }}>저장 {up.saved}건</span></>
               : <span>{up.cur}</span>}
             <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 3 }}>큰 PDF(질의회시집)는 자동으로 여러 조각으로 나눠 올려요. 분량이 많으면 몇 분 걸릴 수 있어요.</div>
           </div>
