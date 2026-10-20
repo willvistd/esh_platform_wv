@@ -1375,17 +1375,22 @@ function LegalQAManager({ currentUser }) {
     // 2) 동시 3개씩 업로드
     let saved = 0, done = 0; const errs = [];
     setUp({ total: units.length, done: 0, saved: 0, cur: units[0] ? units[0].name : "" });
-    let idx = 0;
-    const worker = async () => {
-      while (idx < units.length) {
-        const u = units[idx++];
-        try { saved += await uploadOne(u); }
-        catch (e) { errs.push(`${u.name}: ${e.message}`); }
-        done++;
-        setUp({ total: units.length, done, saved, cur: `${done} / ${units.length} 처리 완료` });
+    // Gemini 분당 한도 보호를 위해 한 개씩 순차 처리 + 조각 사이 짧은 간격
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    for (let i = 0; i < units.length; i++) {
+      const u = units[i];
+      let ok = false;
+      for (let attempt = 0; attempt < 2 && !ok; attempt++) {   // 혼잡 시 1회 더 재시도
+        try { saved += await uploadOne(u); ok = true; }
+        catch (e) {
+          if (attempt === 0 && /혼잡|시간 초과|429|과부하/.test(e.message)) { await sleep(5000); continue; }
+          errs.push(`${u.name}: ${e.message}`);
+        }
       }
-    };
-    await Promise.all([worker(), worker(), worker()]);
+      done++;
+      setUp({ total: units.length, done, saved, cur: `${done} / ${units.length} 처리 완료` });
+      if (i < units.length - 1) await sleep(1500);   // 다음 조각까지 간격
+    }
     setUp(null);
     setMsg(`업로드 완료 · 총 ${saved}건 저장${errs.length ? ` · 실패 ${errs.length}건` : ""}${errs.length ? "\n" + errs.slice(0, 8).join("\n") : ""}`);
     if (fileRef.current) fileRef.current.value = "";
