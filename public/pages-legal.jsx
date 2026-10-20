@@ -1287,7 +1287,9 @@ function LegalQAManager({ currentUser }) {
   const [up, setUp] = React.useState(null);   // { total, done, saved, cur, errs }
   const [msg, setMsg] = React.useState("");
   const [drag, setDrag] = React.useState(false);
+  const [openIds, setOpenIds] = React.useState({});   // 전문 펼친 항목
   const fileRef = React.useRef(null);
+  const toggleOpen = (id) => setOpenIds(o => ({ ...o, [id]: !o[id] }));
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
 
   const load = async (query) => {
@@ -1427,19 +1429,23 @@ function LegalQAManager({ currentUser }) {
         </div>
         {loading ? <div style={{ padding: "26px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13 }}>불러오는 중…</div>
           : items.length === 0 ? <div style={{ padding: "26px 0", textAlign: "center", color: "var(--fg-3)", fontSize: 13.5 }}>저장된 질의회시가 없습니다. PDF를 업로드해 주세요.</div>
-            : items.map(it => (
+            : items.map(it => {
+              const open = !!openIds[it.id];
+              const clamp = open ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" };
+              return (
               <div key={it.id} style={{ padding: "12px 2px", borderBottom: "1px solid var(--line-2)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span className="chip chip-primary">질의회시</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0 }}>{it.title || "(제목 없음)"}</span>
+                  <span onClick={() => toggleOpen(it.id)} style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0, cursor: "pointer" }}>{it.title || "(제목 없음)"}</span>
                   <span style={{ fontSize: 11.5, color: "var(--fg-4)" }}>{[it.sourceOrg, it.sourceDate].filter(Boolean).join(" · ")}</span>
+                  <button onClick={() => toggleOpen(it.id)} style={{ border: "1px solid var(--line)", background: open ? "var(--primary)" : "var(--bg-elev)", color: open ? "#fff" : "var(--fg-3)", borderRadius: 6, padding: "2px 8px", fontSize: 11.5, cursor: "pointer" }}>{open ? "접기 ▲" : "전문 보기 ▼"}</button>
                   <button onClick={() => del(it.id)} style={{ border: "1px solid var(--line)", background: "var(--bg-elev)", color: "#b91c1c", borderRadius: 6, padding: "2px 8px", fontSize: 11.5, cursor: "pointer" }}>삭제</button>
                 </div>
                 {it.law && <div style={{ fontSize: 12, color: "var(--primary)", marginTop: 4 }}>관련법령: {it.law}</div>}
-                {it.question && <div style={{ fontSize: 12.5, color: "var(--fg-2)", marginTop: 4, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><b>질의</b> {it.question}</div>}
-                {it.answer && <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginTop: 2, lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}><b>회시</b> {it.answer}</div>}
+                {it.question && <div style={{ fontSize: open ? 13.5 : 12.5, color: "var(--fg-2)", marginTop: 6, lineHeight: 1.8, whiteSpace: open ? "pre-wrap" : "normal", background: open ? "var(--bg-sunk)" : "transparent", borderRadius: open ? 8 : 0, padding: open ? "10px 12px" : 0, ...clamp }}><b style={{ color: "var(--primary)" }}>질의</b> {it.question}</div>}
+                {it.answer && <div style={{ fontSize: open ? 13.5 : 12.5, color: open ? "var(--fg)" : "var(--fg-3)", marginTop: open ? 8 : 2, lineHeight: 1.8, whiteSpace: open ? "pre-wrap" : "normal", background: open ? "var(--bg-sunk)" : "transparent", borderRadius: open ? 8 : 0, padding: open ? "10px 12px" : 0, ...clamp }}><b style={{ color: "var(--primary)" }}>회시</b> {it.answer}</div>}
               </div>
-            ))}
+            ); })}
       </div>
     </div>
   );
