@@ -481,6 +481,7 @@ function LawSmartSearch({ initialQuery = "" }) {
   const [err, setErr] = React.useState("");
   const [needKey, setNeedKey] = React.useState(false);
   const [fType, setFType] = React.useState("전체");    // 결과 목록 분류 필터(클라이언트)
+  const [openRows, setOpenRows] = React.useState({});  // 본문 펼침 상태(행 키 → true)
 
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
 
@@ -490,7 +491,7 @@ function LawSmartSearch({ initialQuery = "" }) {
     const targets = CATS.filter(c => sel[c.v]).map(c => c.v);
     if (!query) { setErr("검색어를 입력하세요."); return; }
     if (targets.length === 0) { setErr("자료 구분을 하나 이상 선택하세요."); return; }
-    setLoading(true); setErr(""); setNeedKey(false); setFType("전체");
+    setLoading(true); setErr(""); setNeedKey(false); setFType("전체"); setOpenRows({});
     const allOn = targets.length === CATS.length;
     try {
       let merged = []; const counts = {}; let media = []; let total = 0; let needKeyAny = false; const errs = [];
@@ -520,7 +521,7 @@ function LawSmartSearch({ initialQuery = "" }) {
           (d.media || []).forEach(m => media.push({ ...m, category: m.category || v }));
         }
       }
-      setData({ merged, counts, media, totalCount: total });
+      setData({ merged, counts, media, totalCount: total, query });
       if (merged.length === 0 && media.length === 0) {
         if (needKeyAny) setNeedKey(true);
         else if (errs.length) setErr(errs.join("  /  "));
@@ -551,18 +552,48 @@ function LawSmartSearch({ initialQuery = "" }) {
   const totalCount = (data && data.totalCount) || 0;
   const shown = fType === "전체" ? merged : merged.filter(it => String(it.category) === String(fType));
 
+  // 검색어 위치 찾기: 공단 강조(<em>)가 없으면 본문에서 검색어(띄어쓰기 단위)를 직접 찾아 그 주변을 발췌·강조
+  const plain = (s) => String(s || "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const terms = String((data && data.query) || "").split(/\s+/).filter(t => t.length >= 1);
+  const termRe = terms.length ? new RegExp("(" + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "g") : null;
+  const markTerms = (txt) => { const e = esc(txt); return termRe ? e.replace(termRe, "<mark>$1</mark>") : e; };
+  const excerptOf = (txt) => {
+    if (!termRe) return null;
+    termRe.lastIndex = 0; const m = termRe.exec(txt); termRe.lastIndex = 0;
+    if (!m) return null;
+    const st = Math.max(0, m.index - 60), en = Math.min(txt.length, m.index + 160);
+    return (st > 0 ? "… " : "") + txt.slice(st, en) + (en < txt.length ? " …" : "");
+  };
+  const toggleRow = (k) => setOpenRows(o => ({ ...o, [k]: !o[k] }));
+
   const resultRow = (it, i) => {
     const link = Array.isArray(it.filepath) ? it.filepath[0] : it.filepath;
+    const k = (it.category || "") + ":" + i + ":" + plain(it.title).slice(0, 40);
+    const open = !!openRows[k];
+    const body = plain(it.content || it.highlight_content);
+    const apiHl = /<em\b/i.test(String(it.highlight_content || ""));
+    const ex = apiHl ? null : excerptOf(body);
+    const noHit = !apiHl && !ex && !(termRe && (termRe.lastIndex = 0, termRe.test(plain(it.title))));
+    if (termRe) termRe.lastIndex = 0;
+    const summary = apiHl ? hl(it.highlight_content) : { __html: markTerms(ex || body) };
     return (
       <div key={i} style={{ padding: "14px 2px", borderBottom: "1px solid var(--line-2)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
           <span className="chip chip-primary">{catLabel(it.category)}</span>
           {link
             ? <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }} dangerouslySetInnerHTML={hl(it.title)} />
-            : <span style={{ fontSize: 15, fontWeight: 700 }} dangerouslySetInnerHTML={hl(it.title)} />}
+            : <span onClick={() => body && toggleRow(k)} style={{ fontSize: 15, fontWeight: 700, cursor: body ? "pointer" : "default" }} dangerouslySetInnerHTML={hl(it.title)} />}
         </div>
-        <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}
-          dangerouslySetInnerHTML={hl(it.highlight_content || it.content)} />
+        {open
+          ? <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 420, overflowY: "auto", background: "var(--bg-sunk)", borderRadius: 8, padding: "10px 12px" }}
+              dangerouslySetInnerHTML={{ __html: markTerms(body) }} />
+          : <div onClick={() => body && toggleRow(k)} style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", cursor: body ? "pointer" : "default" }}
+              dangerouslySetInnerHTML={summary} />}
+        {(body || noHit) && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
+          {body && <button type="button" onClick={() => toggleRow(k)} className="btn btn-secondary btn-sm" style={{ padding: "3px 10px", fontSize: 12 }}>{open ? "본문 접기 ▲" : "본문 전체 보기 ▼"}</button>}
+          {noHit && <span style={{ fontSize: 11.5, color: "#92400e" }}>본문에 검색어가 그대로 나오지 않습니다. 공단 검색엔진이 관련어로 연결한 결과입니다.</span>}
+        </div>}
         {it.keyword && <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           관련어: {String(it.keyword).split(/\s*,\s*/).filter(Boolean).slice(0, 6).join(" · ")}
         </div>}
