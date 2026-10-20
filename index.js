@@ -2830,17 +2830,25 @@ app.get('/api/ai-legal', async (req, res) => {
       '- 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙이세요.\n\n' +
       '[질문]\n' + q + '\n\n[자료]\n' + context;
 
-    const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-    const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
-    const gr = await fetch(gurl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1400 } }),
-    });
-    const gd = await gr.json();
-    if (gd.error) return res.json({ ok: false, message: 'Gemini 오류: ' + (gd.error.message || '').slice(0, 200), sources });
-    const answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
-    if (!answer) return res.json({ ok: false, message: 'AI 응답을 생성하지 못했습니다.', sources });
+    // 최신 모델 우선, 접근 불가/구버전 중단 시 하위 모델로 자동 폴백(GEMINI_MODELS 공용 목록 사용)
+    const models = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
+      ? GEMINI_MODELS : [process.env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+    let answer = '', lastErr = '';
+    for (const model of models) {
+      try {
+        const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
+        const gr = await fetch(gurl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1400 } }),
+        });
+        const gd = await gr.json();
+        if (gd.error) { lastErr = gd.error.message || ''; continue; } // 모델 중단/미지원 → 다음 모델
+        answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
+        if (answer) break;
+      } catch (e) { lastErr = e.message; }
+    }
+    if (!answer) return res.json({ ok: false, message: 'Gemini 오류: ' + String(lastErr).slice(0, 200), sources });
     res.json({ ok: true, answer, sources });
   } catch (e) {
     console.error('[ai-legal]', e.message);
