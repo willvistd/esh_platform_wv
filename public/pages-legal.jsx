@@ -241,7 +241,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
     <div className="content" style={{ maxWidth: 920 }}>
       {/* 탭: 법적의무 자동판정 / 안전보건법령 검색 */}
       <div style={{ display: "flex", gap: 6, marginBottom: 18, borderBottom: "1px solid var(--line)" }}>
-        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"]].map(([k, label]) => (
+        {[["checker", "법적의무 자동판정"], ["search", "안전보건법령 검색"], ["ai", "AI 근거 정리"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ border: "none", background: "transparent", cursor: "pointer", padding: "10px 16px", fontSize: 14,
               fontWeight: tab === k ? 800 : 600, color: tab === k ? "var(--primary)" : "var(--fg-3)",
@@ -252,6 +252,7 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
       </div>
 
       {tab === "search" && <LawSearchPanel initialQuery={initialLawQuery} />}
+      {tab === "ai" && <LegalAIView initialQuery={initialLawQuery} />}
 
       {tab === "checker" && (<>
       <div className="content-hd">
@@ -1118,4 +1119,107 @@ h2{font-size:14px;color:#1d4ed8;margin:22px 0 8px;} .hd{font-weight:800;margin:9
     </div>
   );
 }
+// ── AI 근거 정리 (질문 → 국가법령/KOSHA 자료 기반 Gemini 정리) ──
+function LegalAIView({ initialQuery = "" }) {
+  const [q, setQ] = React.useState(initialQuery || "");
+  const [loading, setLoading] = React.useState(false);
+  const [res, setRes] = React.useState(null);   // { answer, sources } | { noSource }
+  const [err, setErr] = React.useState("");
+  const [needKey, setNeedKey] = React.useState(false);
+
+  const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
+  const EXAMPLES = ["휴게시설 설치 의무가 있나요?", "밀폐공간 작업 전 조치사항은?", "특별안전보건교육 대상과 시간은?", "사다리 작업 안전기준은?", "중대재해처벌법 적용 범위는?"];
+
+  const ask = async (overrideQ) => {
+    const query = String(overrideQ != null ? overrideQ : q).trim();
+    if (!query) { setErr("질문을 입력하세요."); return; }
+    setLoading(true); setErr(""); setNeedKey(false); setRes(null);
+    try {
+      const r = await fetch(`/api/ai-legal?q=${encodeURIComponent(query)}`);
+      const d = await r.json();
+      if (!d.ok) { if (d.needKey) setNeedKey(true); else setErr(d.message || "답변을 생성하지 못했습니다."); return; }
+      setRes(d);
+    } catch (e) { setErr("AI 처리 오류: " + e.message); }
+    finally { setLoading(false); }
+  };
+
+  // 간단 마크다운(굵게 **..**, 머리글 #) 렌더
+  const renderMd = (txt) => String(txt || "").split("\n").map((ln, i) => {
+    const isHead = /^#{1,6}\s/.test(ln);
+    const clean = isHead ? ln.replace(/^#{1,6}\s/, "") : ln;
+    const parts = clean.split(/(\*\*[^*]+\*\*)/g).map((p, j) => /^\*\*[^*]+\*\*$/.test(p) ? <b key={j}>{p.slice(2, -2)}</b> : p);
+    if (!ln.trim()) return <div key={i} style={{ height: 8 }} />;
+    return <div key={i} style={{ margin: "0 0 6px", fontWeight: isHead ? 800 : 400, fontSize: isHead ? 15 : 14, lineHeight: 1.9, color: "var(--fg)" }}>{isHead ? clean : parts}</div>;
+  });
+
+  return (
+    <div>
+      <div className="content-hd">
+        <div>
+          <h1 className="content-title">AI 근거 정리</h1>
+          <div className="content-sub">질문을 입력하면 산업안전보건 법령 자료를 찾아 <b>근거와 함께 정리</b>해 드려요. (근거: 안전보건공단 공공데이터 · 정리: Gemini AI)</div>
+        </div>
+      </div>
+
+      <div style={{ ...card, marginBottom: 14 }}>
+        <textarea value={q} onChange={e => setQ(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) ask(); }}
+          placeholder="예: 휴게시설 설치 의무가 있나요? 어떤 기준으로 설치해야 하나요?"
+          rows={3}
+          style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "11px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)", resize: "vertical", fontFamily: "inherit", lineHeight: 1.6 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {EXAMPLES.map(ex => (
+              <button key={ex} onClick={() => { setQ(ex); ask(ex); }} disabled={loading}
+                className="chip" style={{ cursor: "pointer", fontSize: 12 }}>{ex}</button>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={() => ask()} disabled={loading}>{loading ? "정리 중…" : "질문하기"}</button>
+        </div>
+      </div>
+
+      {needKey && (
+        <div style={{ ...card, marginBottom: 14, borderColor: "#fdba74", background: "#fff7ed" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#c2410c", marginBottom: 6 }}>🔑 AI(Gemini) 인증키 설정이 필요합니다</div>
+          <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.75 }}>
+            Google AI Studio에서 <b>Gemini API 키</b>를 발급받아 서버 환경변수 <code>GEMINI_API_KEY</code>로 등록하면 활성화됩니다.
+          </div>
+        </div>
+      )}
+      {err && <div style={{ ...card, marginBottom: 14, borderColor: "#fca5a5", background: "#fef2f2", color: "#b91c1c", fontSize: 13, lineHeight: 1.7 }}>{err}</div>}
+
+      {loading && <div style={{ ...card, textAlign: "center", color: "var(--fg-3)", fontSize: 13.5, padding: "32px 0" }}>법령 자료를 찾아 정리하고 있어요… (몇 초 걸릴 수 있어요)</div>}
+
+      {res && !loading && res.noSource && (
+        <div style={{ ...card, color: "var(--fg-3)", fontSize: 13.5, textAlign: "center", padding: "28px 0" }}>{res.message || "관련 자료를 찾지 못했습니다."}</div>
+      )}
+
+      {res && !loading && res.answer && (
+        <>
+          <div style={{ ...card, marginBottom: 14, borderLeft: "4px solid var(--primary)" }}>
+            <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--primary)", marginBottom: 10 }}>🤖 AI 정리 결과</div>
+            {renderMd(res.answer)}
+          </div>
+          {(res.sources || []).length > 0 && (
+            <div style={card}>
+              <div style={{ fontSize: 12.5, fontWeight: 800, color: "var(--fg-2)", marginBottom: 10 }}>📎 참고한 자료 ({res.sources.length})</div>
+              {res.sources.map((s, i) => (
+                <div key={i} style={{ padding: "10px 2px", borderBottom: i < res.sources.length - 1 ? "1px solid var(--line-2)" : "none" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
+                    {s.category && <span className="chip chip-primary">{s.category}</span>}
+                    {s.link
+                      ? <a href={s.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }}>{s.title} ↗</a>
+                      : <span style={{ fontSize: 14, fontWeight: 700 }}>{s.title}</span>}
+                  </div>
+                  {s.content && <div style={{ fontSize: 12.5, color: "var(--fg-3)", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.content}</div>}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 Object.assign(window, { LegalCheckerView });

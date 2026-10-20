@@ -2779,6 +2779,75 @@ app.get('/api/kosha-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
   }
 });
 
+// ── AI 근거 정리 (Gemini) ──
+//   질문을 받아 KOSHA 안전보건법령 스마트검색으로 근거 자료를 모은 뒤, Gemini가 근거 기반으로 정리.
+//   환경변수: GEMINI_API_KEY (또는 gemini_key / GOOGLE_API_KEY) · 근거수집은 기존 KOSHA 키 사용.
+app.get('/api/ai-legal', async (req, res) => {
+  try {
+    const gkey = process.env.GEMINI_API_KEY || process.env.gemini_key || process.env.GOOGLE_API_KEY || process.env.gemini_api_key;
+    if (!gkey) return res.json({ ok: false, needKey: true, message: 'GEMINI_API_KEY 미설정' });
+    const q = String(req.query.q || req.query.question || '').trim();
+    if (!q) return res.status(400).json({ ok: false, message: '질문을 입력하세요.' });
+
+    const stripTags = (s) => String(s || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+    // 1) 근거 자료 수집 — KOSHA 안전보건법령 스마트검색(전체 분류)
+    const CAT_LABEL = { '0': '전체', '1': '산업안전보건법', '2': '시행령', '3': '시행규칙', '4': '안전보건기준규칙', '5': '고시·훈령·예규', '6': '미디어', '7': 'KOSHA GUIDE', '8': '중대재해처벌법', '9': '중대재해처벌법 시행령', '11': '유해·위험작업 취업제한 규칙' };
+    const sources = [];
+    const koshaKey = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
+    if (koshaKey) {
+      try {
+        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=8&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
+        const kr = await fetch(kurl);
+        const kd = JSON.parse(await kr.text());
+        const body = (kd.response && kd.response.body) || {};
+        const toArr = (x) => (x == null ? [] : (Array.isArray(x) ? x : [x]));
+        toArr(body.items && body.items.item).slice(0, 8).forEach(it => {
+          const link = Array.isArray(it.filepath) ? it.filepath[0] : it.filepath;
+          sources.push({
+            title: stripTags(it.title),
+            category: CAT_LABEL[String(it.category)] || String(it.category || ''),
+            content: stripTags(it.highlight_content || it.content).slice(0, 700),
+            link: link || '',
+          });
+        });
+      } catch (e) { /* 근거 수집 실패해도 계속 진행 */ }
+    }
+
+    if (sources.length === 0) {
+      return res.json({ ok: true, answer: '', noSource: true, sources: [], message: '관련 법령 자료를 찾지 못했습니다. 검색어를 바꿔 다시 질문해 주세요.' });
+    }
+
+    // 2) Gemini에 근거 기반 정리 요청
+    const context = sources.map((s, i) => `[자료 ${i + 1}] (${s.category}) ${s.title}\n${s.content}`).join('\n\n');
+    const prompt =
+      '당신은 한국의 산업안전보건 법령 실무 전문가입니다. 아래 "자료"에 근거해서만 질문에 답하세요.\n' +
+      '규칙:\n' +
+      '- 자료에 없는 내용은 지어내지 말고, 부족하면 "제공된 자료에서는 확인되지 않습니다"라고 밝히세요.\n' +
+      '- 먼저 핵심 결론을 2~3줄로 요약하고, 그다음 근거가 되는 법령명과 조문을 제시하세요.\n' +
+      '- 안전보건 실무 담당자가 바로 이해할 수 있게 쉽고 간결한 한국어로 쓰세요.\n' +
+      '- 대시(—) 기호는 쓰지 말고, 항목은 번호나 가운뎃점(·)으로 정리하세요.\n' +
+      '- 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙이세요.\n\n' +
+      '[질문]\n' + q + '\n\n[자료]\n' + context;
+
+    const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+    const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
+    const gr = await fetch(gurl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1400 } }),
+    });
+    const gd = await gr.json();
+    if (gd.error) return res.json({ ok: false, message: 'Gemini 오류: ' + (gd.error.message || '').slice(0, 200), sources });
+    const answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
+    if (!answer) return res.json({ ok: false, message: 'AI 응답을 생성하지 못했습니다.', sources });
+    res.json({ ok: true, answer, sources });
+  } catch (e) {
+    console.error('[ai-legal]', e.message);
+    res.status(500).json({ ok: false, message: 'AI 처리 중 오류: ' + e.message });
+  }
+});
+
 // ── 국가법령정보센터(law.go.kr) 법령 검색 프록시 ──
 //   공동활용 OpenAPI. 인증키(OC)는 환경변수 LAWGO_OC(= open.law.go.kr 신청 ID, 보통 이메일 앞부분).
 //   법령상세링크를 그대로 사용해 실제 법령 원문 페이지로 딥링크.
