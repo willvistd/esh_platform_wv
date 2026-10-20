@@ -1286,6 +1286,7 @@ function LegalQAManager({ currentUser }) {
   const [loading, setLoading] = React.useState(false);
   const [up, setUp] = React.useState(null);   // { total, done, saved, cur, errs }
   const [msg, setMsg] = React.useState("");
+  const [drag, setDrag] = React.useState(false);
   const fileRef = React.useRef(null);
   const card = { background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: "var(--r-md)", padding: 16, boxShadow: "var(--shadow)" };
 
@@ -1337,14 +1338,21 @@ function LegalQAManager({ currentUser }) {
         </div>
       </div>
 
-      <div style={{ ...card, marginBottom: 14, borderStyle: "dashed", textAlign: "center", padding: "26px 16px" }}>
+      <div
+        onDragOver={e => { e.preventDefault(); if (!up) setDrag(true); }}
+        onDragEnter={e => { e.preventDefault(); if (!up) setDrag(true); }}
+        onDragLeave={e => { e.preventDefault(); setDrag(false); }}
+        onDrop={e => { e.preventDefault(); setDrag(false); if (!up && e.dataTransfer && e.dataTransfer.files) onFiles(e.dataTransfer.files); }}
+        onClick={() => !up && fileRef.current && fileRef.current.click()}
+        style={{ ...card, marginBottom: 14, borderStyle: "dashed", borderWidth: 2, borderColor: drag ? "var(--primary)" : "var(--line)", background: drag ? "var(--primary-soft, #eef3ff)" : "var(--bg-elev)", textAlign: "center", padding: "30px 16px", cursor: up ? "default" : "pointer", transition: "border-color .15s, background .15s" }}>
         <input ref={fileRef} type="file" accept="application/pdf" multiple style={{ display: "none" }}
           onChange={e => onFiles(e.target.files)} />
         <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 6 }}>📄 질의회시 PDF 업로드</div>
         <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginBottom: 12, lineHeight: 1.6 }}>
-          여러 개 한 번에 선택 가능 · 한 PDF 안에 여러 건이 있어도 자동으로 나눠서 저장돼요.
+          {drag ? "여기에 놓으세요" : "이 영역에 PDF를 끌어다 놓거나, 아래 버튼으로 선택하세요"}<br />
+          여러 개 한 번에 선택 가능한 PDF 안에 여러 건이 있어도 자동으로 나눠서 저장돼요.
         </div>
-        <button className="btn btn-primary" disabled={!!up} onClick={() => fileRef.current && fileRef.current.click()}>
+        <button className="btn btn-primary" disabled={!!up} onClick={e => { e.stopPropagation(); fileRef.current && fileRef.current.click(); }}>
           {up ? "추출 중…" : "PDF 선택"}
         </button>
         {up && (
