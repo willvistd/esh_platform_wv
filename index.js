@@ -2797,17 +2797,19 @@ app.get('/api/ai-legal', async (req, res) => {
     const koshaKey = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
     if (koshaKey) {
       try {
-        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=8&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
+        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=12&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
         const kr = await fetch(kurl);
         const kd = JSON.parse(await kr.text());
         const body = (kd.response && kd.response.body) || {};
         const toArr = (x) => (x == null ? [] : (Array.isArray(x) ? x : [x]));
-        toArr(body.items && body.items.item).slice(0, 8).forEach(it => {
+        toArr(body.items && body.items.item).slice(0, 12).forEach(it => {
           const link = Array.isArray(it.filepath) ? it.filepath[0] : it.filepath;
+          // 조문 전체(content)를 우선 사용해 근거를 두껍게. 없으면 하이라이트 조각 사용.
+          const full = stripTags(it.content) || stripTags(it.highlight_content);
           sources.push({
             title: stripTags(it.title),
             category: CAT_LABEL[String(it.category)] || String(it.category || ''),
-            content: stripTags(it.highlight_content || it.content).slice(0, 700),
+            content: full.slice(0, 1600),
             link: link || '',
           });
         });
@@ -2821,13 +2823,16 @@ app.get('/api/ai-legal', async (req, res) => {
     // 2) Gemini에 근거 기반 정리 요청
     const context = sources.map((s, i) => `[자료 ${i + 1}] (${s.category}) ${s.title}\n${s.content}`).join('\n\n');
     const prompt =
-      '당신은 한국의 산업안전보건 법령 실무 전문가입니다. 아래 "자료"에 근거해서만 질문에 답하세요.\n' +
-      '규칙:\n' +
-      '- 자료에 없는 내용은 지어내지 말고, 부족하면 "제공된 자료에서는 확인되지 않습니다"라고 밝히세요.\n' +
-      '- 먼저 핵심 결론을 2~3줄로 요약하고, 그다음 근거가 되는 법령명과 조문을 제시하세요.\n' +
-      '- 안전보건 실무 담당자가 바로 이해할 수 있게 쉽고 간결한 한국어로 쓰세요.\n' +
-      '- 대시(—) 기호는 쓰지 말고, 항목은 번호나 가운뎃점(·)으로 정리하세요.\n' +
-      '- 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙이세요.\n\n' +
+      '당신은 한국의 산업안전보건 법령 실무 전문가입니다. 아래 "자료"에 근거해서 질문에 실무적으로 답하세요.\n' +
+      '반드시 아래 4개 소제목 구조로, 각 항목을 충분히 구체적으로 작성하세요. (소제목은 **굵게**)\n\n' +
+      '**결론**\n질문에 대한 직접적인 답을 2~4줄로. 의무가 있으면 "있음/없음/조건부"를 명확히.\n\n' +
+      '**근거 법령·조문**\n관련 법령명과 조문 번호를 제시하고, 해당 조문이 실제로 요구하는 내용을 자료 인용과 함께 설명. 여러 개면 번호로 나열.\n\n' +
+      '**실무 적용 포인트**\n담당자가 현장에서 무엇을 어떻게 해야 하는지 구체적인 행동(설치 기준, 수치, 주기, 서류 등)을 가운뎃점(·)으로 정리.\n\n' +
+      '**주의·예외**\n예외 조항, 적용 제외, 흔한 오해가 있으면 적고, 자료에 없으면 "제공된 자료에서는 확인되지 않습니다"라고 밝힘.\n\n' +
+      '작성 규칙:\n' +
+      '- 자료에 있는 내용만 사용하고, 추측하지 마세요. 숫자·기준·조문번호는 자료에 있는 그대로 정확히.\n' +
+      '- 쉽고 명확한 한국어. 대시(—) 기호는 쓰지 말고 가운뎃점(·)이나 번호를 사용.\n' +
+      '- 맨 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙이세요.\n\n' +
       '[질문]\n' + q + '\n\n[자료]\n' + context;
 
     // 최신 모델 우선, 접근 불가/구버전 중단 시 하위 모델로 자동 폴백(GEMINI_MODELS 공용 목록 사용)
@@ -2840,7 +2845,7 @@ app.get('/api/ai-legal', async (req, res) => {
         const gr = await fetch(gurl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1400 } }),
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.25, maxOutputTokens: 2400 } }),
         });
         const gd = await gr.json();
         if (gd.error) { lastErr = gd.error.message || ''; continue; } // 모델 중단/미지원 → 다음 모델
