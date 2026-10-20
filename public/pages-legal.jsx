@@ -459,6 +459,21 @@ function LegalCheckerView({ onNav, currentUser, initialLawQuery = "" }) {
   );
 }
 
+// ── 법령 검색 결과 브라우저 캐시 — 같은 요청은 10분간 다시 서버에 묻지 않음(성공 응답만 저장) ──
+const LEGAL_CACHE = new Map();
+const LEGAL_CACHE_MS = 10 * 60 * 1000;
+const legalFetch = async (url) => {
+  const hit = LEGAL_CACHE.get(url);
+  if (hit && Date.now() - hit.t < LEGAL_CACHE_MS) return { json: async () => hit.d };
+  const res = await fetch(url);
+  const d = await res.json();
+  if (d && d.ok) {
+    if (LEGAL_CACHE.size >= 300) LEGAL_CACHE.delete(LEGAL_CACHE.keys().next().value);
+    LEGAL_CACHE.set(url, { t: Date.now(), d });
+  }
+  return { json: async () => d };
+};
+
 // ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI) ──
 //   백엔드 /api/kosha-search 프록시를 통해 산업안전보건법·령·규칙, KOSHA GUIDE, 미디어 등을 키워드 검색.
 function LawSmartSearch({ initialQuery = "" }) {
@@ -497,7 +512,7 @@ function LawSmartSearch({ initialQuery = "" }) {
       let merged = []; const counts = {}; let media = []; let total = 0; let needKeyAny = false; const errs = [];
       if (allOn) {
         // 전부 선택 → category=0 한 번으로(효율)
-        const res = await fetch(`/api/kosha-search?searchValue=${encodeURIComponent(query)}&category=0&pageNo=1&numOfRows=${disp}`);
+        const res = await legalFetch(`/api/kosha-search?searchValue=${encodeURIComponent(query)}&category=0&pageNo=1&numOfRows=${disp}`);
         const d = await res.json();
         if (d && d.needKey) needKeyAny = true;
         else if (!d || !d.ok) errs.push((d && d.message) || "오류");
@@ -508,7 +523,7 @@ function LawSmartSearch({ initialQuery = "" }) {
       } else {
         const results = await Promise.all(targets.map(async (v) => {
           try {
-            const res = await fetch(`/api/kosha-search?searchValue=${encodeURIComponent(query)}&category=${v}&pageNo=1&numOfRows=${disp}`);
+            const res = await legalFetch(`/api/kosha-search?searchValue=${encodeURIComponent(query)}&category=${v}&pageNo=1&numOfRows=${disp}`);
             return { v, d: await res.json() };
           } catch (e) { return { v, d: { ok: false, message: e.message } }; }
         }));
@@ -785,7 +800,7 @@ function LawGoSearch({ initialQuery = "" }) {
   const fetchPreview = async (it, auto) => {
     const k = pkey(it);
     try {
-      const res = await fetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
+      const res = await legalFetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
       const d = await res.json();
       if (!d || !d.ok) { setPrev(p => ({ ...p, [k]: { open: true, auto, err: (d && d.needKey) ? "본문 열람 권한이 필요합니다." : ((d && d.message) || "본문을 불러오지 못했습니다.") } })); return; }
       const snips = makeSnippet(bodyText(d), (data && data.query) || q);
@@ -891,7 +906,7 @@ h2{font-size:14px;color:#1d4ed8;margin:22px 0 8px;} .hd{font-weight:800;margin:9
   const openReader = async (it) => {
     setReader(it); setRData(null); setRErr(""); setRLoading(true);
     try {
-      const res = await fetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
+      const res = await legalFetch(`/api/lawgo-detail?target=${it._t}&mst=${encodeURIComponent(it.mst || "")}&id=${encodeURIComponent(it.id || "")}`);
       const d = await res.json();
       if (!d.ok) setRErr(d.needKey ? "국가법령정보센터 인증(OC) 설정이 필요합니다." : (d.message || "본문을 불러오지 못했습니다."));
       else setRData(d);
@@ -910,7 +925,7 @@ h2{font-size:14px;color:#1d4ed8;margin:22px 0 8px;} .hd{font-weight:800;margin:9
       const results = await Promise.all(targets.map(async (t) => {
         const sc = (t === "law" || t === "admrul" || t === "prec") ? "2" : "1";  // 법령·행정규칙·판례는 본문(전문)까지 폭넓게 검색
         try {
-          const res = await fetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${t}&search=${sc}&page=1&display=${disp}`);
+          const res = await legalFetch(`/api/lawgo-search?query=${encodeURIComponent(query)}&target=${t}&search=${sc}&page=1&display=${disp}`);
           return { t, d: await res.json() };
         } catch (e) { return { t, d: { ok: false, message: e.message } }; }
       }));

@@ -2716,7 +2716,27 @@ app.get('/api/substances/meta', (req, res) => {
 // ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI 프록시) ──
 //   공개 API(apis.data.go.kr/B552468/srch/smartSearch)를 서버에서 호출해 CORS·인증키 노출 없이 중계.
 //   인증키 환경변수: law_key / LAW_KEY / KOSHA_API_KEY 중 아무거나(공공데이터포털 serviceKey, URL 인코딩된 값 권장).
-app.get('/api/kosha-search', async (req, res) => {
+// ── 법령 검색 결과 서버 캐시(메모리) — 같은 검색은 일정 시간 외부 기관에 다시 묻지 않음 ──
+//   성공(ok:true) 응답만 저장, 진단(?debug) 요청은 제외. 서버리스 인스턴스가 살아있는 동안 유지.
+const legalCache = new Map();
+const legalCacheJson = (ttlMs) => (req, res, next) => {
+  if (req.query.debug) return next();
+  const key = req.path + '?' + Object.keys(req.query).sort().map(k => k + '=' + req.query[k]).join('&');
+  const hit = legalCache.get(key);
+  if (hit && hit.exp > Date.now()) { res.set('X-Cache', 'HIT'); return res.json(hit.body); }
+  if (hit) legalCache.delete(key);
+  const orig = res.json.bind(res);
+  res.json = (body) => {
+    if (body && body.ok === true && res.statusCode < 400) {
+      if (legalCache.size >= 500) legalCache.delete(legalCache.keys().next().value);
+      legalCache.set(key, { body, exp: Date.now() + ttlMs });
+    }
+    return orig(body);
+  };
+  next();
+};
+
+app.get('/api/kosha-search', legalCacheJson(10 * 60 * 1000), async (req, res) => {
   try {
     const key = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
     if (!key) return res.json({ ok: false, needKey: true, message: 'KOSHA_API_KEY 미설정' });
@@ -2762,7 +2782,7 @@ app.get('/api/kosha-search', async (req, res) => {
 // ── 국가법령정보센터(law.go.kr) 법령 검색 프록시 ──
 //   공동활용 OpenAPI. 인증키(OC)는 환경변수 LAWGO_OC(= open.law.go.kr 신청 ID, 보통 이메일 앞부분).
 //   법령상세링크를 그대로 사용해 실제 법령 원문 페이지로 딥링크.
-app.get('/api/lawgo-search', async (req, res) => {
+app.get('/api/lawgo-search', legalCacheJson(10 * 60 * 1000), async (req, res) => {
   try {
     const oc = process.env.LAWGO_OC || process.env.lawgo_oc || process.env.LAW_GO_OC || process.env.LAW_OC;
     if (!oc) return res.json({ ok: false, needKey: true, message: 'LAWGO_OC 미설정' });
@@ -2833,7 +2853,7 @@ app.get('/api/lawgo-search', async (req, res) => {
 
 // ── 국가법령정보센터 본문(조문) 조회 — 앱 안에서 법령 내용 읽기 ──
 //   lawService.do(본문 API). '본문 XML' 활용 권한이 있어야 동작.
-app.get('/api/lawgo-detail', async (req, res) => {
+app.get('/api/lawgo-detail', legalCacheJson(60 * 60 * 1000), async (req, res) => {
   try {
     const oc = process.env.LAWGO_OC || process.env.lawgo_oc || process.env.LAW_GO_OC || process.env.LAW_OC;
     if (!oc) return res.json({ ok: false, needKey: true, message: 'LAWGO_OC 미설정' });
