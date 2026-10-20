@@ -2882,15 +2882,21 @@ app.get('/api/ai-legal', async (req, res) => {
     const koshaKey = process.env.law_key || process.env.LAW_KEY || process.env.KOSHA_API_KEY;
     if (koshaKey) {
       try {
-        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=12&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
+        const kurl = `http://apis.data.go.kr/B552468/srch/smartSearch?serviceKey=${koshaKey}&pageNo=1&numOfRows=25&searchValue=${encodeURIComponent(q)}&category=0&type=json`;
         const kr = await fetch(kurl);
         const kd = JSON.parse(await kr.text());
         const body = (kd.response && kd.response.body) || {};
         const toArr = (x) => (x == null ? [] : (Array.isArray(x) ? x : [x]));
-        toArr(body.items && body.items.item).slice(0, 12).forEach(it => {
+        // 공식 법령(법·령·규칙·기준규칙·중처법·취업제한·고시) 우선, KOSHA GUIDE는 뒤. 미디어(포스터·영상)는 근거에서 제외.
+        const PRIO = { '1': 1, '2': 2, '3': 3, '4': 4, '8': 5, '9': 6, '11': 7, '5': 8, '7': 9 };
+        const cand = toArr(body.items && body.items.item)
+          .filter(it => String(it.category) !== '6')
+          .map(it => ({ it, full: (stripTags(it.content) || stripTags(it.highlight_content)) }))
+          .filter(x => x.full && x.full.length > 20)   // 제목만 있고 내용 없는 자료 제외
+          .sort((a, b) => (PRIO[String(a.it.category)] || 99) - (PRIO[String(b.it.category)] || 99))
+          .slice(0, 12);
+        cand.forEach(({ it, full }) => {
           const link = Array.isArray(it.filepath) ? it.filepath[0] : it.filepath;
-          // 조문 전체(content)를 우선 사용해 근거를 두껍게. 없으면 하이라이트 조각 사용.
-          const full = stripTags(it.content) || stripTags(it.highlight_content);
           sources.push({
             title: stripTags(it.title),
             category: CAT_LABEL[String(it.category)] || String(it.category || ''),
