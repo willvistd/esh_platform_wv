@@ -2846,7 +2846,7 @@ app.get('/api/kosha-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
         ok: true, debug: true, category, totalCount: body.totalCount || 0,
         categoryCount: body.categorycount || body.categoryCount || {},
         associated: toArr(body.associated_word),
-        titles: items.slice(0, 25).map(it => ({ cat: it.category, title: String(it.title || '').replace(/<[^>]*>/g, '') })),
+        titles: items.slice(0, 25).map(it => ({ cat: it.category, title: String(it.title || '').replace(/<[^>]*>/g, ''), clen: String(it.content || '').length, hlen: String(it.highlight_content || '').length, hasLink: !!(Array.isArray(it.filepath) ? it.filepath[0] : it.filepath) })),
       });
     }
     res.json({
