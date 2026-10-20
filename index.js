@@ -531,6 +531,19 @@ async function initDB() {
       "updatedAt" TEXT,
       PRIMARY KEY ("siteId", year)
     );
+    -- 질의회시(행정해석 Q&A) — AI 근거 정리의 실무 근거 자료
+    CREATE TABLE IF NOT EXISTS legal_qa (
+      id SERIAL PRIMARY KEY,
+      title TEXT,
+      question TEXT,
+      answer TEXT,
+      law TEXT,
+      "sourceDate" TEXT,
+      "sourceOrg" TEXT,
+      "fileName" TEXT,
+      "createdBy" TEXT,
+      "createdAt" TEXT
+    );
   `);
 
   // 본부(HQ) 시드 — 위험성평가 코드 본부명단과 일치
@@ -2695,6 +2708,69 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
   }
 });
 
+// ── 질의회시(행정해석 Q&A) 관리 ──
+//   PDF 업로드 → Gemini가 질의/회시/관련법령을 추출 → legal_qa 테이블 저장 → AI 근거 정리가 검색해 활용.
+const LEGALQA_PROMPT =
+  '당신은 한국 산업안전보건·노동 분야의 질의회시(행정해석) 문서를 구조화하는 전문가입니다.\n' +
+  '첨부한 PDF 안에 들어있는 모든 질의회시 사례를 찾아 아래 JSON 형식으로만 반환하세요. 마크다운(```) 없이 순수 JSON만.\n' +
+  '하나의 PDF에 여러 건이 있으면 모두 배열에 담고, 한 건이면 1개만 담으세요.\n' +
+  '형식: {"items":[{"title":"질의 제목(한 줄 요약)","question":"질의 내용 전문","answer":"회시 내용 전문","law":"관련 법령·조문(쉼표로 구분)","sourceDate":"YYYY-MM-DD 또는 YYYY.MM.","sourceOrg":"회시 기관(예: 고용노동부, 안전보건공단)"}]}\n' +
+  '규칙: 원문 내용을 요약하지 말고 최대한 그대로 담되, 머리글호(【질의】【회시】 등)는 제거. 날짜·기관·법령이 없으면 빈 문자열. 내용이 없으면 items는 빈 배열.';
+
+app.post('/api/legal-qa/upload', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ ok: false, message: '파일이 없습니다.' });
+  const cleanup = () => { if (req.file.path) fs.unlink(req.file.path, () => {}); };
+  if (!GEMINI_API_KEY) { cleanup(); return res.status(503).json({ ok: false, needKey: true, message: 'GEMINI_API_KEY 미설정' }); }
+  try {
+    const pdfBuffer = req.file.buffer || fs.readFileSync(req.file.path);
+    const pdfBase64 = pdfBuffer.toString('base64');
+    cleanup();
+    const raw = await callGemini(LEGALQA_PROMPT, 'application/pdf', pdfBase64);
+    const items = Array.isArray(raw && raw.items) ? raw.items : (Array.isArray(raw) ? raw : []);
+    const who = String(req.body && req.body.createdBy || '').slice(0, 100);
+    const fileName = (req.file.originalname || '').slice(0, 200);
+    let saved = 0;
+    for (const it of items) {
+      const q = String(it.question || '').trim();
+      const a = String(it.answer || '').trim();
+      if (!q && !a) continue;
+      await pool.query(
+        `INSERT INTO legal_qa (title, question, answer, law, "sourceDate", "sourceOrg", "fileName", "createdBy", "createdAt")
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, NOW()::TEXT)`,
+        [String(it.title || '').slice(0, 300), q, a, String(it.law || '').slice(0, 500),
+         String(it.sourceDate || '').slice(0, 40), String(it.sourceOrg || '').slice(0, 100), fileName, who]
+      );
+      saved++;
+    }
+    res.json({ ok: true, saved, found: items.length, fileName });
+  } catch (err) {
+    console.error('[legal-qa/upload]', err.message);
+    res.status(500).json({ ok: false, message: '추출/저장 중 오류: ' + err.message });
+  }
+});
+
+app.get('/api/legal-qa', async (req, res) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    let r;
+    if (q) {
+      const like = '%' + q.replace(/[%_]/g, '') + '%';
+      r = await pool.query(
+        `SELECT * FROM legal_qa WHERE title ILIKE $1 OR question ILIKE $1 OR answer ILIKE $1 OR law ILIKE $1 ORDER BY id DESC LIMIT 500`, [like]);
+    } else {
+      r = await pool.query(`SELECT * FROM legal_qa ORDER BY id DESC LIMIT 500`);
+    }
+    res.json({ ok: true, items: r.rows });
+  } catch (e) { res.status(500).json({ ok: false, message: e.message }); }
+});
+
+app.delete('/api/legal-qa/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM legal_qa WHERE id=$1', [parseInt(req.params.id)]);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ ok: false, message: e.message }); }
+});
+
 // ── POST /api/substances/judge — 성분 목록 규제 판정 (작업환경측정/특수건강진단 등) ──
 //  body: { components:[{name,cas,content}], product:{name,manufacturer,revisionDate} }
 app.post('/api/substances/judge', (req, res) => {
@@ -2815,6 +2891,25 @@ app.get('/api/ai-legal', async (req, res) => {
         });
       } catch (e) { /* 근거 수집 실패해도 계속 진행 */ }
     }
+
+    // 1-2) 질의회시(행정해석 Q&A) 자료 — 업로드된 legal_qa에서 키워드 매칭 상위 6건(실무 근거로 우선 배치)
+    try {
+      const terms = q.replace(/[%_]/g, ' ').split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2).slice(0, 6);
+      if (terms.length) {
+        const conds = []; const vals = [];
+        terms.forEach(t => { vals.push('%' + t + '%'); const i = vals.length; conds.push(`(title ILIKE $${i} OR question ILIKE $${i} OR answer ILIKE $${i} OR law ILIKE $${i})`); });
+        const qr = await pool.query(`SELECT title, question, answer, law, "sourceDate", "sourceOrg" FROM legal_qa WHERE ${conds.join(' OR ')} LIMIT 6`, vals);
+        qr.rows.forEach(row => {
+          const body = `[질의] ${String(row.question || '').slice(0, 900)}\n[회시] ${String(row.answer || '').slice(0, 1200)}`;
+          sources.unshift({   // 질의회시를 근거 목록 앞쪽에 배치
+            title: (row.title || '질의회시') + (row.sourceDate ? ` (${row.sourceDate})` : ''),
+            category: '질의회시',
+            content: (row.law ? `관련법령: ${row.law}\n` : '') + body,
+            link: '',
+          });
+        });
+      }
+    } catch (e) { /* 질의회시 조회 실패해도 계속 */ }
 
     if (sources.length === 0) {
       return res.json({ ok: true, answer: '', noSource: true, sources: [], message: '관련 법령 자료를 찾지 못했습니다. 검색어를 바꿔 다시 질문해 주세요.' });
