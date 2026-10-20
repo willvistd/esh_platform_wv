@@ -477,6 +477,32 @@ const legalFetch = async (url) => {
   return { json: async () => d };
 };
 
+// 법령/고시/판결문 본문을 읽기 좋게 정리(【항목】·조문·번호 앞에서 줄바꿈) — 공용
+function WV_prettyLegal(s) {
+  let t = String(s || "").replace(/\r/g, "").replace(/ /g, " ");
+  t = t.replace(/[ \t]{2,}/g, " ");
+  t = t.replace(/\s*【\s*([^】]+?)\s*】\s*/g, "\n\n【$1】\n");       // 【항목】
+  t = t.replace(/\s+(\d{1,2}\.\s)/g, "\n$1");                        // 1. 2.
+  t = t.replace(/\s+([가나다라마바사아자차카타파하]\.\s)/g, "\n$1"); // 가. 나.
+  t = t.replace(/\s*([①-⑮⑯-⑳])\s*/g, "\n$1 ");                      // ① ②
+  t = t.replace(/\s+(\(\s*\d{1,2}\s*\)\s)/g, "\n$1");                // (1) (2)
+  t = t.replace(/\n{3,}/g, "\n\n").trim();
+  return t;
+}
+// 정리된 본문을 HTML로(【항목】 굵게, 검색어 형광펜). termRe는 /g 플래그 정규식 또는 null.
+function WV_prettyLegalHTML(raw, termRe) {
+  const esc = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return WV_prettyLegal(raw).split("\n").map(ln => {
+    const t = ln.trim();
+    if (!t) return "<div style='height:6px'></div>";
+    let safe = esc(ln);
+    if (termRe) { try { safe = safe.replace(termRe, "<mark>$1</mark>"); } catch (e) {} }
+    return /^【.+】$/.test(t)
+      ? `<div style="font-weight:800;margin:9px 0 2px;color:var(--fg)">${safe}</div>`
+      : `<div style="margin:0 0 4px;line-height:1.85">${safe}</div>`;
+  }).join("");
+}
+
 // ── 안전보건법령 스마트검색 (공공데이터포털 KOSHA OpenAPI) ──
 //   백엔드 /api/kosha-search 프록시를 통해 산업안전보건법·령·규칙, KOSHA GUIDE, 미디어 등을 키워드 검색.
 function LawSmartSearch({ initialQuery = "" }) {
@@ -604,8 +630,8 @@ function LawSmartSearch({ initialQuery = "" }) {
             : <span onClick={() => body && toggleRow(k)} style={{ fontSize: 15, fontWeight: 700, cursor: body ? "pointer" : "default" }} dangerouslySetInnerHTML={hl(it.title)} />}
         </div>
         {open
-          ? <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.7, whiteSpace: "pre-wrap", maxHeight: 420, overflowY: "auto", background: "var(--bg-sunk)", borderRadius: 8, padding: "10px 12px" }}
-              dangerouslySetInnerHTML={{ __html: markTerms(body) }} />
+          ? <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.7, maxHeight: 420, overflowY: "auto", background: "var(--bg-sunk)", borderRadius: 8, padding: "12px 14px" }}
+              dangerouslySetInnerHTML={{ __html: WV_prettyLegalHTML(body, termRe) }} />
           : <div onClick={() => body && toggleRow(k)} style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", cursor: body ? "pointer" : "default" }}
               dangerouslySetInnerHTML={summary} />}
         {(body || noHit) && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 6 }}>
