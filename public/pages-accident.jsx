@@ -268,7 +268,6 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
             { label: "중대재해", value: list.filter(a => a.isSerious).length, color: "#dc2626" },
             { label: "조사표 기한초과", value: list.filter(a => iaReportCompliance(a).key === "over").length, color: "#b91c1c" },
             { label: "조사표 미입력", value: list.filter(a => iaReportCompliance(a).key === "missing").length, color: "#d97706" },
-            { label: "조치 미완료", value: list.filter(a => !a.actionCompleted && a.preventionMeasures).length, color: "#7c3aed" },
           ].map(c => (
             <div key={c.label} className="card" style={{ padding: "14px 16px" }}>
               <div style={{ fontSize: 24, fontWeight: 800, color: c.color }}>{c.value}</div>
@@ -839,24 +838,6 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
             <div style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 3 }}>{k.l}</div>
           </div>
         ))}
-      </div>
-
-      {/* 조치기한 알림 */}
-      <div style={card}>
-        <h3 style={h3}>⚠ 재발방지 조치 — 기한 초과·미완료</h3>
-        <p style={cs}>조치기한이 지났거나 완료되지 않은 건만 (클릭 시 상세)</p>
-        {actionAlerts.length === 0 ? <div style={{ color: "var(--fg-4)", fontSize: 13 }}>해당 건이 없습니다. 👍</div> :
-          actionAlerts.slice(0, 6).map(({ a, due, over }) => (
-            <div key={a.id} onClick={() => onOpenDetail(a.id)}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, cursor: "pointer",
-                background: over ? "#fff5f5" : "#fffbeb", border: "1px solid " + (over ? "#fecaca" : "#fde68a"), marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: over ? "#dc2626" : "#d97706", padding: "2px 8px", borderRadius: 99, whiteSpace: "nowrap" }}>
-                {over ? `기한초과 +${over}일` : "미완료"}
-              </span>
-              <div style={{ flex: 1, fontSize: 13 }}><b>{hqOf(a)}{placeName(a) !== "(미지정)" ? " · " + placeName(a) : ""}</b> · {a.accidentType || "-"} · {a.preventionMeasures ? a.preventionMeasures.split("\n")[0] : "-"}
-                <span style={{ fontSize: 11, color: "var(--fg-3)" }}> {a.actionOwner ? `(담당 ${a.actionOwner}` : "("}{due ? ` · 기한 ${due.slice(5)})` : ")"}</span></div>
-            </div>
-          ))}
       </div>
 
       {/* 월별 추이 + 날개박스 */}
