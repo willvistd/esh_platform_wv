@@ -14,16 +14,25 @@ const IA_EMP_TYPES = ["직영", "계약", "도급·협력사", "파견"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "치료종결"];
 const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
 
-// 표 헤더용 안내 툴팁(마우스 올리면 설명 표시)
+// 표 헤더용 안내 툴팁(마우스 올리면 설명 표시) — 화면 고정 위치로 띄워 표 스크롤박스를 벗어남
 function HeaderInfo({ label, title, lines }) {
-  const [on, setOn] = React.useState(false);
+  const [pos, setPos] = React.useState(null);
+  const ref = React.useRef(null);
+  const W = 250;
+  const show = () => {
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - W - 8));
+    setPos({ left, bottom: window.innerHeight - r.top + 6 });   // 아이콘 위쪽에 고정
+  };
+  const hide = () => setPos(null);
   return (
-    <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 4 }}
-      onMouseEnter={() => setOn(true)} onMouseLeave={() => setOn(false)}>
+    <span ref={ref} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}
+      onMouseEnter={show} onMouseLeave={hide}>
       {label}
       <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--fg-4)", color: "var(--fg-4)", fontSize: 10, fontWeight: 700, lineHeight: 1, cursor: "help" }}>i</span>
-      {on && (
-        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 1500, width: 250, background: "#1f2937", color: "#fff", borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 500, lineHeight: 1.65, boxShadow: "0 6px 20px rgba(0,0,0,.28)", whiteSpace: "normal", textAlign: "left", letterSpacing: 0 }}>
+      {pos && (
+        <span style={{ position: "fixed", left: pos.left, bottom: pos.bottom, zIndex: 3000, width: W, background: "#1f2937", color: "#fff", borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 500, lineHeight: 1.65, boxShadow: "0 6px 22px rgba(0,0,0,.3)", whiteSpace: "normal", textAlign: "left", letterSpacing: 0, pointerEvents: "none" }}>
           {title && <b style={{ display: "block", marginBottom: 5 }}>{title}</b>}
           {lines.map((l, i) => <div key={i}>· {l}</div>)}
         </span>
