@@ -13,6 +13,24 @@ const IA_SEVERITIES = ["사망", "3일 이상 휴업", "3일 미만 휴업", "�
 const IA_EMP_TYPES = ["직영", "계약", "도급·협력사", "파견"];
 const IA_COMP_STATUS = ["미신청(공상처리)", "신청·심사중", "승인", "불승인", "치료종결"];
 const IA_CATEGORIES = ["업무상 사고", "업무상 질병", "출퇴근재해"];
+
+// 표 헤더용 안내 툴팁(마우스 올리면 설명 표시)
+function HeaderInfo({ label, title, lines }) {
+  const [on, setOn] = React.useState(false);
+  return (
+    <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 4 }}
+      onMouseEnter={() => setOn(true)} onMouseLeave={() => setOn(false)}>
+      {label}
+      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", border: "1px solid var(--fg-4)", color: "var(--fg-4)", fontSize: 10, fontWeight: 700, cursor: "help", fontStyle: "italic" }}>i</span>
+      {on && (
+        <span style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 1500, width: 250, background: "#1f2937", color: "#fff", borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 500, lineHeight: 1.65, boxShadow: "0 6px 20px rgba(0,0,0,.28)", whiteSpace: "normal", textAlign: "left", letterSpacing: 0 }}>
+          {title && <b style={{ display: "block", marginBottom: 5 }}>{title}</b>}
+          {lines.map((l, i) => <div key={i}>· {l}</div>)}
+        </span>
+      )}
+    </span>
+  );
+}
 // 본부(관리조직) 선택지는 실제 본부(hq) 테이블에서 가져옴 → 폼에서 hqNames로 구성(하드코딩 목록 제거).
 // 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
 const iaIsApproved = (s) => s === "승인" || s === "요양중" || s === "치료종결";
@@ -277,7 +295,12 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
             <thead>
               <tr>
-                {["본부", "사업장 / 현장", "발생일", "재해자", "발생형태", "재해정도", "조사표", "산재진행", ""].map((h, i) => <th key={i} style={TH}>{h}</th>)}
+                {["본부", "사업장 / 현장", "발생일", "재해자", "발생형태", "재해정도", "조사표", "산재진행", ""].map((h, i) => (
+                  <th key={i} style={TH}>{h === "조사표"
+                    ? <HeaderInfo label="조사표" title="재해조사표 제출 제외 기준"
+                        lines={["출퇴근 재해", "휴업일수 3일 미만(응급처치·3일 미만 휴업)"]} />
+                    : h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
