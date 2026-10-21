@@ -21,9 +21,9 @@ function HeaderInfo({ label, title, lines }) {
     <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 4 }}
       onMouseEnter={() => setOn(true)} onMouseLeave={() => setOn(false)}>
       {label}
-      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 14, height: 14, borderRadius: "50%", border: "1px solid var(--fg-4)", color: "var(--fg-4)", fontSize: 10, fontWeight: 700, cursor: "help", fontStyle: "italic" }}>i</span>
+      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: "50%", border: "1px solid var(--fg-4)", color: "var(--fg-4)", fontSize: 10, fontWeight: 700, lineHeight: 1, cursor: "help" }}>i</span>
       {on && (
-        <span style={{ position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 1500, width: 250, background: "#1f2937", color: "#fff", borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 500, lineHeight: 1.65, boxShadow: "0 6px 20px rgba(0,0,0,.28)", whiteSpace: "normal", textAlign: "left", letterSpacing: 0 }}>
+        <span style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 1500, width: 250, background: "#1f2937", color: "#fff", borderRadius: 8, padding: "9px 11px", fontSize: 11.5, fontWeight: 500, lineHeight: 1.65, boxShadow: "0 6px 20px rgba(0,0,0,.28)", whiteSpace: "normal", textAlign: "left", letterSpacing: 0 }}>
           {title && <b style={{ display: "block", marginBottom: 5 }}>{title}</b>}
           {lines.map((l, i) => <div key={i}>· {l}</div>)}
         </span>
