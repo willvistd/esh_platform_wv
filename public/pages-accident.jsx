@@ -40,6 +40,27 @@ function HeaderInfo({ label, title, lines }) {
     </span>
   );
 }
+// 생년월일 + 기준일(발생일)로 만 나이 계산
+function iaAgeAt(birth, on) {
+  if (!birth || !on) return null;
+  const b = new Date(birth), o = new Date(on);
+  if (isNaN(b.getTime()) || isNaN(o.getTime())) return null;
+  let age = o.getFullYear() - b.getFullYear();
+  const m = o.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && o.getDate() < b.getDate())) age--;
+  return (age >= 0 && age < 120) ? age : null;
+}
+// 나이 → 연령대(10살 단위)
+function iaAgeBand(age) {
+  if (age == null) return null;
+  if (age < 20) return "10대 이하";
+  if (age < 30) return "20대";
+  if (age < 40) return "30대";
+  if (age < 50) return "40대";
+  if (age < 60) return "50대";
+  return "60대 이상";
+}
+const IA_AGE_BANDS = ["10대 이하", "20대", "30대", "40대", "50대", "60대 이상"];
 // 본부(관리조직) 선택지는 실제 본부(hq) 테이블에서 가져옴 → 폼에서 hqNames로 구성(하드코딩 목록 제거).
 // 산재요양 '승인' 집계 기준: 승인 + 요양중 + 치료종결(=승인 이후 상태 포함)
 const iaIsApproved = (s) => s === "승인" || s === "요양중" || s === "치료종결";
@@ -175,6 +196,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
           occurredAt: date + (time ? "T" + time : ""),
           location: pick(r, ["발생장소", "장소", "사업장", "현장", "사업장명", "현장명"]),
           victimName: pick(r, ["재해자", "재해자명", "성명"]),
+          birthDate: normDate(pick(r, ["생년월일", "생일", "출생일"])),
           employmentType: pick(r, ["고용형태"]) || "직영",
           accidentType: pick(r, ["발생형태", "재해형태", "유형"]),
           agentObject: pick(r, ["기인물", "기인물·가해물", "가해물"]),
@@ -338,6 +360,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                             <IADetail label="본부" v={hqNameOf(a)} />
                             <IADetail label="재해구분" v={a.category} />
                             <IADetail label="발생장소" v={a.location} />
+                            <IADetail label="생년월일 · 나이" v={a.birthDate ? `${iaDatePart(a.birthDate)}${iaAgeAt(a.birthDate, a.occurredAt) != null ? ` (발생일 기준 ${iaAgeAt(a.birthDate, a.occurredAt)}세)` : ""}` : ""} />
                             <IADetail label="고용형태" v={a.employmentType} />
                             <IADetail label="기인물·가해물" v={a.agentObject} />
                             <IADetail label="작업 내용" v={a.workDescription} />
@@ -479,6 +502,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
     occurredTimeUnknown: !!initial?.occurredTimeUnknown,
     location: initial?.location || "",
     victimName: initial?.victimName || "",
+    birthDate: iaDatePart(initial?.birthDate) || "",
     employmentType: initial?.employmentType || "직영",
     accidentType: initial?.accidentType || "",
     agentObject: initial?.agentObject || "",
@@ -547,7 +571,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
       category: f.category,
       occurredAt,
       occurredTimeUnknown: f.occurredTimeUnknown,
-      location: f.location, victimName: f.victimName, employmentType: f.employmentType,
+      location: f.location, victimName: f.victimName, birthDate: f.birthDate, employmentType: f.employmentType,
       accidentType: f.accidentType, agentObject: f.agentObject, workDescription: f.workDescription,
       circumstances: f.circumstances, severity: f.severity, isSerious: f.isSerious,
       lostDays: f.lostDays === "" ? null : (parseInt(f.lostDays) || 0),
@@ -634,6 +658,18 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div><label style={L}>발생장소</label><input className="field-input" value={f.location} onChange={e => upd("location", e.target.value)} placeholder="계단, 주차장, 기계실 등" /></div>
             <div><label style={L}>재해자명 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(민감정보)</span></label><input className="field-input" value={f.victimName} onChange={e => upd("victimName", e.target.value)} placeholder="실명 또는 이니셜" /></div>
+          </div>
+
+          <div style={half}>
+            <div><label style={L}>생년월일 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(연령대 분석용)</span></label>
+              <input type="date" className="field-input" value={f.birthDate} onChange={e => upd("birthDate", e.target.value)} /></div>
+            <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 9 }}>
+              <span style={{ fontSize: 13, color: "var(--fg-3)" }}>
+                {(() => { const age = iaAgeAt(f.birthDate, f.occurredDate); return (f.birthDate && f.occurredDate && age != null)
+                  ? <>발생일 기준 <b style={{ color: "var(--fg)" }}>{age}세</b> · {iaAgeBand(age)}</>
+                  : "생년월일·발생일 입력 시 나이 자동 계산"; })()}
+              </span>
+            </div>
           </div>
 
           <div style={half}>
@@ -793,6 +829,14 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
     const m = {}; list.forEach(a => { const n = placeName(a); m[n] = (m[n] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([l, v]) => ({ l, v }));
   }, [list, siteMap]);
+  // 연령대별(발생일 기준 나이) — 생년월일 없는 건은 '미입력'
+  const byAge = React.useMemo(() => {
+    const m = {}; let unknown = 0;
+    list.forEach(a => { const band = iaAgeBand(iaAgeAt(a.birthDate, a.occurredAt)); if (band) m[band] = (m[band] || 0) + 1; else unknown++; });
+    const rows = IA_AGE_BANDS.filter(b => m[b]).map(b => ({ l: b, v: m[b] }));
+    if (unknown) rows.push({ l: "미입력", v: unknown, color: "var(--fg-4)" });
+    return rows;
+  }, [list]);
   const byDept = React.useMemo(() => {
     const acc = {};
     list.forEach(a => { if (!iaReportCompliance(a).required) return;
@@ -898,7 +942,12 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ia-grid2">
         <div style={card}><h3 style={h3}>재해 다발 사업장 Top 5</h3><p style={cs}>사업장별 누적 건수</p><IAHBars data={bySite} /></div>
+        <div style={card}><h3 style={h3}>연령대별 재해 건수</h3><p style={cs}>발생일 기준 재해자 나이 (생년월일 입력분)</p>
+          {byAge.length ? <IAHBars data={byAge} /> : <div style={{ color: "var(--fg-4)", fontSize: 13, padding: "8px 0" }}>생년월일이 입력된 재해가 없습니다. 재해 수정에서 생년월일을 넣어주세요.</div>}</div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 16 }} className="ia-grid2">
         <div style={card}><h3 style={h3}>부서별 재해조사표 평균 소요일</h3><p style={cs}>발생→고용노동부 제출까지 평균 (30일 초과 빨강)</p><IAHBars data={byDept} /></div>
+        <div />
       </div>
       <style>{`@media(max-width:720px){.ia-grid2{grid-template-columns:1fr !important}}`}</style>
     </div>
