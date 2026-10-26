@@ -502,6 +502,7 @@ async function initDB() {
       "occurredTimeUnknown" BOOLEAN DEFAULT false,
       location TEXT,
       "victimName" TEXT,
+      "birthDate" TEXT,
       "employmentType" TEXT,
       "accidentType" TEXT,
       "agentObject" TEXT,
@@ -545,6 +546,9 @@ async function initDB() {
       "createdAt" TEXT
     );
   `);
+
+  // 기존 DB에 재해자 생년월일 컬럼 추가(연령대 분석용) — 이미 있으면 무시
+  await pool.query('ALTER TABLE accidents ADD COLUMN IF NOT EXISTS "birthDate" TEXT');
 
   // 본부(HQ) 시드 — 위험성평가 코드 본부명단과 일치
   const hqExisting = await pool.query('SELECT COUNT(*) FROM hq');
@@ -2227,7 +2231,7 @@ const maskKoreanName = (name) => {
   return s[0] + '○'.repeat(s.length - 2) + s[s.length - 1];
 };
 const ACCIDENT_COLS = [
-  'siteId','hqName','category','occurredAt','occurredTimeUnknown','location','victimName','employmentType',
+  'siteId','hqName','category','occurredAt','occurredTimeUnknown','location','victimName','birthDate','employmentType',
   'accidentType','agentObject','workDescription','circumstances','severity','isSerious',
   'lostDays','expectedReturnDate','reportSubmittedDate','compensationStatus',
   'preventionMeasures','actionOwner','actionDueDate','actionCompleted','actionCompletedDate',
