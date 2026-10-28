@@ -1172,6 +1172,10 @@ function LegalAIView({ initialQuery = "" }) {
       const r = await fetch(`/api/ai-legal?q=${encodeURIComponent(query)}&format=${useFmt}`);
       const d = await r.json();
       if (!d.ok) { if (d.needKey) setNeedKey(true); else setErr(d.message || "답변을 생성하지 못했습니다."); return; }
+      // 존댓말 → 개조식 후처리(법령·조문·인용·URL은 보호). 소제목(**..**)은 그대로.
+      if (d.answer && window.Concise) {
+        d.answer = d.answer.split("\n").map(ln => /^\s*\*\*.+\*\*\s*$/.test(ln) ? ln : window.Concise.concise(ln)).join("\n");
+      }
       setRes(d);
     } catch (e) { setErr("AI 처리 오류: " + e.message); }
     finally { setLoading(false); }
