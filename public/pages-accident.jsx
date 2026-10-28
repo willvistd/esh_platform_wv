@@ -356,15 +356,21 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                     {open && (
                       <tr>
                         <td colSpan={9} style={{ padding: "10px 16px 18px", background: "var(--bg-elev)", borderBottom: "1px solid var(--line)" }}>
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", fontSize: 13, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--bg-elev)" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, fontSize: 13, border: "1px solid var(--line)", borderRadius: 8, overflow: "hidden", background: "var(--line)" }}>
                             <IADetail label="본부" v={hqNameOf(a)} />
                             <IADetail label="재해구분" v={a.category} />
-                            <IADetail label="발생장소" v={a.location} />
+                            <IADetail label="발생일" v={iaDatePart(a.occurredAt) + (a.occurredTimeUnknown ? " (시각 미상)" : ((a.occurredAt || "").slice(11, 16) ? " " + (a.occurredAt || "").slice(11, 16) : ""))} />
+                            <IADetail label="발생형태" v={a.accidentType} />
+                            <IADetail label="재해정도" v={a.severity} />
+                            <IADetail label="중대재해" v={a.isSerious ? "해당(중대재해)" : "해당 없음"} />
+                            <IADetail label="산재 진행상태" v={a.compensationStatus} />
+                            <IADetail label="재해자명" v={a.victimName} />
                             <IADetail label="생년월일 · 나이" v={a.birthDate ? `${iaDatePart(a.birthDate)}${iaAgeAt(a.birthDate, a.occurredAt) != null ? ` (발생일 기준 ${iaAgeAt(a.birthDate, a.occurredAt)}세)` : ""}` : ""} />
                             <IADetail label="고용형태" v={a.employmentType} />
+                            <IADetail label="발생장소" v={a.location} />
                             <IADetail label="기인물·가해물" v={a.agentObject} />
-                            <IADetail label="작업 내용" v={a.workDescription} />
                             <IADetail label="재해 경위" v={a.circumstances} full />
+                            <IADetail label="작업 내용" v={a.workDescription} />
                             <IADetail label="휴업일수" v={a.lostDays != null ? `${a.lostDays}일` : ""} />
                             <IADetail label="예상 복귀일" v={iaDatePart(a.expectedReturnDate)} />
                             <IADetail label="재해조사표 제출일(고용노동부)" v={iaDatePart(a.reportSubmittedDate)} />
@@ -374,6 +380,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
                             <IADetail label="조치 완료" v={a.actionCompleted ? `완료 (${iaDatePart(a.actionCompletedDate) || "-"})` : "미완료"} />
                             <IADetail label="위험성평가 반영" v={a.riskReflected ? "반영함" : "미반영"} />
                             <IADetail label="작성자" v={a.createdBy} />
+                            <IADetail label="작성일" v={iaDatePart(a.createdAt)} />
                           </div>
                           {canWrite && (
                             <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
@@ -407,7 +414,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 };
 
 const IADetail = ({ label, v, full }) => (
-  <div style={{ gridColumn: full ? "1 / -1" : "auto", borderRight: "1px solid var(--line)", borderBottom: "1px solid var(--line)", padding: "8px 12px" }}>
+  <div style={{ gridColumn: full ? "1 / -1" : "auto", background: "var(--bg-elev)", padding: "8px 12px" }}>
     <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", marginBottom: 3 }}>{label}</div>
     <div style={{ whiteSpace: "pre-wrap", color: v ? "var(--fg)" : "var(--fg-4)" }}>{v || "-"}</div>
   </div>
