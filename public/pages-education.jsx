@@ -689,8 +689,11 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
           <h2 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>{eduType} 교육일지</h2>
           {/* 화면에서만 보이는 드롭다운 */}
           {!isView && (
-            <div className="edu-no-print" style={{ marginTop: 10, width: 240 }}>
-              <KSelect value={eduType} onChange={setEduType} options={eduTypes.map(t => t.label)} />
+            <div className="edu-no-print" style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-2)", whiteSpace: "nowrap" }}>교육내용 선택</span>
+              <div style={{ width: 240 }}>
+                <KSelect value={eduType} onChange={setEduType} options={eduTypes.map(t => t.label)} />
+              </div>
             </div>
           )}
         </div>
