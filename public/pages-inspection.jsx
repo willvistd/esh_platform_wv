@@ -212,6 +212,9 @@ function PhotoZone({ photo, onPhoto }) {
   );
 }
 
+/* 보고서 표시용 개조식 변환(입력은 원문 유지, 미리보기/보고서에서만 변환) */
+const inspConcise = (t) => (window.Concise && window.Concise.concise ? window.Concise.concise(String(t || "")) : t);
+
 /* ── 카테고리 항목 입력 ── */
 function CategorySection({ cat, items, onChange }) {
   const add = () => onChange([...items, blankItem()]);
@@ -446,7 +449,7 @@ function InspPreview({ meta, cards }) {
                 <td style={{ textAlign:'center', fontWeight:700 }}>{i+1}</td>
                 <td style={{ fontWeight:600 }}>{c.title || '-'}</td>
                 <td style={{ fontSize:12, lineHeight:1.8 }}>
-                  {issues.length ? issues.map((it,ii) => <div key={ii}>• {it.text}</div>) : '-'}
+                  {issues.length ? issues.map((it,ii) => <div key={ii}>• {inspConcise(it.text)}</div>) : '-'}
                 </td>
                 <td style={{
                   textAlign:'center', fontWeight:800,
@@ -489,7 +492,7 @@ function InspPreview({ meta, cards }) {
                         </td>
                         <td>
                           {items.map((it,ii) => (
-                            <div key={ii} style={{ lineHeight:1.8, fontSize:13 }}>{ii+1}. {it.text}</div>
+                            <div key={ii} style={{ lineHeight:1.8, fontSize:13 }}>{ii+1}. {inspConcise(it.text)}</div>
                           ))}
                         </td>
                       </tr>
