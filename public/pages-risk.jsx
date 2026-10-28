@@ -4113,7 +4113,7 @@ const RISK_STYLE = `
     .risk-print-area textarea:-ms-input-placeholder { color: transparent !important; opacity: 0 !important; }
 
     /* 7-1) 날짜·시간 입력란의 달력 아이콘 인쇄 시 숨김 */
-    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="date" min="1920-01-01" max="2100-12-31"]::-webkit-calendar-picker-indicator,
     input[type="datetime-local"]::-webkit-calendar-picker-indicator,
     input[type="time"]::-webkit-calendar-picker-indicator,
     input[type="month"]::-webkit-calendar-picker-indicator,
@@ -4125,7 +4125,7 @@ const RISK_STYLE = `
       width: 0 !important;
       padding: 0 !important;
     }
-    input[type="date"],
+    input[type="date" min="1920-01-01" max="2100-12-31"],
     input[type="datetime-local"],
     input[type="time"],
     input[type="month"],
@@ -6806,7 +6806,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
             resize: none !important;
             text-align: center !important;   /* textarea만 가운데 정렬 (드롭다운/입력은 제외) */
           }
-          .risk-print-area-table tbody input[type="date"] {
+          .risk-print-area-table tbody input[type="date" min="1920-01-01" max="2100-12-31"] {
             font-size: ${printFontSize}pt !important;
           }
           /* 날짜 셀(개선예정일/완료일): YY-MM-DD 오버레이용
@@ -7528,7 +7528,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                           (캘린더 픽커는 그대로 동작 — span은 pointer-events:none) */}
                     <TD center>
                       <div style={{ position: "relative", width: "100%" }}>
-                        <input type="date" value={row.개선예정일} onChange={e => updRow(i, "개선예정일", e.target.value)}
+                        <input type="date" min="1920-01-01" max="2100-12-31" value={row.개선예정일} onChange={e => updRow(i, "개선예정일", e.target.value)}
                           className="date-yy-input"
                           style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.개선예정일 ? "transparent" : undefined, WebkitTextFillColor: row.개선예정일 ? "transparent" : undefined, caretColor: "transparent" }} />
                         {row.개선예정일 && (
@@ -7541,7 +7541,7 @@ const RiskTableView = ({ onNav, currentUser, area, inPrintAll }) => {
                     </TD>
                     <TD center>
                       <div style={{ position: "relative", width: "100%" }}>
-                        <input type="date" value={row.완료일} onChange={e => updRow(i, "완료일", e.target.value)}
+                        <input type="date" min="1920-01-01" max="2100-12-31" value={row.완료일} onChange={e => updRow(i, "완료일", e.target.value)}
                           className="date-yy-input"
                           style={{ ...inIn, fontSize: 12, textAlign: "center", color: row.완료일 ? "transparent" : undefined, WebkitTextFillColor: row.완료일 ? "transparent" : undefined, caretColor: "transparent" }} />
                         {row.완료일 && (
@@ -7992,7 +7992,7 @@ const RiskTrainingView = ({ onNav, currentUser }) => {
           white-space: nowrap; width: 100px; font-size: 13px;
         }
         .train-tbl input[type="text"],
-        .train-tbl input[type="date"],
+        .train-tbl input[type="date" min="1920-01-01" max="2100-12-31"],
         .train-tbl input[type="time"] {
           width: 100%; border: none; background: transparent; font-size: 13px; padding: 2px 0; outline: none;
         }
@@ -8469,7 +8469,7 @@ const RiskAttendeesView = ({ onNav }) => {
             border: none !important; background: transparent !important; color: #000 !important;
             -webkit-appearance: none !important; appearance: none !important; outline: none !important;
           }
-          input[type="date"]::-webkit-calendar-picker-indicator {
+          input[type="date" min="1920-01-01" max="2100-12-31"]::-webkit-calendar-picker-indicator {
             display: none !important; opacity: 0 !important; width: 0 !important; padding: 0 !important;
           }
         }

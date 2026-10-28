@@ -1145,7 +1145,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], d
           </div>
           <div className="field">
             <label className="field-label">계약 시작일</label>
-            <input className="field-input" type="date" value={form.startAt}
+            <input className="field-input" type="date" min="1920-01-01" max="2100-12-31" value={form.startAt}
               onChange={e => update("startAt", e.target.value)} />
           </div>
           <div className="field">
@@ -1153,7 +1153,7 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], d
               계약 종료일 (계정 사용 가능 기한)
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}> · 비워두면 무기한</span>
             </label>
-            <input className="field-input" type="date" value={form.expiresAt}
+            <input className="field-input" type="date" min="1920-01-01" max="2100-12-31" value={form.expiresAt}
               disabled={!canEditExpiry}
               onChange={e => update("expiresAt", e.target.value)}
               style={!canEditExpiry ? { background: "var(--bg-sunk)", color: "var(--fg-3)", cursor: "not-allowed" } : undefined} />
