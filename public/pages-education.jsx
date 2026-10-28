@@ -541,7 +541,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
           }
 
           /* 6) 달력 아이콘 인쇄 시 숨김 */
-          input[type="date"]::-webkit-calendar-picker-indicator,
+          input[type="date" min="1920-01-01" max="2100-12-31"]::-webkit-calendar-picker-indicator,
           input[type="datetime-local"]::-webkit-calendar-picker-indicator,
           input[type="time"]::-webkit-calendar-picker-indicator,
           input[type="month"]::-webkit-calendar-picker-indicator,
@@ -587,7 +587,7 @@ const EducationLogForm = ({ onNav, currentUser, editData }) => {
           font-size: 13px;
         }
         .edu-tbl input[type="text"],
-        .edu-tbl input[type="date"],
+        .edu-tbl input[type="date" min="1920-01-01" max="2100-12-31"],
         .edu-tbl input[type="time"],
         .edu-tbl input[type="number"] {
           width: 100%;
@@ -981,7 +981,7 @@ const EducationAttendeeSheet = ({ onNav, currentUser }) => {
             border: none !important; background: transparent !important; color: #000 !important;
             -webkit-appearance: none !important; appearance: none !important; outline: none !important;
           }
-          input[type="date"]::-webkit-calendar-picker-indicator {
+          input[type="date" min="1920-01-01" max="2100-12-31"]::-webkit-calendar-picker-indicator {
             display: none !important; opacity: 0 !important; width: 0 !important; padding: 0 !important;
           }
         }

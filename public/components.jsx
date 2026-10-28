@@ -285,13 +285,13 @@ const PrintButton = ({ onClick, label = "PDF 출력", className = "", style }) =
 //   block=true → 래퍼가 셀/컨테이너 전폭을 채움(width:100% 입력용). 정렬은 style.textAlign 따라감.
 //   ⚠️ Chrome은 인쇄 시 input[type=date] 값을 color:transparent 무시하고 그대로 찍음
 //      → styles.css @media print에서 .kdate-wrap의 input을 숨기고 오버레이만 인쇄.
-const KDate = ({ value, onChange, className = "", style = {}, block = false, ...rest }) => {
+const KDate = ({ value, onChange, className = "", style = {}, block = false, min = "1920-01-01", max = "2100-12-31", ...rest }) => {
   const k = value ? String(value).replace(/-/g, ". ") + "." : "";
   const ta = style.textAlign;
   const justify = ta === "center" ? "center" : ta === "right" ? "flex-end" : "flex-start";
   return (
     <span className={"kdate-wrap" + (block ? " kdate-block" : "") + (value ? " kdate-filled" : "")}>
-      <input type="date" value={value || ""} onChange={onChange} className={className}
+      <input type="date" value={value || ""} onChange={onChange} className={className} min={min} max={max}
         // 좁은 칸에서 달력 아이콘을 화면에서도 숨기고(오버레이 텍스트와 겹침 방지),
         // 칸을 클릭하면 달력이 열리도록 showPicker 호출(아이콘 없이도 날짜 선택 가능)
         onClick={(e) => { const el = e.currentTarget; try { el.showPicker && el.showPicker(); } catch (_) {} }}
@@ -309,7 +309,7 @@ const KDate = ({ value, onChange, className = "", style = {}, block = false, ...
 
 // ── 시간 선택(10분 단위) — 시(00~23) + 분(00,10,…,50) 드롭다운으로 10분 단위 고정 ──
 //   value: "HH:MM" 문자열. onChange(e)로 기존 input[type=time]과 동일하게 e.target.value 전달.
-const KTime = ({ value, onChange, style = {} }) => {
+const KTime = ({ value, onChange, style = {}, disabled = false }) => {
   const [h, m] = (value && /^\d{1,2}:\d{1,2}$/.test(value))
     ? value.split(":").map(s => s.padStart(2, "0"))
     : ["", ""];
@@ -320,18 +320,19 @@ const KTime = ({ value, onChange, style = {} }) => {
   const sel = {
     border: "1px solid #ddd", borderRadius: 4, padding: "4px 6px",
     fontSize: 13, fontFamily: "inherit", background: "var(--bg-elev)", color: "var(--fg)",
+    opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer",
     ...style,
   };
   const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   const mins = ["00", "10", "20", "30", "40", "50"];
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
-      <select value={h} onChange={e => emit(e.target.value, m || "00")} style={sel}>
+      <select value={h} disabled={disabled} onChange={e => emit(e.target.value, m || "00")} style={sel}>
         <option value="">시</option>
         {hours.map(x => <option key={x} value={x}>{x}</option>)}
       </select>
       <span style={{ fontSize: 12, color: "#888" }}>:</span>
-      <select value={m} onChange={e => emit(h || "00", e.target.value)} style={sel}>
+      <select value={m} disabled={disabled} onChange={e => emit(h || "00", e.target.value)} style={sel}>
         <option value="">분</option>
         {mins.map(x => <option key={x} value={x}>{x}</option>)}
       </select>

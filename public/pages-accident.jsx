@@ -642,12 +642,12 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div style={half}>
             <div>
               <label style={L}>발생일 *</label>
-              <input type="date" className="field-input" value={f.occurredDate} onChange={e => upd("occurredDate", e.target.value)} />
+              <input type="date" className="field-input" min="1920-01-01" max={new Date().toISOString().slice(0, 10)} value={f.occurredDate} onChange={e => upd("occurredDate", e.target.value)} />
             </div>
             <div>
-              <label style={L}>발생시각</label>
+              <label style={L}>발생시각 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(10분 단위)</span></label>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input type="time" className="field-input" style={{ flex: 1 }} value={f.occurredTime} disabled={f.occurredTimeUnknown} onChange={e => upd("occurredTime", e.target.value)} />
+                <KTime value={f.occurredTime} disabled={f.occurredTimeUnknown} onChange={e => upd("occurredTime", e.target.value)} style={{ padding: "8px 8px" }} />
                 <label style={{ fontSize: 12, whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 4 }}>
                   <input type="checkbox" checked={f.occurredTimeUnknown} onChange={e => upd("occurredTimeUnknown", e.target.checked)} /> 미상
                 </label>
@@ -704,14 +704,14 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
           <div style={half}>
             <div><label style={L}>휴업일수</label><input type="number" className="field-input" value={f.lostDays} onChange={e => upd("lostDays", e.target.value)} placeholder="일" /></div>
-            <div><label style={L}>예상 복귀일</label><input type="date" className="field-input" value={f.expectedReturnDate} onChange={e => upd("expectedReturnDate", e.target.value)} /></div>
+            <div><label style={L}>예상 복귀일</label><input type="date" min="1920-01-01" max="2100-12-31" className="field-input" value={f.expectedReturnDate} onChange={e => upd("expectedReturnDate", e.target.value)} /></div>
           </div>
 
           {/* 법정 관리 */}
           <div style={{ padding: "12px 14px", background: "var(--primary-soft)", borderRadius: 10 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 8 }}>재해조사표 (고용노동부 제출일 기준)</div>
             <div style={half}>
-              <div><label style={L}>고용노동부 제출일자</label><input type="date" className="field-input" value={f.reportSubmittedDate} onChange={e => upd("reportSubmittedDate", e.target.value)} /></div>
+              <div><label style={L}>고용노동부 제출일자</label><input type="date" min="1920-01-01" max="2100-12-31" className="field-input" value={f.reportSubmittedDate} onChange={e => upd("reportSubmittedDate", e.target.value)} /></div>
               <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8, fontSize: 12.5 }}>
                 <span>대상 여부: <b>{preview.required ? "제출 대상" : "해당없음"}</b>
                   {preview.required && preview.deadline && <> · 기한 <b>{preview.deadline}</b> · <b style={{ color: preview.key === "over" ? "#b91c1c" : preview.key === "in" ? "#166534" : "#92400e" }}>{preview.label}</b></>}
@@ -729,7 +729,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
           <div><label style={L}>재발방지대책</label><textarea className="field-input" rows={2} value={f.preventionMeasures} onChange={e => upd("preventionMeasures", e.target.value)} /></div>
           <div style={half}>
             <div><label style={L}>조치 담당자</label><input className="field-input" value={f.actionOwner} onChange={e => upd("actionOwner", e.target.value)} /></div>
-            <div><label style={L}>조치 기한</label><input type="date" className="field-input" value={f.actionDueDate} onChange={e => upd("actionDueDate", e.target.value)} /></div>
+            <div><label style={L}>조치 기한</label><input type="date" min="1920-01-01" max="2100-12-31" className="field-input" value={f.actionDueDate} onChange={e => upd("actionDueDate", e.target.value)} /></div>
           </div>
           <div style={half}>
             <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 8 }}>
@@ -737,7 +737,7 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
                 <input type="checkbox" checked={f.actionCompleted} onChange={e => upd("actionCompleted", e.target.checked)} /> 조치 완료
               </label>
             </div>
-            <div><label style={L}>완료일</label><input type="date" className="field-input" value={f.actionCompletedDate} disabled={!f.actionCompleted} onChange={e => upd("actionCompletedDate", e.target.value)} /></div>
+            <div><label style={L}>완료일</label><input type="date" min="1920-01-01" max="2100-12-31" className="field-input" value={f.actionCompletedDate} disabled={!f.actionCompleted} onChange={e => upd("actionCompletedDate", e.target.value)} /></div>
           </div>
           <label style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
             <input type="checkbox" checked={f.riskReflected} onChange={e => upd("riskReflected", e.target.checked)} /> 위험성평가(수시평가) 반영함
