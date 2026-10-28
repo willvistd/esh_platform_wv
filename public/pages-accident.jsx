@@ -662,7 +662,8 @@ const AccidentFormModal = ({ initial, sites, hqs, hqMap, currentUser, onClose, o
 
           <div style={half}>
             <div><label style={L}>생년월일 <span style={{ color: "var(--fg-4)", fontWeight: 500 }}>(연령대 분석용)</span></label>
-              <input type="date" className="field-input" value={f.birthDate} onChange={e => upd("birthDate", e.target.value)} /></div>
+              <input type="date" className="field-input" value={f.birthDate} min="1920-01-01" max={new Date().toISOString().slice(0, 10)}
+                onChange={e => upd("birthDate", e.target.value)} /></div>
             <div style={{ display: "flex", alignItems: "flex-end", paddingBottom: 9 }}>
               <span style={{ fontSize: 13, color: "var(--fg-3)" }}>
                 {(() => { const age = iaAgeAt(f.birthDate, f.occurredDate); return (f.birthDate && f.occurredDate && age != null)
