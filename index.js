@@ -612,6 +612,39 @@ async function initDB() {
     console.error('본부 명칭 표준화 실패:', e);
   }
 
+  // ── 지사 → 사업본부 병합(매 부팅·멱등) — '○○지사'를 '윌앤비전 ○○사업본부'로 통일하고 지사 제거 ──
+  //   (예: 대전지사 == 윌앤비전 대전사업본부 → 하나로 합침. 부산/대구/광주/대전 등 모든 '지사')
+  try {
+    const regionOf = (nm) => String(nm || '').replace(/^윌앤비전\s*/, '').replace(/지사$/, '').trim(); // '대전지사'→'대전'
+    const branchRows = (await pool.query("SELECT id, name FROM hq WHERE name LIKE '%지사%'")).rows;
+    const accBranch = (await pool.query("SELECT DISTINCT \"hqName\" FROM accidents WHERE \"hqName\" LIKE '%지사%'")).rows.map(r => r.hqName);
+    const regions = new Set();
+    branchRows.forEach(r => { const rg = regionOf(r.name); if (rg) regions.add(rg); });
+    accBranch.forEach(nm => { const rg = regionOf(nm); if (rg) regions.add(rg); });
+    for (const region of regions) {
+      const canon = `윌앤비전 ${region}사업본부`;
+      // 대상 사업본부 행 확보(없으면 '○○사업본부' 개명, 그래도 없으면 생성)
+      let target = (await pool.query('SELECT id FROM hq WHERE name = $1', [canon])).rows[0];
+      if (!target) {
+        const plain = `${region}사업본부`;
+        const pr = (await pool.query('SELECT id FROM hq WHERE name = $1', [plain])).rows[0];
+        if (pr) { await pool.query('UPDATE hq SET name = $1 WHERE id = $2', [canon, pr.id]); target = pr; }
+        else { target = (await pool.query('INSERT INTO hq (name, "ownerDept", "sortOrder", status, "createdAt") VALUES ($1, $1, 60, \'active\', NOW()::TEXT) RETURNING id', [canon])).rows[0]; }
+      }
+      const branchNames = [`${region}지사`, `윌앤비전 ${region}지사`];
+      const brIds = (await pool.query('SELECT id FROM hq WHERE name = ANY($1::text[])', [branchNames])).rows.map(r => r.id).filter(id => id !== target.id);
+      if (brIds.length) {
+        await pool.query('UPDATE sites SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, brIds]);
+        await pool.query('UPDATE users SET "hqId" = $1 WHERE "hqId" = ANY($2::int[])', [target.id, brIds]);
+        await pool.query('DELETE FROM hq WHERE id = ANY($1::int[])', [brIds]);
+        console.log(`[DB] 지사 병합: ${region}지사 → ${canon} (${brIds.length}개)`);
+      }
+      await pool.query('UPDATE accidents SET "hqName" = $1 WHERE "hqName" = ANY($2::text[])', [canon, branchNames]);
+    }
+  } catch (e) {
+    console.error('지사 병합 실패:', e);
+  }
+
   // ── 사업장 담당자 정리(1회) ──
   // 예전엔 담당자 칸에 본부명·팀 공용계정명·사업장명(현장계정명)이 그대로 박혀 목록에서 중복 표시됐음.
   // 담당자 텍스트를 콤마로 분리해, 아래에 해당하는 토큰만 제거하고 '실제 사람 이름'만 남김:
