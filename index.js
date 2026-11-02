@@ -2253,6 +2253,153 @@ app.delete('/api/sites/:id', async (req, res) => {
   }
 });
 
+// ── FM사업본부 사업장 담당자(담당AM) 일괄 매칭/반영 ──
+//   · PDF 'FM운영팀 사업장별 담당자'(순번/부서/사업장명(BMP기준)/담당AM) 46건을 코드에 내장.
+//   · 플랫폼 사업장명이 기준. PDF 사업장명은 매칭 비교용으로만 사용(정규화 후 비교).
+//   · 기본은 미리보기(dry-run). ?apply=1 일 때만 실제 반영. 브라우저에서 열어 결과 확인용 HTML 반환.
+const FM_MANAGER_LIST = [
+  ['삼성이앤에이평택캠프(FM)', '김용기'],
+  ['에스원프로젝트107타워(FM)', '김용기'],
+  ['초동오피스(FM)', '김용기'],
+  ['라까사호텔광명점(FM)', '김용기'],
+  ['라까사호텔광명점룸메이드(FM)', '김용기'],
+  ['라까사호텔서울(FM)', '김용기'],
+  ['에스원에스케이씨타워(FM)', '김용기'],
+  ['젠스타메이트(FM)', '김용기'],
+  ['샹제리제센터(FM)', '김용기'],
+  ['서울숲포휴(FM)', '김용기'],
+  ['생각공장당산(FM)', '송병학'],
+  ['세브란스시설', '송병학'],
+  ['신동진반포빌딩(FM)', '송병학'],
+  ['에이치에스효성토요타 주식회사(FM)', '송병학'],
+  ['유씨케이파트너스(FM)', '송병학'],
+  ['효성공덕빌딩(FM)', '송병학'],
+  ['효성첨단소재(주)-등촌동빌딩(FM)', '송병학'],
+  ['용인세브란스병원(FM)', '송병학'],
+  ['용인세브란스장례식장(FM)', '송병학'],
+  ['원주세브란스기독병원(FM)', '송병학'],
+  ['원주세브란스기독병원의과대학(FM)', '송병학'],
+  ['원주세브란스기독병원장례식장(FM)', '송병학'],
+  ['이투스교육주식회사선릉지점(도급)', '이준형'],
+  ['당산에스케이브이원센터(FM)', '이준형'],
+  ['더클래스효성(FM)', '이준형'],
+  ['DM스퀘어(FM)', '이준형'],
+  ['뉴고려병원(FM)', '이준형'],
+  ['램프빌딩(FM)', '이준형'],
+  ['벤틀리큐브(FM)', '이준형'],
+  ['벤틀리타워(FM)', '이준형'],
+  ['웰킵스타워(FM)', '이준형'],
+  ['ICT폴리텍대학(FM)', '조승준'],
+  ['강남하이퍼이과기숙학원(FM)', '조승준'],
+  ['청솔학원(일산지점)FM', '조승준'],
+  ['청솔학원노원지점(FM)', '조승준'],
+  ['청솔학원부천지점(FM)', '조승준'],
+  ['청솔학원분당지점(FM)', '조승준'],
+  ['청솔학원평촌지점(FM)', '조승준'],
+  ['유한대학교(FM)', '조승준'],
+  ['디씨티(FM)', '조승준'],
+  ['지엔씨에너지(FM)', '조승준'],
+  ['타원벨라움오피스텔관리단(FM)', '조승준'],
+  ['타원타크라2지식산업센터(FM)', '조승준'],
+  ['타원타크라3관리단(FM)', '조승준'],
+  ['타원타크라5관리단(FM)', '조승준'],
+  ['타원타크라6관리단(FM)', '조승준'],
+];
+const fmNorm = (s) => String(s || '')
+  .replace(/\(\s*fm\s*\)/gi, '')
+  .replace(/\(\s*도급\s*\)/g, '')
+  .replace(/fm$/i, '')              // 끝에 괄호 없이 붙은 FM (예: 청솔학원(일산지점)FM)
+  .replace(/주식회사|\(주\)|㈜/g, '')
+  .replace(/[()\[\]{}]/g, '')       // 괄호 문자는 제거하되 안쪽 글자는 보존
+  .replace(/[\s\-·.,"'’_]/g, '')
+  .toLowerCase();
+app.get('/api/admin/fm-manager-sync', async (req, res) => {
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  try {
+    const apply = req.query.apply === '1';
+    // FM사업본부 hq id 확보
+    const hqRow = (await pool.query(
+      "SELECT id, name FROM hq WHERE name IN ('윌앤비전 FM사업본부','FM사업본부') ORDER BY (name='윌앤비전 FM사업본부') DESC, id LIMIT 1"
+    )).rows[0];
+    if (!hqRow) return res.status(404).send('<meta charset="utf-8">FM사업본부 본부를 찾을 수 없습니다.');
+    const siteRows = (await pool.query('SELECT id, name, manager FROM sites WHERE "hqId"=$1 ORDER BY id', [hqRow.id])).rows;
+
+    // 플랫폼 사업장 정규화 인덱스(중복 키는 배열로)
+    const siteIndex = new Map();
+    for (const s of siteRows) {
+      const k = fmNorm(s.name);
+      if (!siteIndex.has(k)) siteIndex.set(k, []);
+      siteIndex.get(k).push(s);
+    }
+
+    const matched = [];     // { pdfName, site, newMgr, oldMgr, dup }
+    const pdfUnmatched = []; // { pdfName, newMgr }
+    const usedSiteIds = new Set();
+    for (const [pdfName, mgr] of FM_MANAGER_LIST) {
+      const k = fmNorm(pdfName);
+      const hits = (siteIndex.get(k) || []).filter(s => !usedSiteIds.has(s.id));
+      if (hits.length) {
+        const site = hits[0];
+        usedSiteIds.add(site.id);
+        matched.push({ pdfName, site, newMgr: mgr, oldMgr: site.manager || '', dup: hits.length > 1 });
+      } else {
+        pdfUnmatched.push({ pdfName, newMgr: mgr });
+      }
+    }
+    const siteUnmatched = siteRows.filter(s => !usedSiteIds.has(s.id));
+
+    let appliedCount = 0;
+    if (apply) {
+      for (const m of matched) {
+        if (fmNorm(m.oldMgr) === fmNorm(m.newMgr)) continue; // 이미 동일하면 건너뜀
+        await pool.query('UPDATE sites SET manager=$1 WHERE id=$2', [m.newMgr, m.site.id]);
+        appliedCount++;
+      }
+    }
+
+    const row = (cells) => '<tr>' + cells.map(c => `<td style="border:1px solid #d0d0d0;padding:6px 10px">${c}</td>`).join('') + '</tr>';
+    const th = (cells) => '<tr>' + cells.map(c => `<th style="border:1px solid #d0d0d0;padding:6px 10px;background:#f4f4f6;text-align:left">${c}</th>`).join('') + '</tr>';
+    let html = `<!doctype html><meta charset="utf-8"><title>FM 담당자 매칭</title>`;
+    html += `<div style="font-family:system-ui,'Malgun Gothic',sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#222">`;
+    html += `<h2>FM사업본부 사업장 담당자 매칭 ${apply ? '(반영 완료)' : '(미리보기)'}</h2>`;
+    html += `<p>본부: <b>${esc(hqRow.name)}</b> · 플랫폼 FM 사업장 <b>${siteRows.length}</b>곳 · PDF 명단 <b>${FM_MANAGER_LIST.length}</b>건</p>`;
+    if (apply) html += `<p style="color:#0a7d2c;font-weight:600">✅ ${appliedCount}곳의 담당자를 반영했습니다.</p>`;
+    else html += `<p style="color:#b26b00;font-weight:600">※ 미리보기입니다. 아래 매칭이 맞으면 주소 끝에 <code>?apply=1</code> 을 붙여 다시 열면 실제로 반영됩니다.</p>`;
+
+    html += `<h3>① 매칭됨 (${matched.length}건) — 플랫폼 사업장명 기준</h3>`;
+    html += `<table style="border-collapse:collapse;width:100%;font-size:14px">`;
+    html += th(['플랫폼 사업장명', '담당자(기존 → 변경)', 'PDF 사업장명']);
+    for (const m of matched) {
+      const changed = fmNorm(m.oldMgr) !== fmNorm(m.newMgr);
+      const mgrCell = changed
+        ? `<span style="color:#888">${esc(m.oldMgr) || '(없음)'}</span> → <b style="color:#0a58ca">${esc(m.newMgr)}</b>`
+        : `<b>${esc(m.newMgr)}</b> <span style="color:#0a7d2c">(동일)</span>`;
+      html += row([esc(m.site.name) + (m.dup ? ' <span style="color:#c00">⚠동명중복</span>' : ''), mgrCell, esc(m.pdfName)]);
+    }
+    html += `</table>`;
+
+    html += `<h3>② PDF에는 있으나 플랫폼에서 못 찾은 사업장 (${pdfUnmatched.length}건)</h3>`;
+    if (pdfUnmatched.length) {
+      html += `<table style="border-collapse:collapse;width:100%;font-size:14px">` + th(['PDF 사업장명', '담당자']);
+      for (const u of pdfUnmatched) html += row([esc(u.pdfName), esc(u.newMgr)]);
+      html += `</table><p style="color:#666">→ 플랫폼 사업장명이 달라 매칭이 안 된 경우입니다. 실제 플랫폼 사업장명을 알려주시면 연결해 드립니다.</p>`;
+    } else html += `<p style="color:#0a7d2c">전부 매칭되었습니다.</p>`;
+
+    html += `<h3>③ 플랫폼 FM 사업장 중 PDF 명단에 없는 곳 (${siteUnmatched.length}건, 담당자 변경 안 함)</h3>`;
+    if (siteUnmatched.length) {
+      html += `<table style="border-collapse:collapse;width:100%;font-size:14px">` + th(['플랫폼 사업장명', '현재 담당자']);
+      for (const s of siteUnmatched) html += row([esc(s.name), esc(s.manager) || '(없음)']);
+      html += `</table>`;
+    } else html += `<p style="color:#0a7d2c">없습니다.</p>`;
+
+    html += `</div>`;
+    res.set('Content-Type', 'text/html; charset=utf-8').send(html);
+  } catch (e) {
+    console.error('FM 담당자 매칭 오류:', e);
+    res.status(500).send('<meta charset="utf-8">오류: ' + esc(e.message));
+  }
+});
+
 // ── 산업재해 관리(통계) ──
 // 입력/수정/삭제·재해자 실명 조회 = 관리자급(admin/safety)만. 그 외는 조회+실명 마스킹.
 const canWriteAccident = (req) => ['admin', 'safety'].includes(req.session && req.session.role);
