@@ -76,7 +76,7 @@
 "address": "서울특별시 노원구 초안산로 12(월계동) 인덕대학교",
 "workType": "사무",
 "contractType": "도급",
-"openNo": "여",
+"openNo": "",
 "startAt": "2026-09-18"
 },
 {
@@ -86,7 +86,7 @@
 "address": "경남 양산시 어곡공단1길 31",
 "workType": "물류",
 "contractType": "도급",
-"openNo": "여",
+"openNo": "",
 "startAt": "2025-01-01"
 },
 {
@@ -96,7 +96,7 @@
 "address": "대전시 중구 계룡로 820(오류동) 하나은행",
 "workType": "고객관련 사무종사자의 업무",
 "contractType": "파견",
-"openNo": "여",
+"openNo": "",
 "startAt": "2026-08-18"
 },
 {
@@ -106,7 +106,7 @@
 "address": "경기도 평택시 오성면 서동대로 2062-4",
 "workType": "물류",
 "contractType": "도급",
-"openNo": "부",
+"openNo": "",
 "startAt": "2026-08-03"
 },
 {
@@ -146,7 +146,7 @@
 "address": "경기도 평택시 첨단대로 280",
 "workType": "시설,미화",
 "contractType": "도급",
-"openNo": "여",
+"openNo": "",
 "startAt": "2026-08-01"
 },
 {
@@ -856,7 +856,7 @@
 "address": "서울시 영등포구 양평로21길 10 롯데양평빌딩",
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
-"openNo": "부",
+"openNo": "",
 "startAt": "2025-01-15"
 },
 {
