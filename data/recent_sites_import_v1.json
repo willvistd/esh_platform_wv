@@ -7,7 +7,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-10-29"
+"startAt": "2026-06-01"
 },
 {
 "name": "와이잭(HR)",
@@ -17,7 +17,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-10-29"
+"startAt": "2026-10-19"
 },
 {
 "name": "한국인삼공사직영위탁(HR)",
@@ -27,7 +27,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-10-29"
+"startAt": "2026-10-12"
 },
 {
 "name": "토탈하버서비스(부산)",
@@ -37,7 +37,7 @@
 "workType": "사무업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-10-21"
+"startAt": "2026-10-01"
 },
 {
 "name": "삼양밀양2센터(물류)",
@@ -47,7 +47,7 @@
 "workType": "물류",
 "contractType": "도급",
 "openNo": "925-05-23636-7",
-"startAt": "2026-10-14"
+"startAt": "2025-04-01"
 },
 {
 "name": "우승(HR)",
@@ -57,7 +57,7 @@
 "workType": "사무업무",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-10-02"
+"startAt": "2026-09-07"
 },
 {
 "name": "화승알앤에이(부산)",
@@ -67,7 +67,7 @@
 "workType": "생산",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-09-28"
+"startAt": "2026-09-07"
 },
 {
 "name": "인덕대학교(HR)",
@@ -87,7 +87,7 @@
 "workType": "물류",
 "contractType": "도급",
 "openNo": "여",
-"startAt": "2026-09-14"
+"startAt": "2025-01-01"
 },
 {
 "name": "하나은행(대전)",
@@ -97,7 +97,7 @@
 "workType": "고객관련 사무종사자의 업무",
 "contractType": "파견",
 "openNo": "여",
-"startAt": "2026-09-09"
+"startAt": "2026-08-18"
 },
 {
 "name": "하늘산물류센터(HR)",
@@ -107,7 +107,7 @@
 "workType": "물류",
 "contractType": "도급",
 "openNo": "부",
-"startAt": "2026-09-07"
+"startAt": "2026-08-03"
 },
 {
 "name": "벨리시마코스메틱",
@@ -117,7 +117,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-08-31"
+"startAt": ""
 },
 {
 "name": "대한통운김포구다이글로벌센터",
@@ -127,7 +127,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-08-28"
+"startAt": ""
 },
 {
 "name": "한국원자력환경복원연구원(HR)",
@@ -137,7 +137,7 @@
 "workType": "사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-08-25"
+"startAt": "2026-08-05"
 },
 {
 "name": "삼성이앤에이평택캠프(FM)",
@@ -147,7 +147,7 @@
 "workType": "시설,미화",
 "contractType": "도급",
 "openNo": "여",
-"startAt": "2026-08-07"
+"startAt": "2026-08-01"
 },
 {
 "name": "광명이케아(동부캐리어)(HR)",
@@ -167,7 +167,7 @@
 "workType": "서비스",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-06-30"
+"startAt": "2026-05-27"
 },
 {
 "name": "디와이글로벌(부산)",
@@ -177,7 +177,7 @@
 "workType": "서비스",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-06-30"
+"startAt": "2026-06-29"
 },
 {
 "name": "베스트슬립(CRM)",
@@ -187,7 +187,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-06-05"
+"startAt": "2026-06-02"
 },
 {
 "name": "에스앤티홀딩스(부산)",
@@ -197,7 +197,7 @@
 "workType": "사업서비스",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-06-02"
+"startAt": "2026-05-29"
 },
 {
 "name": "생각공장당산(FM)",
@@ -217,7 +217,7 @@
 "workType": "도소매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-05-19"
+"startAt": "2026-05-11"
 },
 {
 "name": "웰킵스타워(FM)",
@@ -227,7 +227,7 @@
 "workType": "미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-05-12"
+"startAt": "2026-05-04"
 },
 {
 "name": "AI교수학습플랫폼(CRM)",
@@ -237,7 +237,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-05-08"
+"startAt": "2026-05-01"
 },
 {
 "name": "소노아임레디만기방어센터(CRM)",
@@ -247,7 +247,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-05-08"
+"startAt": "2026-05-18"
 },
 {
 "name": "국립소방병원(대전)",
@@ -257,7 +257,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-04-28"
+"startAt": "2026-04-01"
 },
 {
 "name": "이지메디컴(부산)",
@@ -267,7 +267,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-04-28"
+"startAt": ""
 },
 {
 "name": "비젼아이티에스(대구)",
@@ -277,7 +277,7 @@
 "workType": "상담,미화",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-04-22"
+"startAt": "2026-04-01"
 },
 {
 "name": "서울숲포휴(FM)",
@@ -287,7 +287,7 @@
 "workType": "시설,경비,미화,서무",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-04-22"
+"startAt": "2026-04-21"
 },
 {
 "name": "씨제이제일제당(HR)",
@@ -297,7 +297,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-04-22"
+"startAt": "2026-04-06"
 },
 {
 "name": "잉글리시에그(HR)",
@@ -307,7 +307,7 @@
 "workType": "도소매",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-04-20"
+"startAt": "2026-04-01"
 },
 {
 "name": "샥즈(CRM)",
@@ -317,7 +317,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-04-16"
+"startAt": "2026-04-13"
 },
 {
 "name": "제닉(대전)",
@@ -327,7 +327,7 @@
 "workType": "생산",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-04-09"
+"startAt": "2026-03-01"
 },
 {
 "name": "비버웍스(CRM)",
@@ -337,7 +337,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-03-30"
+"startAt": "2026-04-08"
 },
 {
 "name": "이디비(HR)",
@@ -347,7 +347,7 @@
 "workType": "서비스",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-03-05"
+"startAt": "2026-02-23"
 },
 {
 "name": "한국로봇산업진흥원(대구)",
@@ -357,7 +357,7 @@
 "workType": "사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-01-30"
+"startAt": "2026-02-02"
 },
 {
 "name": "광주상공회의소(광주)",
@@ -367,7 +367,7 @@
 "workType": "사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2026-01-26"
+"startAt": "2026-02-01"
 },
 {
 "name": "한국기업서울지사(HR)",
@@ -377,7 +377,7 @@
 "workType": "도매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-01-16"
+"startAt": "2026-01-19"
 },
 {
 "name": "한국인삼공사대형마트(광주)",
@@ -387,7 +387,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-01-15"
+"startAt": "2025-12-31"
 },
 {
 "name": "KDB생명고객센터(광주)",
@@ -397,7 +397,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2026-01-09"
+"startAt": "2026-01-01"
 },
 {
 "name": "샹제리제센터(FM)",
@@ -407,7 +407,7 @@
 "workType": "시설,경비,미화,주차",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "당산에스케이브이원센터(FM)",
@@ -417,7 +417,7 @@
 "workType": "시설,보안,미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "영진전문대학교(대구)",
@@ -427,7 +427,7 @@
 "workType": "미화,조경",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "디엠모빌리티(대구)",
@@ -437,7 +437,7 @@
 "workType": "안내",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "원주세브란스기독병원(FM)",
@@ -447,7 +447,7 @@
 "workType": "미화, 경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "원주세브란스기독병원의과대학(FM)",
@@ -457,7 +457,7 @@
 "workType": "미화, 경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "원주세브란스기독병원장례식장(FM)",
@@ -467,7 +467,7 @@
 "workType": "미화, 경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-30"
+"startAt": "2026-01-01"
 },
 {
 "name": "아시아나인천캐빈지원(FM)",
@@ -477,7 +477,7 @@
 "workType": "미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-29"
+"startAt": "2026-01-01"
 },
 {
 "name": "농협하나로마트(HR)",
@@ -487,7 +487,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-23"
+"startAt": "2025-12-01"
 },
 {
 "name": "한국인삼공사대형마트(HR)",
@@ -497,7 +497,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-23"
+"startAt": "2026-01-01"
 },
 {
 "name": "에스케이스피드메이트(CRM)",
@@ -507,7 +507,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-12-22"
+"startAt": "2026-01-01"
 },
 {
 "name": "태영모터스(대구)",
@@ -517,7 +517,7 @@
 "workType": "사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-12-15"
+"startAt": "2025-12-01"
 },
 {
 "name": "한국중소벤처기업유통원(HR)",
@@ -527,7 +527,7 @@
 "workType": "사무지원 종사자 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-12-02"
+"startAt": "2025-11-07"
 },
 {
 "name": "이지메디컴",
@@ -537,7 +537,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-11-24"
+"startAt": "2025-12-01"
 },
 {
 "name": "유한대학교(FM)",
@@ -547,7 +547,7 @@
 "workType": "미화, 영선",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-11-12"
+"startAt": "2025-11-01"
 },
 {
 "name": "롯데글로벌로지스(주)-롯데홈쇼핑(여주)",
@@ -557,7 +557,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-11-12"
+"startAt": "2025-11-01"
 },
 {
 "name": "퀴즈노스인하대병원점(HR)",
@@ -567,7 +567,7 @@
 "workType": "조리종사자 업무",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-11-05"
+"startAt": "2025-10-30"
 },
 {
 "name": "하림CS통합콜센터(광주)",
@@ -577,7 +577,7 @@
 "workType": "",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-09-29"
+"startAt": "2025-08-01"
 },
 {
 "name": "트라이씨클(CRM)",
@@ -587,7 +587,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-09-03"
+"startAt": "2025-10-01"
 },
 {
 "name": "DM스퀘어(FM)",
@@ -597,7 +597,7 @@
 "workType": "종합관리(시설,미화,보안)",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-08-29"
+"startAt": "2025-09-01"
 },
 {
 "name": "엘지유플러스레드캡(CRM)",
@@ -617,7 +617,7 @@
 "workType": "농축산물",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-07-29"
+"startAt": "2025-07-17"
 },
 {
 "name": "동성항운(HR)",
@@ -627,7 +627,7 @@
 "workType": "고객관련사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-07-29"
+"startAt": "2025-07-21"
 },
 {
 "name": "동일모터스(부산)",
@@ -657,7 +657,7 @@
 "workType": "제조업",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-07-11"
+"startAt": "2025-06-20"
 },
 {
 "name": "와이엠렉서스(대구-파견)",
@@ -667,7 +667,7 @@
 "workType": "리셉션",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-07-04"
+"startAt": "2025-04-21"
 },
 {
 "name": "삼성카드법인모니터링(CRM)",
@@ -677,7 +677,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-06-30"
+"startAt": "2025-07-01"
 },
 {
 "name": "블루개러지(CRM)",
@@ -687,7 +687,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-06-26"
+"startAt": "2025-07-01"
 },
 {
 "name": "한국인삼공사(부산)",
@@ -697,7 +697,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-06-19"
+"startAt": "2025-06-01"
 },
 {
 "name": "한국인삼공사(HR)",
@@ -707,7 +707,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-06-12"
+"startAt": "2025-06-01"
 },
 {
 "name": "아마노코리아(타임스퀘어HR)",
@@ -717,7 +717,7 @@
 "workType": "제조업",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-06-12"
+"startAt": "2025-06-01"
 },
 {
 "name": "토탈마린앤드마케팅서비스(부산)",
@@ -727,7 +727,7 @@
 "workType": "사무직",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-06-11"
+"startAt": "2025-06-04"
 },
 {
 "name": "에이치씨엔부산방송(부산-파견)",
@@ -737,7 +737,7 @@
 "workType": "고객관련 사무종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-05-30"
+"startAt": "2025-05-19"
 },
 {
 "name": "대한통운삼성바이오로직스",
@@ -747,7 +747,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-05-28"
+"startAt": "2025-06-01"
 },
 {
 "name": "신한카드(대전)",
@@ -757,7 +757,7 @@
 "workType": "상담",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-05-20"
+"startAt": "2025-05-02"
 },
 {
 "name": "에스원프로젝트107타워(FM)",
@@ -777,7 +777,7 @@
 "workType": "미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-05-19"
+"startAt": "2025-07-01"
 },
 {
 "name": "용인세브란스장례식장(FM)",
@@ -787,7 +787,7 @@
 "workType": "미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-05-19"
+"startAt": "2025-07-01"
 },
 {
 "name": "아마노코리아(부산)",
@@ -797,7 +797,7 @@
 "workType": "주차시설관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-05-13"
+"startAt": "2025-04-28"
 },
 {
 "name": "신한카드(부산)",
@@ -807,7 +807,7 @@
 "workType": "고객관련 사무종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-05-13"
+"startAt": "2025-05-02"
 },
 {
 "name": "내쇼날모터스(광주-파견)",
@@ -817,7 +817,7 @@
 "workType": "리셉션",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-04-30"
+"startAt": "2025-04-01"
 },
 {
 "name": "내쇼날모터스(대전-파견)",
@@ -827,7 +827,7 @@
 "workType": "리셉션",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2025-04-30"
+"startAt": "2025-04-21"
 },
 {
 "name": "KAIN통합관제센터(동부캐리어)(CRM)",
@@ -837,7 +837,7 @@
 "workType": "콜센터",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-04-29"
+"startAt": "2025-04-01"
 },
 {
 "name": "램프빌딩(FM)",
@@ -847,7 +847,7 @@
 "workType": "보안,미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-03-05"
+"startAt": "2025-02-01"
 },
 {
 "name": "롯데홈쇼핑(HR)",
@@ -857,7 +857,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "부",
-"startAt": "2025-02-20"
+"startAt": "2025-01-15"
 },
 {
 "name": "씨제이프레시웨이인천공항(HR)",
@@ -867,7 +867,7 @@
 "workType": "세척",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-11"
+"startAt": "2025-01-01"
 },
 {
 "name": "초동오피스(FM)",
@@ -877,7 +877,7 @@
 "workType": "미화,보안,안내",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-11"
+"startAt": "2025-01-17"
 },
 {
 "name": "경상북도농식품유통교육진흥원(HR)",
@@ -887,7 +887,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-06"
+"startAt": "2025-01-01"
 },
 {
 "name": "놀유니버스(CRM)",
@@ -897,7 +897,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-05"
+"startAt": "2022-03-01"
 },
 {
 "name": "놀유니버스(대전)",
@@ -907,7 +907,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-05"
+"startAt": "2022-03-01"
 },
 {
 "name": "라까사호텔서울(FM)",
@@ -917,7 +917,7 @@
 "workType": "시설,경비,미화,안내",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-01"
+"startAt": "2025-01-01"
 },
 {
 "name": "ICT폴리텍대학(FM)",
@@ -927,7 +927,7 @@
 "workType": "미화,경비,영선",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-02-01"
+"startAt": "2025-01-01"
 },
 {
 "name": "에스원에스케이씨타워(FM)",
@@ -937,7 +937,7 @@
 "workType": "시설,경비,미화,안내",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-16"
+"startAt": "2025-01-01"
 },
 {
 "name": "비앤지스틸(대전)",
@@ -947,7 +947,7 @@
 "workType": "경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-13"
+"startAt": "2025-01-01"
 },
 {
 "name": "케이그린빌아파트(부산)",
@@ -957,7 +957,7 @@
 "workType": "경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-13"
+"startAt": "2025-01-01"
 },
 {
 "name": "판토스(SC안성센터)",
@@ -967,7 +967,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-08"
+"startAt": "2025-01-01"
 },
 {
 "name": "삼양패키징대전1공장(대전)",
@@ -977,7 +977,7 @@
 "workType": "물류",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-07"
+"startAt": "2025-01-01"
 },
 {
 "name": "삼양패키징대전2공장(대전)",
@@ -987,7 +987,7 @@
 "workType": "물류",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-07"
+"startAt": "2025-01-01"
 },
 {
 "name": "케이조선(부산-도급)",
@@ -997,7 +997,7 @@
 "workType": "경비,미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-07"
+"startAt": "2025-01-01"
 },
 {
 "name": "코오롱인더스트리김천2공장(대구)",
@@ -1007,7 +1007,7 @@
 "workType": "경비",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2025-01-07"
+"startAt": "2025-01-01"
 },
 {
 "name": "트립일레븐(CRM)",
@@ -1017,7 +1017,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-12-20"
+"startAt": "2024-12-16"
 },
 {
 "name": "티케이엘리베이터(HR)",
@@ -1027,7 +1027,7 @@
 "workType": "상담",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-11-28"
+"startAt": "2024-10-01"
 },
 {
 "name": "에이블씨엔씨(CRM)",
@@ -1037,7 +1037,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-11-25"
+"startAt": "2024-12-01"
 },
 {
 "name": "대한항공ITSVC(CRM)",
@@ -1047,7 +1047,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-09-23"
+"startAt": "2024-10-01"
 },
 {
 "name": "홈앤브릿지(HR)",
@@ -1057,7 +1057,7 @@
 "workType": "판매",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-09-04"
+"startAt": "2024-08-01"
 },
 {
 "name": "다음컴퍼니",
@@ -1067,7 +1067,7 @@
 "workType": "택배상하차",
 "contractType": "택배상하차",
 "openNo": "",
-"startAt": "2024-08-29"
+"startAt": ""
 },
 {
 "name": "전국화물자동차공제조합(CRM)",
@@ -1077,7 +1077,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-07-29"
+"startAt": "2024-09-01"
 },
 {
 "name": "신한카드(대구)",
@@ -1087,7 +1087,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-05-31"
+"startAt": "2024-05-01"
 },
 {
 "name": "신한카드(광주)",
@@ -1097,7 +1097,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-05-31"
+"startAt": "2024-05-01"
 },
 {
 "name": "신한카드(HR)",
@@ -1107,7 +1107,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-05-29"
+"startAt": "2024-05-01"
 },
 {
 "name": "아이즈비전(CRM)",
@@ -1117,7 +1117,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-05-21"
+"startAt": "2024-06-10"
 },
 {
 "name": "태경산업(HR)",
@@ -1127,7 +1127,7 @@
 "workType": "조리,주유,미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-05-03"
+"startAt": "2022-06-01"
 },
 {
 "name": "지리산산청샘물(대구)",
@@ -1137,7 +1137,7 @@
 "workType": "생산직",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-05-03"
+"startAt": "2024-04-29"
 },
 {
 "name": "태경산업(서해안HR)",
@@ -1147,7 +1147,7 @@
 "workType": "조리,주유,미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-05-03"
+"startAt": "2026-01-01"
 },
 {
 "name": "웹케시씨앤에스(HR)",
@@ -1157,7 +1157,7 @@
 "workType": "사무지원 종사자의 업무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-04-25"
+"startAt": "2024-04-11"
 },
 {
 "name": "한국금융연수원(HR)",
@@ -1167,7 +1167,7 @@
 "workType": "교육보조",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-04-03"
+"startAt": "2024-03-14"
 },
 {
 "name": "JW중외제약-군포",
@@ -1177,7 +1177,7 @@
 "workType": "물류센터관리",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-03-19"
+"startAt": ""
 },
 {
 "name": "엔에스홈쇼핑익산(광주)",
@@ -1187,7 +1187,7 @@
 "workType": "상담",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-02-20"
+"startAt": "2024-02-01"
 },
 {
 "name": "에스엔티에너지(부산)",
@@ -1197,7 +1197,7 @@
 "workType": "사무",
 "contractType": "파견",
 "openNo": "",
-"startAt": "2024-02-19"
+"startAt": "2024-02-13"
 },
 {
 "name": "에이치에스효성더프리미엄전주(광주)",
@@ -1207,7 +1207,7 @@
 "workType": "미화",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-01-29"
+"startAt": "2024-01-01"
 },
 {
 "name": "라까사호텔광명점룸메이드(FM)",
@@ -1217,6 +1217,6 @@
 "workType": "룸메이드",
 "contractType": "도급",
 "openNo": "",
-"startAt": "2024-01-26"
+"startAt": "2024-01-03"
 }
 ]

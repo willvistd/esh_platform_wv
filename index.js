@@ -755,8 +755,8 @@ async function initDB() {
           await pool.query(
             `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
               "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
-             VALUES ($1,'','',$2,'','active',$3,$4,NULL,'본사','','',$5,$6,$7,NULL)`,
-            [nm, s.manager || '', hid, s.address || '', s.openNo || '', s.workType || '', s.contractType || '']
+             VALUES ($1,'','',$2,'','active',$3,$4,NULL,'본사','','',$5,$6,$7,$8)`,
+            [nm, s.manager || '', hid, s.address || '', s.openNo || '', s.workType || '', s.contractType || '', s.startAt || null]
           );
           existing.add(norm(nm));
           created++;
@@ -773,6 +773,33 @@ async function initDB() {
     }
   } catch (e) {
     console.error('최근 사업장 가져오기 실패:', e);
+  }
+
+  // ── 가져온 사업장 계약시작일(startAt) 보강(1회) ──
+  //   앞선 가져오기가 startAt 없이 먼저 실행된 경우를 대비: 명단의 계약시작일을
+  //   '현재 비어 있는 사업장'에만 채움(기존 입력값은 절대 덮어쓰지 않음).
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_import_startat_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/recent_sites_import_v1.json'); } catch (_) { list = []; }
+      let filled = 0;
+      for (const s of list) {
+        const nm = String(s.name || '').trim();
+        if (!nm || !s.startAt) continue;
+        const r = await pool.query(
+          `UPDATE sites SET "startAt"=$1
+             WHERE regexp_replace(lower(name),'\\s','','g') = regexp_replace(lower($2),'\\s','','g')
+               AND (COALESCE("startAt",'') = '')`,
+          [s.startAt, nm]
+        );
+        filled += r.rowCount;
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_import_startat_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 가져온 사업장 계약시작일 보강 v1: ${filled}건`);
+    }
+  } catch (e) {
+    console.error('계약시작일 보강 실패:', e);
   }
 
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
