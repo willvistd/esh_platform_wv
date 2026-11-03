@@ -802,6 +802,22 @@ async function initDB() {
     console.error('계약시작일 보강 실패:', e);
   }
 
+  // ── 사업개시번호(openNo) 오입력 정리(1회) ──
+  //   가져오기 때 '여/부/해당없음' 등 번호가 아닌 값이 openNo에 잘못 들어간 것 제거.
+  //   (이 값들은 사업개시번호가 될 수 없으므로 전역으로 비움)
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_openno_cleanup_v1'");
+    if (done.rowCount === 0) {
+      const r = await pool.query(
+        `UPDATE sites SET "openNo"='' WHERE TRIM(COALESCE("openNo",'')) IN ('여','부','해당없음','없음','X','x','-','N/A','na')`
+      );
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_openno_cleanup_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 사업개시번호 오입력 정리 v1: ${r.rowCount}건`);
+    }
+  } catch (e) {
+    console.error('사업개시번호 정리 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
