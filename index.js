@@ -762,6 +762,12 @@ async function initDB() {
           created++;
         }
         await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_import_recent_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        // 실제 '증가분'(신규 등록 수)을 저장 → 화면에 그대로 표시(한 번 실행될 때의 값 보존)
+        const resultJson = JSON.stringify({ created, skipped, noHq, candidates: list.length, at: new Date().toISOString() });
+        await pool.query(
+          "INSERT INTO app_settings (key, value) VALUES ('site_import_recent_result', $1) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value",
+          [resultJson]
+        );
         console.log(`[DB] 최근 사업장 가져오기 v1: 신규 ${created}건, 기존중복 ${skipped}건, 본부미매칭 ${noHq}건`);
       }
     }
@@ -2136,7 +2142,13 @@ app.delete('/api/edu-types/:id', async (req, res) => {
 // ── Sites ──
 app.get('/api/sites', async (req, res) => {
   const result = await pool.query('SELECT * FROM sites ORDER BY "hqId" NULLS LAST, id');
-  res.json({ sites: result.rows });
+  // 최근(2024~) 급여기초 가져오기의 '실제 신규 등록 수'(마이그레이션 실행 시 기록된 값)
+  let recentImport = null;
+  try {
+    const r = await pool.query("SELECT value FROM app_settings WHERE key='site_import_recent_result'");
+    if (r.rowCount) recentImport = JSON.parse(r.rows[0].value);
+  } catch (_) {}
+  res.json({ sites: result.rows, recentImport });
 });
 
 // ── 사업장 ↔ 담당 직원 siteIds 동기화 헬퍼 ──

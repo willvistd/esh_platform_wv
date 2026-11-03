@@ -279,6 +279,7 @@ const api = {
     const res = await fetch(ENDPOINTS.sites);
     const data = await res.json();
     const items = data.sites || [];
+    try { window.WV_recentImport = data.recentImport || null; } catch (_) {}
     return items.map(s => ({
       ...s,
       id: s.id,
