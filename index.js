@@ -680,6 +680,41 @@ async function initDB() {
     console.error('사업장 담당자 정리 실패:', e);
   }
 
+  // ── FM사업본부 사업장 담당자(담당AM) 반영(1회) ──
+  //   FM운영팀 명단(FM_MANAGER_LIST, 46건)을 플랫폼 FM 사업장에 반영.
+  //   플랫폼 사업장명이 기준 — PDF 사업장명은 정규화(fmNorm) 후 비교에만 사용.
+  //   정규화 완전일치만 반영(오매칭 방지). 결과는 사업장 관리 화면에서 바로 확인 가능.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='fm_manager_sync_v1'");
+    if (done.rowCount === 0) {
+      const hqRow = (await pool.query(
+        "SELECT id FROM hq WHERE name IN ('윌앤비전 FM사업본부','FM사업본부') ORDER BY (name='윌앤비전 FM사업본부') DESC, id LIMIT 1"
+      )).rows[0];
+      if (hqRow) {
+        const siteRows = (await pool.query('SELECT id, name, manager FROM sites WHERE "hqId"=$1', [hqRow.id])).rows;
+        const idx = new Map();
+        for (const s of siteRows) { const k = fmNorm(s.name); if (!idx.has(k)) idx.set(k, []); idx.get(k).push(s); }
+        const used = new Set();
+        let changed = 0, matchedN = 0;
+        const unmatched = [];
+        for (const [pdfName, mgr] of FM_MANAGER_LIST) {
+          const hits = (idx.get(fmNorm(pdfName)) || []).filter(s => !used.has(s.id));
+          if (!hits.length) { unmatched.push(pdfName); continue; }
+          const site = hits[0]; used.add(site.id); matchedN++;
+          if (fmNorm(site.manager || '') !== fmNorm(mgr)) {
+            await pool.query('UPDATE sites SET manager=$1 WHERE id=$2', [mgr, site.id]);
+            changed++;
+          }
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('fm_manager_sync_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        console.log(`[DB] FM 담당자 반영 v1: 매칭 ${matchedN}/${FM_MANAGER_LIST.length}건, 변경 ${changed}건` +
+          (unmatched.length ? `, 미매칭(PDF기준): ${unmatched.join(' / ')}` : ''));
+      }
+    }
+  } catch (e) {
+    console.error('FM 담당자 반영 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
@@ -2253,10 +2288,10 @@ app.delete('/api/sites/:id', async (req, res) => {
   }
 });
 
-// ── FM사업본부 사업장 담당자(담당AM) 일괄 매칭/반영 ──
+// ── FM사업본부 사업장 담당자(담당AM) 명단 ──
 //   · PDF 'FM운영팀 사업장별 담당자'(순번/부서/사업장명(BMP기준)/담당AM) 46건을 코드에 내장.
 //   · 플랫폼 사업장명이 기준. PDF 사업장명은 매칭 비교용으로만 사용(정규화 후 비교).
-//   · 기본은 미리보기(dry-run). ?apply=1 일 때만 실제 반영. 브라우저에서 열어 결과 확인용 HTML 반환.
+//   · 실제 반영은 initDB()의 마커 기반 마이그레이션에서 자동 수행(배포 시 1회).
 const FM_MANAGER_LIST = [
   ['삼성이앤에이평택캠프(FM)', '김용기'],
   ['에스원프로젝트107타워(FM)', '김용기'],
@@ -2313,92 +2348,6 @@ const fmNorm = (s) => String(s || '')
   .replace(/[()\[\]{}]/g, '')       // 괄호 문자는 제거하되 안쪽 글자는 보존
   .replace(/[\s\-·.,"'’_]/g, '')
   .toLowerCase();
-app.get('/api/admin/fm-manager-sync', async (req, res) => {
-  const esc = (v) => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
-  try {
-    const apply = req.query.apply === '1';
-    // FM사업본부 hq id 확보
-    const hqRow = (await pool.query(
-      "SELECT id, name FROM hq WHERE name IN ('윌앤비전 FM사업본부','FM사업본부') ORDER BY (name='윌앤비전 FM사업본부') DESC, id LIMIT 1"
-    )).rows[0];
-    if (!hqRow) return res.status(404).send('<meta charset="utf-8">FM사업본부 본부를 찾을 수 없습니다.');
-    const siteRows = (await pool.query('SELECT id, name, manager FROM sites WHERE "hqId"=$1 ORDER BY id', [hqRow.id])).rows;
-
-    // 플랫폼 사업장 정규화 인덱스(중복 키는 배열로)
-    const siteIndex = new Map();
-    for (const s of siteRows) {
-      const k = fmNorm(s.name);
-      if (!siteIndex.has(k)) siteIndex.set(k, []);
-      siteIndex.get(k).push(s);
-    }
-
-    const matched = [];     // { pdfName, site, newMgr, oldMgr, dup }
-    const pdfUnmatched = []; // { pdfName, newMgr }
-    const usedSiteIds = new Set();
-    for (const [pdfName, mgr] of FM_MANAGER_LIST) {
-      const k = fmNorm(pdfName);
-      const hits = (siteIndex.get(k) || []).filter(s => !usedSiteIds.has(s.id));
-      if (hits.length) {
-        const site = hits[0];
-        usedSiteIds.add(site.id);
-        matched.push({ pdfName, site, newMgr: mgr, oldMgr: site.manager || '', dup: hits.length > 1 });
-      } else {
-        pdfUnmatched.push({ pdfName, newMgr: mgr });
-      }
-    }
-    const siteUnmatched = siteRows.filter(s => !usedSiteIds.has(s.id));
-
-    let appliedCount = 0;
-    if (apply) {
-      for (const m of matched) {
-        if (fmNorm(m.oldMgr) === fmNorm(m.newMgr)) continue; // 이미 동일하면 건너뜀
-        await pool.query('UPDATE sites SET manager=$1 WHERE id=$2', [m.newMgr, m.site.id]);
-        appliedCount++;
-      }
-    }
-
-    const row = (cells) => '<tr>' + cells.map(c => `<td style="border:1px solid #d0d0d0;padding:6px 10px">${c}</td>`).join('') + '</tr>';
-    const th = (cells) => '<tr>' + cells.map(c => `<th style="border:1px solid #d0d0d0;padding:6px 10px;background:#f4f4f6;text-align:left">${c}</th>`).join('') + '</tr>';
-    let html = `<!doctype html><meta charset="utf-8"><title>FM 담당자 매칭</title>`;
-    html += `<div style="font-family:system-ui,'Malgun Gothic',sans-serif;max-width:900px;margin:24px auto;padding:0 16px;color:#222">`;
-    html += `<h2>FM사업본부 사업장 담당자 매칭 ${apply ? '(반영 완료)' : '(미리보기)'}</h2>`;
-    html += `<p>본부: <b>${esc(hqRow.name)}</b> · 플랫폼 FM 사업장 <b>${siteRows.length}</b>곳 · PDF 명단 <b>${FM_MANAGER_LIST.length}</b>건</p>`;
-    if (apply) html += `<p style="color:#0a7d2c;font-weight:600">✅ ${appliedCount}곳의 담당자를 반영했습니다.</p>`;
-    else html += `<p style="color:#b26b00;font-weight:600">※ 미리보기입니다. 아래 매칭이 맞으면 주소 끝에 <code>?apply=1</code> 을 붙여 다시 열면 실제로 반영됩니다.</p>`;
-
-    html += `<h3>① 매칭됨 (${matched.length}건) — 플랫폼 사업장명 기준</h3>`;
-    html += `<table style="border-collapse:collapse;width:100%;font-size:14px">`;
-    html += th(['플랫폼 사업장명', '담당자(기존 → 변경)', 'PDF 사업장명']);
-    for (const m of matched) {
-      const changed = fmNorm(m.oldMgr) !== fmNorm(m.newMgr);
-      const mgrCell = changed
-        ? `<span style="color:#888">${esc(m.oldMgr) || '(없음)'}</span> → <b style="color:#0a58ca">${esc(m.newMgr)}</b>`
-        : `<b>${esc(m.newMgr)}</b> <span style="color:#0a7d2c">(동일)</span>`;
-      html += row([esc(m.site.name) + (m.dup ? ' <span style="color:#c00">⚠동명중복</span>' : ''), mgrCell, esc(m.pdfName)]);
-    }
-    html += `</table>`;
-
-    html += `<h3>② PDF에는 있으나 플랫폼에서 못 찾은 사업장 (${pdfUnmatched.length}건)</h3>`;
-    if (pdfUnmatched.length) {
-      html += `<table style="border-collapse:collapse;width:100%;font-size:14px">` + th(['PDF 사업장명', '담당자']);
-      for (const u of pdfUnmatched) html += row([esc(u.pdfName), esc(u.newMgr)]);
-      html += `</table><p style="color:#666">→ 플랫폼 사업장명이 달라 매칭이 안 된 경우입니다. 실제 플랫폼 사업장명을 알려주시면 연결해 드립니다.</p>`;
-    } else html += `<p style="color:#0a7d2c">전부 매칭되었습니다.</p>`;
-
-    html += `<h3>③ 플랫폼 FM 사업장 중 PDF 명단에 없는 곳 (${siteUnmatched.length}건, 담당자 변경 안 함)</h3>`;
-    if (siteUnmatched.length) {
-      html += `<table style="border-collapse:collapse;width:100%;font-size:14px">` + th(['플랫폼 사업장명', '현재 담당자']);
-      for (const s of siteUnmatched) html += row([esc(s.name), esc(s.manager) || '(없음)']);
-      html += `</table>`;
-    } else html += `<p style="color:#0a7d2c">없습니다.</p>`;
-
-    html += `</div>`;
-    res.set('Content-Type', 'text/html; charset=utf-8').send(html);
-  } catch (e) {
-    console.error('FM 담당자 매칭 오류:', e);
-    res.status(500).send('<meta charset="utf-8">오류: ' + esc(e.message));
-  }
-});
 
 // ── 산업재해 관리(통계) ──
 // 입력/수정/삭제·재해자 실명 조회 = 관리자급(admin/safety)만. 그 외는 조회+실명 마스킹.
