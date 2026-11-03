@@ -1,0 +1,1222 @@
+[
+{
+"name": "대한항공국내(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "조두호",
+"address": "서울 강서구 하늘길260",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-10-29"
+},
+{
+"name": "와이잭(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이채민",
+"address": "서울 강남구 역삼로 239",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-10-29"
+},
+{
+"name": "한국인삼공사직영위탁(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이채민",
+"address": "대전 대덕구 벚꽃길71",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-10-29"
+},
+{
+"name": "토탈하버서비스(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "부산 중구 중앙대로 102, 10층 1002호",
+"workType": "사무업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-10-21"
+},
+{
+"name": "삼양밀양2센터(물류)",
+"hq": "윌앤비전 물류사업본부",
+"manager": "김은경",
+"address": "경남 밀양시 부북면 나노국가산단1로 88 삼양로지스틱스㈜ 밀양센터",
+"workType": "물류",
+"contractType": "도급",
+"openNo": "925-05-23636-7",
+"startAt": "2026-10-14"
+},
+{
+"name": "우승(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김기태",
+"address": "경기도 오산시 대호로 77(궐동)",
+"workType": "사무업무",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-10-02"
+},
+{
+"name": "화승알앤에이(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "경남 양산시 충렬로 61 ㈜화승알앤에이",
+"workType": "생산",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-09-28"
+},
+{
+"name": "인덕대학교(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울특별시 노원구 초안산로 12(월계동) 인덕대학교",
+"workType": "사무",
+"contractType": "도급",
+"openNo": "여",
+"startAt": "2026-09-18"
+},
+{
+"name": "동원로엑스(주)양산물류(물류)",
+"hq": "윌앤비전 물류사업본부",
+"manager": "김은경",
+"address": "경남 양산시 어곡공단1길 31",
+"workType": "물류",
+"contractType": "도급",
+"openNo": "여",
+"startAt": "2026-09-14"
+},
+{
+"name": "하나은행(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "대전시 중구 계룡로 820(오류동) 하나은행",
+"workType": "고객관련 사무종사자의 업무",
+"contractType": "파견",
+"openNo": "여",
+"startAt": "2026-09-09"
+},
+{
+"name": "하늘산물류센터(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김경태",
+"address": "경기도 평택시 오성면 서동대로 2062-4",
+"workType": "물류",
+"contractType": "도급",
+"openNo": "부",
+"startAt": "2026-09-07"
+},
+{
+"name": "벨리시마코스메틱",
+"hq": "윌앤비전 물류사업본부",
+"manager": "황원서",
+"address": "경기도 군포시 번영로 82 한국복합물류 C동",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-08-31"
+},
+{
+"name": "대한통운김포구다이글로벌센터",
+"hq": "윌앤비전 물류사업본부",
+"manager": "박평운",
+"address": "경기도 김포시 양촌읍 학운산단로5로가길 5, 4층",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-08-28"
+},
+{
+"name": "한국원자력환경복원연구원(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "부산광역시 기장군 장안읍 해맞이로 569",
+"workType": "사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-08-25"
+},
+{
+"name": "삼성이앤에이평택캠프(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "경기도 평택시 첨단대로 280",
+"workType": "시설,미화",
+"contractType": "도급",
+"openNo": "여",
+"startAt": "2026-08-07"
+},
+{
+"name": "광명이케아(동부캐리어)(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "서상원",
+"address": "서울특별시 영등포구 영등포로 150, 생각공장 당산 C동 5층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-07-01"
+},
+{
+"name": "디와이글로벌(부산-도급)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "권영락",
+"address": "부산광역시 해운대구 좌동로25",
+"workType": "서비스",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-06-30"
+},
+{
+"name": "디와이글로벌(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "권영락",
+"address": "부산광역시 해운대구 좌동로25",
+"workType": "서비스",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-06-30"
+},
+{
+"name": "베스트슬립(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "김미화",
+"address": "서울 영등포구 문래북로 116 트리플렉스 3층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-06-05"
+},
+{
+"name": "에스앤티홀딩스(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "서울 강남구 테헤란로 305 한국기술센터 20층",
+"workType": "사업서비스",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-06-02"
+},
+{
+"name": "생각공장당산(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "서울 영등포구 영등포로 150",
+"workType": "관리,시설,보안,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-06-01"
+},
+{
+"name": "CJ프레시웨이(CK센터-HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이동훈",
+"address": "경기도 이천시 백사면 원적로618번길 301-40",
+"workType": "도소매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-05-19"
+},
+{
+"name": "웰킵스타워(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "이준형",
+"address": "서울 강동구 고덕비즈밸리로54, 웰킵스타워",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-05-12"
+},
+{
+"name": "AI교수학습플랫폼(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "백소희",
+"address": "서울시 영등포구 영등포로 150, C동 5층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-05-08"
+},
+{
+"name": "소노아임레디만기방어센터(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "이유림",
+"address": "서울 영등포구 문래북로 116 트리플렉스 2층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-05-08"
+},
+{
+"name": "국립소방병원(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "충청북도 음성군 맹동면 용두4길 19",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-04-28"
+},
+{
+"name": "이지메디컴(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "부산광역시 남구 신선로 217-12",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-04-28"
+},
+{
+"name": "비젼아이티에스(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "김대성",
+"address": "대구 수성구 알파시티1로 31길 17",
+"workType": "상담,미화",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-04-22"
+},
+{
+"name": "서울숲포휴(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 성동구 왕십리로 58",
+"workType": "시설,경비,미화,서무",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-04-22"
+},
+{
+"name": "씨제이제일제당(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울 강남구 삼성로 85길 34 이노플레이빌딩 8층",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-04-22"
+},
+{
+"name": "잉글리시에그(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김유진",
+"address": "서울 서초구 동작대로 212",
+"workType": "도소매",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-04-20"
+},
+{
+"name": "샥즈(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "백소희",
+"address": "서울시 영등포구 영등포로 150, C동 5층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-04-16"
+},
+{
+"name": "제닉(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "충청남도 논산시 성동면 산업단지로5길 5(4길 5)",
+"workType": "생산",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-04-09"
+},
+{
+"name": "비버웍스(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "정유라",
+"address": "서울시 강남구 도산대로 6길 12",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-03-30"
+},
+{
+"name": "이디비(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김유진",
+"address": "경기도 성남시 분당구 판교로 255번길 58, 403호",
+"workType": "서비스",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-03-05"
+},
+{
+"name": "한국로봇산업진흥원(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "정대환",
+"address": "대구광역시 북구 노원로77, 1층",
+"workType": "사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-01-30"
+},
+{
+"name": "광주상공회의소(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "광주 서구 대남대로 465(농성동) 상공회의소빌딩",
+"workType": "사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2026-01-26"
+},
+{
+"name": "한국기업서울지사(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "홍대웅",
+"address": "부산광역시 사상구 감전천로 243",
+"workType": "도매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-01-16"
+},
+{
+"name": "한국인삼공사대형마트(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "광주광역시 서구 상무중앙로 114 랜드피아오피스텔 219호",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-01-15"
+},
+{
+"name": "KDB생명고객센터(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "광주광역시 서구 천변좌로 268 3층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2026-01-09"
+},
+{
+"name": "샹제리제센터(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 강남구 테헤란로 406 샹제리제센터",
+"workType": "시설,경비,미화,주차",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "당산에스케이브이원센터(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "이준형",
+"address": "서울 당산로41길 11, 당산SK V1센터",
+"workType": "시설,보안,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "영진전문대학교(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "정대환",
+"address": "경북 칠곡군 지천면 송정중리1길 195 대구경북영어마을",
+"workType": "미화,조경",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "디엠모빌리티(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "김대성",
+"address": "경북 구미시 야은로 551",
+"workType": "안내",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "원주세브란스기독병원(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "강원 원주시 일산로 20",
+"workType": "미화, 경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "원주세브란스기독병원의과대학(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "강원 원주시 일산로 20",
+"workType": "미화, 경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "원주세브란스기독병원장례식장(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "강원 원주시 일산로 20",
+"workType": "미화, 경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-30"
+},
+{
+"name": "아시아나인천캐빈지원(FM)",
+"hq": "윌앤비전 공항사업본부",
+"manager": "송병학",
+"address": "인천 중구 공항로 271, 제1여객터미널",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-29"
+},
+{
+"name": "농협하나로마트(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김기태",
+"address": "경기 부천시 오정구 송내대로524, 2층 농협수동권미트센터",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-23"
+},
+{
+"name": "한국인삼공사대형마트(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이채민",
+"address": "대전광역시 대덕구 벚꽃길 71",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-23"
+},
+{
+"name": "에스케이스피드메이트(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "안성훈",
+"address": "서울특별시 광진구 자양로 58 태림빌딩 6층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-12-22"
+},
+{
+"name": "태영모터스(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "정대환",
+"address": "경북 포항시 북구 새천년대로 519 포항점",
+"workType": "사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-12-15"
+},
+{
+"name": "한국중소벤처기업유통원(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김유진",
+"address": "서울시 양천구 목동동로 309",
+"workType": "사무지원 종사자 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-12-02"
+},
+{
+"name": "이지메디컴",
+"hq": "윌앤비전 물류사업본부",
+"manager": "태경민",
+"address": "경기도 오산시 황새로 109, 5층",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-11-24"
+},
+{
+"name": "유한대학교(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "조승준",
+"address": "경기도 부천시 소사구 경인로 590 유한대학교",
+"workType": "미화, 영선",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-11-12"
+},
+{
+"name": "롯데글로벌로지스(주)-롯데홈쇼핑(여주)",
+"hq": "윌앤비전 물류사업본부",
+"manager": "황원서",
+"address": "경기도 여주시 삼교동 460-8 로지스포인트 3층",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-11-12"
+},
+{
+"name": "퀴즈노스인하대병원점(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "홍대웅",
+"address": "인천광역시 종구 인항로27, 지하1층(신흥동3가, 인하대학병원)",
+"workType": "조리종사자 업무",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-11-05"
+},
+{
+"name": "하림CS통합콜센터(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "전북 익산시 중앙로 121 5층",
+"workType": "",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-09-29"
+},
+{
+"name": "트라이씨클(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "김기찬",
+"address": "서울 영등포구 문래북로 116 트리플렉스 3층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-09-03"
+},
+{
+"name": "DM스퀘어(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "이준형",
+"address": "서울 강동구 고덕비즈밸리로4길 25",
+"workType": "종합관리(시설,미화,보안)",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-08-29"
+},
+{
+"name": "엘지유플러스레드캡(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "정유라",
+"address": "서울 영등포구 영등포로 150 당산 생각공장 C동 5층 (당산동1가)",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-08-01"
+},
+{
+"name": "파주연천축산업협동조합(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김기태",
+"address": "경기도 파주시 문화로90, 파주연천축협 본점",
+"workType": "농축산물",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-07-29"
+},
+{
+"name": "동성항운(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울시 강서구 양천로 583(우림블루나인A동 1710호~1711호)",
+"workType": "고객관련사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-07-29"
+},
+{
+"name": "동일모터스(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "부산광역시 해운대구 해운대로 293",
+"workType": "수행기사",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-07-14"
+},
+{
+"name": "토탈다큐서비스(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "부산광역시 중구 중앙대로 102(팬오션 부산빌딩 9층 900호)",
+"workType": "사무보조",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-07-14"
+},
+{
+"name": "지온메디텍(파견HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이동훈",
+"address": "경기도 안양시 동안구 시민대로327번길12-18",
+"workType": "제조업",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-07-11"
+},
+{
+"name": "와이엠렉서스(대구-파견)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "김대성",
+"address": "경북 구미시 구미대로 234",
+"workType": "리셉션",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-07-04"
+},
+{
+"name": "삼성카드법인모니터링(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "안성훈",
+"address": "서울특별시 영등포구 영등포로 150, 생각공장 당산 C동 5층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-06-30"
+},
+{
+"name": "블루개러지(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "정유라",
+"address": "서울 영등포구 영등포로 150 당산 생각공장 C동 5층 (당산동1가)",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-06-26"
+},
+{
+"name": "한국인삼공사(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "부산동래구 중앙대로 1393",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-06-19"
+},
+{
+"name": "한국인삼공사(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "탁지영",
+"address": "대전광역시 대덕구 벚꽃길 71",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-06-12"
+},
+{
+"name": "아마노코리아(타임스퀘어HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김경태",
+"address": "서울시 영등포구 영중로 15 타임스퀘어",
+"workType": "제조업",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-06-12"
+},
+{
+"name": "토탈마린앤드마케팅서비스(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "부산광역시 중구 중앙대로 88 은산베이빌딩 7층 706호",
+"workType": "사무직",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-06-11"
+},
+{
+"name": "에이치씨엔부산방송(부산-파견)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "부산광역시 동래구 중앙대로 1455",
+"workType": "고객관련 사무종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-05-30"
+},
+{
+"name": "대한통운삼성바이오로직스",
+"hq": "윌앤비전 물류사업본부",
+"manager": "김범준",
+"address": "인천광역시 연수구 송도바이오대로 300",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-05-28"
+},
+{
+"name": "신한카드(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "대전 서구 한밭대로 809(둔산동,사학연금 대전회관) 20F",
+"workType": "상담",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-05-20"
+},
+{
+"name": "에스원프로젝트107타워(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 중구 마른내로27 프로젝트107타워",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-05-19"
+},
+{
+"name": "용인세브란스병원(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "경기도 용인시 기흥구 동백죽전대로 363",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-05-19"
+},
+{
+"name": "용인세브란스장례식장(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "송병학",
+"address": "경기도 용인시 기흥구 동백죽전대로 363",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-05-19"
+},
+{
+"name": "아마노코리아(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "부산시 남구 대연동 수영로 324",
+"workType": "주차시설관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-05-13"
+},
+{
+"name": "신한카드(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "권영락",
+"address": "부산시 부산진구 중앙대로 748 신한은행 부전동지점 6층",
+"workType": "고객관련 사무종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-05-13"
+},
+{
+"name": "내쇼날모터스(광주-파견)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "전북 전주시 덕진구 신복로 180 내쇼날모터스 BMW 전주 서비스센터",
+"workType": "리셉션",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-04-30"
+},
+{
+"name": "내쇼날모터스(대전-파견)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "문정현",
+"address": "충남 서산시 중앙로 323",
+"workType": "리셉션",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2025-04-30"
+},
+{
+"name": "KAIN통합관제센터(동부캐리어)(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "김기찬",
+"address": "서울특별시 영등포구 영등포로 150, 생각공장 당산 C동 5층",
+"workType": "콜센터",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-04-29"
+},
+{
+"name": "램프빌딩(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "이준형",
+"address": "서울 강남구 도산대로37길 26",
+"workType": "보안,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-03-05"
+},
+{
+"name": "롯데홈쇼핑(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울시 영등포구 양평로21길 10 롯데양평빌딩",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "부",
+"startAt": "2025-02-20"
+},
+{
+"name": "씨제이프레시웨이인천공항(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김기태",
+"address": "인천 중구 제2터미널대로 446,4층",
+"workType": "세척",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-11"
+},
+{
+"name": "초동오피스(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 중구 초동 107-12",
+"workType": "미화,보안,안내",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-11"
+},
+{
+"name": "경상북도농식품유통교육진흥원(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "서상원",
+"address": "경북 예천군 호명읍 수변로 125(산합리,서진타워) 5층",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-06"
+},
+{
+"name": "놀유니버스(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "이유림",
+"address": "서울특별시 영등포구 영등포로 150 생각공장 당산 C동 5층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-05"
+},
+{
+"name": "놀유니버스(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "대전광역시 서구 한밭대로 797, 캠코캐피탈타워 4층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-05"
+},
+{
+"name": "라까사호텔서울(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 충무로 15",
+"workType": "시설,경비,미화,안내",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-01"
+},
+{
+"name": "ICT폴리텍대학(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "조승준",
+"address": "경기도 광주시 순암로 16-26",
+"workType": "미화,경비,영선",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-02-01"
+},
+{
+"name": "에스원에스케이씨타워(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "서울 충무로 15",
+"workType": "시설,경비,미화,안내",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-16"
+},
+{
+"name": "비앤지스틸(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "광주광역시 광산구 하남산단7번로 47, 현대비앤지스틸",
+"workType": "경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-13"
+},
+{
+"name": "케이그린빌아파트(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "경상남도 창원시 진해구 명제로107번길 19(죽곡동)",
+"workType": "경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-13"
+},
+{
+"name": "판토스(SC안성센터)",
+"hq": "윌앤비전 물류사업본부",
+"manager": "태경민",
+"address": "경기도 안성시 삼죽로 75",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-08"
+},
+{
+"name": "삼양패키징대전1공장(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "서울 종로구 종로33길 31 (연지동)",
+"workType": "물류",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-07"
+},
+{
+"name": "삼양패키징대전2공장(대전)",
+"hq": "윌앤비전 대전사업본부",
+"manager": "장기준\n문정현",
+"address": "서울 종로구 종로33길 31 (연지동)",
+"workType": "물류",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-07"
+},
+{
+"name": "케이조선(부산-도급)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "박재현",
+"address": "경남 창원시 진해구 명제로 60 1층",
+"workType": "경비,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-07"
+},
+{
+"name": "코오롱인더스트리김천2공장(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "정대환",
+"address": "서울 강서구 마곡동로 110",
+"workType": "경비",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2025-01-07"
+},
+{
+"name": "트립일레븐(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "김기찬",
+"address": "서울 영등포구 영등포로 150 생각공장 당산 6층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-12-20"
+},
+{
+"name": "티케이엘리베이터(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울특별시 마포구 월드컵북로54길 25(상암동,상암DMC푸르지오시티,S-City)",
+"workType": "상담",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-11-28"
+},
+{
+"name": "에이블씨엔씨(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "이유림",
+"address": "서울 영등포구 문래북로 116 트리플렉스 3층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-11-25"
+},
+{
+"name": "대한항공ITSVC(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "안성훈",
+"address": "서울특별시 강서구 양천로 13(방화동) 대한항공 전산센터 5층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-09-23"
+},
+{
+"name": "홈앤브릿지(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "이동훈",
+"address": "서울시 상동구 천호대로 213, 5층 (홈앤브릿지 본사)",
+"workType": "판매",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-09-04"
+},
+{
+"name": "다음컴퍼니",
+"hq": "윌앤비전 물류사업본부",
+"manager": "황원서",
+"address": "경기도 군포시 번영로82, 한국복합물류 C동 2층",
+"workType": "택배상하차",
+"contractType": "택배상하차",
+"openNo": "",
+"startAt": "2024-08-29"
+},
+{
+"name": "전국화물자동차공제조합(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "백소희",
+"address": "서울 영등포구 영등포로 150 당산 생각공장 C동 6층 (당산동1가)",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-07-29"
+},
+{
+"name": "신한카드(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "김대성",
+"address": "대구 중구 달구벌대로 2125 신한은행빌딩 3층",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-05-31"
+},
+{
+"name": "신한카드(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "광주광역시 북구 금남로 133 신한은행빌딩",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-05-31"
+},
+{
+"name": "신한카드(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김유진",
+"address": "서울시 강남구 역삼로 176(역삼동)",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-05-29"
+},
+{
+"name": "아이즈비전(CRM)",
+"hq": "윌앤비전 CRM사업본부",
+"manager": "조두호",
+"address": "서울 영등포구 영등포로 150, C동 5층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-05-21"
+},
+{
+"name": "태경산업(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김경태",
+"address": "1. 동강휴게소+주유소 : 강원도 영월군 남면 강원남로 641 2. 홍천강휴게소 : 강원도 홍천군 북방면 도사곡길 223 3. 문막휴게소 : 강원도 원주시 문막읍 원문로 1234",
+"workType": "조리,주유,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-05-03"
+},
+{
+"name": "지리산산청샘물(대구)",
+"hq": "윌앤비전 대구사업본부",
+"manager": "정대환",
+"address": "경남 산청군 삼장면 친환경로 460-22",
+"workType": "생산직",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-05-03"
+},
+{
+"name": "태경산업(서해안HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "서상원",
+"address": "1) 전북 군산시 나포면 서해안고속도로 148 군산(서울) 휴게소     2) 전북 군산시 성산면 서해안고속도로 141 군산(무안) 휴게소     3) 충남 천안시 동남구 수신면 성남로 793-40 천안(부산)주유소     4) 경북 청송군 파천면 중평병부길 203-92 청송(상주)주유소     5) 경북 청송군 파천면 중평병부길 203-115 청송(영덕)주유소     6) 전남 함평군 함평읍 서해안 고속도로 31 함평(무안) 휴게소",
+"workType": "조리,주유,미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-05-03"
+},
+{
+"name": "웹케시씨앤에스(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김보경",
+"address": "서울시 구로구 경인로 661, 핀포인트타워 19층",
+"workType": "사무지원 종사자의 업무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-04-25"
+},
+{
+"name": "한국금융연수원(HR)",
+"hq": "윌앤비전 HR사업본부",
+"manager": "김경태",
+"address": "서울 영등포구 은행로 38, 한국수출입은행",
+"workType": "교육보조",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-04-03"
+},
+{
+"name": "JW중외제약-군포",
+"hq": "윌앤비전 물류사업본부",
+"manager": "김범준",
+"address": "경기도 화성시 안녕남로 181, JW중외제약 화성물류센터 5층 (25.03.05 주소변경함) 경기도 군포시 번영로 82, 한국복합물류 O동 5층 (이전주소)",
+"workType": "물류센터관리",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-03-19"
+},
+{
+"name": "엔에스홈쇼핑익산(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "전북 익산시 중앙로 121 5층",
+"workType": "상담",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-02-20"
+},
+{
+"name": "에스엔티에너지(부산)",
+"hq": "윌앤비전 부산사업본부",
+"manager": "이성은",
+"address": "경남 창원시 성산구 완암로 12",
+"workType": "사무",
+"contractType": "파견",
+"openNo": "",
+"startAt": "2024-02-19"
+},
+{
+"name": "에이치에스효성더프리미엄전주(광주)",
+"hq": "윌앤비전 광주사업본부",
+"manager": "김주영,임종완",
+"address": "전라북도 전주시 덕진구 기린대로 621 (덕진동2가)",
+"workType": "미화",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-01-29"
+},
+{
+"name": "라까사호텔광명점룸메이드(FM)",
+"hq": "윌앤비전 FM사업본부",
+"manager": "김용기",
+"address": "경기도 광명시 일직로12번길 22 (일직동)",
+"workType": "룸메이드",
+"contractType": "도급",
+"openNo": "",
+"startAt": "2024-01-26"
+}
+]

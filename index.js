@@ -715,6 +715,60 @@ async function initDB() {
     console.error('FM 담당자 반영 실패:', e);
   }
 
+  // ── 최근(2024~) 활성 사업장 가져오기(1회) ──
+  //   급여기초 엑셀에서 '종료/재직자 0명' 섹션을 제외한 최근 등록 사업장 122건(recent_sites_import_v1.json).
+  //   사업장명(공백/대소문자 무시) 기준으로 '이미 있는 곳은 건너뛰고' 빠진 것만 신규 등록.
+  //   본부는 명칭 완전일치로 hqId 연결. 주소/담당자/계약형태/업무내용 함께 저장.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_import_recent_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/recent_sites_import_v1.json'); } catch (_) { list = []; }
+      if (Array.isArray(list) && list.length) {
+        const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+        // 본부 매칭용: '윌앤비전' 접두어를 떼고 비교(예: '윌앤비전 물류사업본부' == '물류사업본부')
+        const normHq = (v) => norm(String(v == null ? '' : v).replace(/^\s*윌앤비전\s*/, ''));
+        const hqRows = (await pool.query('SELECT id, name FROM hq')).rows;
+        const hqByStrip = new Map();
+        for (const h of hqRows) { const k = normHq(h.name); if (k && !hqByStrip.has(k)) hqByStrip.set(k, h.id); }
+        // import에 등장하는 본부명 중 DB에 없는 것은 캐논 명칭으로 신규 생성(사업장이 본부 없이 뜨지 않도록)
+        const ensureHq = async (canonName) => {
+          const k = normHq(canonName);
+          if (hqByStrip.has(k)) return hqByStrip.get(k);
+          const ins = await pool.query(
+            'INSERT INTO hq (name, "ownerDept", "sortOrder", status, "createdAt") VALUES ($1, $1, 60, \'active\', NOW()::TEXT) RETURNING id',
+            [canonName]
+          );
+          hqByStrip.set(k, ins.rows[0].id);
+          console.log(`[DB] 최근 사업장 가져오기: 본부 신규 생성 — ${canonName}`);
+          return ins.rows[0].id;
+        };
+        const existing = new Set((await pool.query('SELECT name FROM sites')).rows.map(r => norm(r.name)).filter(Boolean));
+        let created = 0, skipped = 0, noHq = 0;
+        for (const s of list) {
+          const nm = String(s.name || '').trim();
+          if (!nm) continue;
+          if (existing.has(norm(nm))) { skipped++; continue; }
+          let hid = null;
+          if (s.hq) { hid = hqByStrip.get(normHq(s.hq)); if (!hid) hid = await ensureHq(s.hq); }
+          if (!hid) noHq++;
+          await pool.query(
+            `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
+              "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
+             VALUES ($1,'','',$2,'','active',$3,$4,NULL,'본사','','',$5,$6,$7,NULL)`,
+            [nm, s.manager || '', hid, s.address || '', s.openNo || '', s.workType || '', s.contractType || '']
+          );
+          existing.add(norm(nm));
+          created++;
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_import_recent_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        console.log(`[DB] 최근 사업장 가져오기 v1: 신규 ${created}건, 기존중복 ${skipped}건, 본부미매칭 ${noHq}건`);
+      }
+    }
+  } catch (e) {
+    console.error('최근 사업장 가져오기 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
