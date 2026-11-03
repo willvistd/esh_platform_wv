@@ -309,6 +309,9 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
             { label: "파견", value: sites.filter(isDispatchSite).length, color: "var(--warning)" },
             { label: "운영중", value: sites.filter(s => s["상태"] === "active").length, color: "var(--success)" },
             { label: "본부 미지정", value: sites.filter(s => !s.hqId).length, color: "var(--fg-3)" },
+            ...(window.WV_recentImport && window.WV_recentImport.created != null
+              ? [{ label: "이번 급여기초 신규 등록(2024~)", value: window.WV_recentImport.created, color: "var(--primary)" }]
+              : []),
           ].map(stat => (
             <div key={stat.label} className="card" style={{ padding: 16, textAlign: "center" }}>
               <div style={{ fontSize: 24, fontWeight: 700, color: stat.color }}>{stat.value}</div>
