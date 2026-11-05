@@ -818,6 +818,68 @@ async function initDB() {
     console.error('사업개시번호 정리 실패:', e);
   }
 
+  // ── 가져오기로 생긴 '(FM)' 등 접미사 중복 사업장 정리(1회) ──
+  //   import 명단의 접미사 이름이 '접미사 없는 기존 사업장'과 중복된 경우:
+  //   기존(접미사 없는)을 남기고 → 빈 필드만 중복본에서 채운 뒤 → 산재/담당지정을 기존으로 옮기고 → 중복본 삭제.
+  //   삭제 대상은 'import 이름과 정확히 일치 + 같은(접미사 제거) 이름의 다른 사업장이 존재'하는 경우로 한정(오삭제 방지).
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_dedupe_suffix_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/recent_sites_import_v1.json'); } catch (_) { list = []; }
+      const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+      const stripNorm = (v) => String(v == null ? '' : v)
+        .replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '')
+        .replace(/fm$/i, '').replace(/주식회사|\(주\)|㈜/g, '')
+        .replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
+      const hasSuffix = (nm) => /\(\s*fm\s*\)|\(\s*도급\s*\)|fm$/i.test(String(nm || ''));
+      const all = (await pool.query('SELECT * FROM sites')).rows;
+      const groups = new Map();
+      for (const s of all) { const k = stripNorm(s.name); if (!k) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); }
+      let deleted = 0;
+      const removedNames = [];
+      for (const it of list) {
+        const g = groups.get(stripNorm(it.name));
+        if (!g || g.length < 2) continue;
+        const dup = g.find(s => norm(s.name) === norm(it.name));   // 내가 넣은 접미사 이름
+        if (!dup) continue;
+        const others = g.filter(s => s.id !== dup.id && norm(s.name) !== norm(dup.name));
+        if (!others.length) continue;
+        const keeper = (others.filter(s => !hasSuffix(s.name)).sort((a, b) => a.id - b.id)[0]) || others.sort((a, b) => a.id - b.id)[0];
+        if (!keeper || keeper.id === dup.id) continue;
+        // 빈 필드 보강(keeper가 비어있을 때만)
+        await pool.query(
+          `UPDATE sites SET
+             address = CASE WHEN COALESCE(address,'')='' THEN $1 ELSE address END,
+             manager = CASE WHEN COALESCE(manager,'')='' THEN $2 ELSE manager END,
+             "startAt" = CASE WHEN COALESCE("startAt",'')='' THEN $3 ELSE "startAt" END,
+             "workType" = CASE WHEN COALESCE("workType",'')='' THEN $4 ELSE "workType" END,
+             "contractType" = CASE WHEN COALESCE("contractType",'')='' THEN $5 ELSE "contractType" END,
+             "openNo" = CASE WHEN COALESCE("openNo",'')='' THEN $6 ELSE "openNo" END,
+             "hqId" = COALESCE("hqId", $7)
+           WHERE id = $8`,
+          [dup.address || '', dup.manager || '', dup.startAt || '', dup.workType || '', dup.contractType || '', dup.openNo || '', dup.hqId || null, keeper.id]
+        );
+        // 산재 데이터 이관
+        await pool.query('UPDATE accidents SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(dup.id)]);
+        // 담당지정(users.siteIds CSV) 이관
+        const us = (await pool.query(`SELECT id, "siteIds" FROM users WHERE "siteIds" ~ ('(^|,)' || $1 || '(,|$)')`, [String(dup.id)])).rows;
+        for (const u of us) {
+          const ids = String(u.siteIds || '').split(',').map(x => x.trim()).filter(Boolean);
+          const next = [...new Set(ids.map(x => x === String(dup.id) ? String(keeper.id) : x))].join(',');
+          await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [next, u.id]);
+        }
+        await pool.query('DELETE FROM sites WHERE id=$1', [dup.id]);
+        removedNames.push(dup.name);
+        deleted++;
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_dedupe_suffix_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 접미사 중복 사업장 정리 v1: ${deleted}건 삭제` + (removedNames.length ? ` — ${removedNames.join(' / ')}` : ''));
+    }
+  } catch (e) {
+    console.error('접미사 중복 정리 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
