@@ -240,7 +240,6 @@ const Dashboard = ({ role, currentUser, onNav }) => {
                   {open && (
                     <div style={{ padding: "0 10px 12px 36px", display: "flex", flexWrap: "wrap", gap: 6 }}>
                       {list.map(s => {
-                        const hq = hqs.find(h => String(h.id) === String(s.hqId));
                         return (
                           <button
                             key={s.id}
@@ -249,7 +248,7 @@ const Dashboard = ({ role, currentUser, onNav }) => {
                             title="사업장 관리로 이동"
                             style={{ cursor: "pointer", fontSize: 12.5 }}
                           >
-                            {hq?.code ? `[${hq.code}] ` : ""}{s.사업장명 || s.name}
+                            {s.사업장명 || s.name}
                           </button>
                         );
                       })}
