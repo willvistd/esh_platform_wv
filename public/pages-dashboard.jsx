@@ -56,6 +56,24 @@ const Dashboard = ({ role, currentUser, onNav }) => {
     }
     return accessibleSites;
   }, [sites, hqs, currentUser, isSiteAgent, isStaff, accessibleSites]);
+  // 팀 공용계정(팀장)용 — 담당자별 담당 사업장 묶음(이름 클릭 시 펼침)
+  const [openMgrs, setOpenMgrs] = React.useState(() => new Set());
+  const toggleMgr = (name) => setOpenMgrs(prev => {
+    const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n;
+  });
+  const byManager = React.useMemo(() => {
+    const m = new Map();
+    for (const s of accessibleSites) {
+      const nm = String(s.담당자 || s.manager || "").trim() || "담당자 미지정";
+      if (!m.has(nm)) m.set(nm, []);
+      m.get(nm).push(s);
+    }
+    return [...m.entries()].sort((a, b) => {
+      if (a[0] === "담당자 미지정") return 1;
+      if (b[0] === "담당자 미지정") return -1;
+      return a[0].localeCompare(b[0], "ko");
+    });
+  }, [accessibleSites]);
   // KPI 사업장 라벨
   const siteKPILabel =
     isAdmin ? "전체 사업장"
@@ -195,6 +213,54 @@ const Dashboard = ({ role, currentUser, onNav }) => {
         </div>
         <div style={{ fontSize: 11.5, color: "var(--fg-4)" }}>산업안전보건법·령·규칙, KOSHA GUIDE, 중대재해처벌법 등 법령을 바로 검색합니다.</div>
       </section>
+
+      {/* ─── 팀 공용계정(팀장): 담당자별 담당 사업장 — 이름 클릭 시 펼침 ─── */}
+      {(isManager || isStaff) && byManager.length > 0 && (
+        <>
+          <SectionHd
+            title="👤 담당자별 담당 사업장"
+            sub={`이름을 누르면 담당 사업장이 펼쳐집니다 · 담당자 ${byManager.filter(([n]) => n !== "담당자 미지정").length}명`}
+          />
+          <div className="card" style={{ padding: 4, marginBottom: 8 }}>
+            {byManager.map(([name, list]) => {
+              const open = openMgrs.has(name);
+              return (
+                <div key={name} style={{ borderBottom: "1px solid var(--line)" }}>
+                  <button
+                    onClick={() => toggleMgr(name)}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "12px 10px", background: "none", border: "none", cursor: "pointer", textAlign: "left", color: "inherit" }}
+                  >
+                    <span style={{ display: "inline-flex", transform: open ? "rotate(90deg)" : "none", transition: "transform .15s", color: "var(--fg-3)" }}>
+                      <Icon name="chevron-right" size={14} />
+                    </span>
+                    <Icon name="user" size={14} />
+                    <span style={{ fontWeight: 700, fontSize: 14, color: name === "담당자 미지정" ? "var(--fg-3)" : "inherit" }}>{name}</span>
+                    <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--fg-3)", background: "var(--bg-sunk)", padding: "2px 9px", borderRadius: 11 }}>{list.length}곳</span>
+                  </button>
+                  {open && (
+                    <div style={{ padding: "0 10px 12px 36px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {list.map(s => {
+                        const hq = hqs.find(h => String(h.id) === String(s.hqId));
+                        return (
+                          <button
+                            key={s.id}
+                            className="chip"
+                            onClick={() => onNav({ name: "sites" })}
+                            title="사업장 관리로 이동"
+                            style={{ cursor: "pointer", fontSize: 12.5 }}
+                          >
+                            {hq?.code ? `[${hq.code}] ` : ""}{s.사업장명 || s.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* ─── 사업장 현황 위젯 (Hero 직후, 권한별 분기) ─── */}
       {/* admin/safety/manager: 본부별 카드 */}
