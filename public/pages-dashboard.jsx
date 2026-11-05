@@ -41,16 +41,18 @@ const Dashboard = ({ role, currentUser, onNav }) => {
     [hqs, currentUser]
   );
   // 본부 전체 사업장 (팀장/admin/safety가 보는 범위)
+  // 메인화면에서는 종료(상태 != active) 사업장은 제외하고 표시
+  const isActiveSite = (s) => ((s && (s.상태 || s.status)) || "active") === "active";
   const accessibleSites = React.useMemo(() => {
-    if (isSiteAgent) {
-      return window.WV_PERMS?.filterSitesByAssignment(sites, currentUser, hqs) || [];
-    }
-    return window.WV_PERMS?.filterSitesForUser(sites, currentUser, hqs) || sites;
+    const base = isSiteAgent
+      ? (window.WV_PERMS?.filterSitesByAssignment(sites, currentUser, hqs) || [])
+      : (window.WV_PERMS?.filterSitesForUser(sites, currentUser, hqs) || sites);
+    return base.filter(isActiveSite);
   }, [sites, hqs, currentUser, isSiteAgent]);
-  // KPI용 사업장 카운트 — 일반직원·현장대리인은 본인 담당만, 그 외는 본부/전사
+  // KPI용 사업장 카운트 — 일반직원·현장대리인은 본인 담당만, 그 외는 본부/전사 (종료 제외)
   const kpiSites = React.useMemo(() => {
     if (isSiteAgent || isStaff) {
-      return window.WV_PERMS?.filterSitesByAssignment(sites, currentUser, hqs) || [];
+      return (window.WV_PERMS?.filterSitesByAssignment(sites, currentUser, hqs) || []).filter(isActiveSite);
     }
     return accessibleSites;
   }, [sites, hqs, currentUser, isSiteAgent, isStaff, accessibleSites]);
