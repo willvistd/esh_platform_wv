@@ -2990,9 +2990,14 @@ async function callGemini(promptText, mimeType, base64Data) {
       }
     }
   }
-  // 과부하/지연으로 끝내 실패하면 사용자에게 명확한 안내 메시지로 변환
+  // 과부하/지연/한도로 끝내 실패하면 실제 원인(상세)을 함께 담아 반환
+  const detail = (lastErr && lastErr.message ? String(lastErr.message) : '').replace(/\s+/g, ' ').slice(0, 180);
+  const isQuota = /quota|resource.?exhausted|exhausted|daily|per.?day|billing|limit exceeded|rate limit|too many requests/i.test(detail);
   if (sawOverload || timedOut) {
-    const e = new Error('AI 서버가 일시적으로 혼잡하거나 응답이 지연됩니다. 20~30초 후 다시 시도해 주세요.');
+    const base = isQuota
+      ? 'Gemini 사용량/요청 한도를 초과한 것 같습니다. 잠시 후·다음날 다시 시도하거나 API 키 요금제를 확인하세요.'
+      : 'AI 서버가 일시적으로 혼잡하거나 응답이 지연됩니다. 20~30초 후 다시 시도해 주세요.';
+    const e = new Error(base + (detail ? ` (상세: ${detail})` : ''));
     e.overloaded = true;
     throw e;
   }
