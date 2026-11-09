@@ -392,7 +392,8 @@ const SearchSelect = ({ options = [], value, onChange, placeholder = "검색 또
           ) : list.map(o => {
             const on = String(o.id) === String(value);
             return (
-              <div key={o.id} onClick={() => { onChange && onChange(String(o.id)); setOpen(false); setQ(""); }}
+              <div key={o.id}
+                onMouseDown={(e) => { e.preventDefault(); onChange && onChange(String(o.id)); setOpen(false); setQ(""); }}
                 style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", background: on ? "var(--primary-soft, #eef3ff)" : "transparent", fontWeight: on ? 700 : 400, color: "var(--fg, #111)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                 onMouseEnter={e => { if (!on) e.currentTarget.style.background = "var(--bg-sunk, #f3f5f9)"; }}
                 onMouseLeave={e => { if (!on) e.currentTarget.style.background = "transparent"; }}>
