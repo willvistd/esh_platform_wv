@@ -298,6 +298,16 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
   const [saveNote,     setSaveNote]     = React.useState('');
   const [savingLedger, setSavingLedger] = React.useState(false);
   const [ledgerMsg,    setLedgerMsg]    = React.useState('');
+  // 사업장별로 '직접 작성한 부서(팀)'를 기억(브라우저 저장) → 같은 사업장 재선택 시 자동 채움
+  const [deptMap, setDeptMap] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('wv_msds_dept_map') || '{}') || {}; } catch (e) { return {}; }
+  });
+  // 사업장을 고르면 기억된 부서를 자동 선택
+  React.useEffect(() => {
+    if (!saveSite) return;
+    const remembered = deptMap[String(saveSite)];
+    if (remembered) setSaveDept(remembered);
+  }, [saveSite]);
 
   const fileRef = React.useRef(null);
   const cardRef = React.useRef(null);
@@ -370,6 +380,14 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
         판정결과: jr ? JSON.stringify(jr) : '',
         작성자: (currentUser && currentUser.name) || '',
       });
+      // 이 사업장에 쓴 부서(팀) 기억 → 다음에 같은 사업장 고르면 자동 채움
+      if (saveDept && saveDept.trim()) {
+        setDeptMap(prev => {
+          const next = { ...prev, [String(site.id)]: saveDept.trim() };
+          try { localStorage.setItem('wv_msds_dept_map', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+      }
       setLedgerMsg('✓ 저장 완료! 관리대장에서 확인할 수 있어요.');
       setSaveUsage(''); setSaveFreq(''); setSaveNote('');
       setTimeout(() => setShowSave(false), 1000);
@@ -1095,10 +1113,15 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                 </label>
                 <div style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
                   <div style={{ marginTop: 4, fontWeight: 400 }}>
-                    <KSelect value={saveDept} onChange={setSaveDept} style={{ fontSize: 13 }}
-                      options={[{ value: "", label: "선택 안 함" }, ...MSDS_DEPTS]} />
+                    <input className="field-input" list="msds-save-dept-list" value={saveDept}
+                      onChange={e => setSaveDept(e.target.value)}
+                      placeholder="예: 미화팀, 시설팀 (직접 입력 가능)"
+                      style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
+                    <datalist id="msds-save-dept-list">
+                      {[...new Set([...MSDS_DEPTS, ...Object.values(deptMap)])].filter(Boolean).map(d => <option key={d} value={d} />)}
+                    </datalist>
                   </div>
-                  <span style={{ fontSize: 11, color: 'var(--fg-3, #667085)', fontWeight: 400 }}>팀을 지정하면 관리대장에서 팀별로 구분·출력할 수 있어요.</span>
+                  <span style={{ fontSize: 11, color: 'var(--fg-3, #667085)', fontWeight: 400 }}>원하는 팀명을 직접 적어도 됩니다. 한번 쓰면 이 사업장은 다음에 자동으로 채워져요.</span>
                 </div>
                 <label style={{ fontSize: 12.5, fontWeight: 700 }}>사용용도
                   <input className="field-input" value={saveUsage} onChange={e => setSaveUsage(e.target.value)} placeholder="예: 바닥 전용 세척제"
@@ -1573,8 +1596,13 @@ const MsdsLedgerView = ({ onNav, currentUser, role }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div style={{ ...lb, gridColumn: '1 / -1' }}>부서(팀)
                   <div style={{ marginTop: 4, fontWeight: 400 }}>
-                    <KSelect value={editForm['부서'] || ''} onChange={v => ef('부서', v)} style={{ fontSize: 13 }}
-                      options={[{ value: "", label: "미분류" }, ...MSDS_DEPTS]} />
+                    <input className="field-input" list="msds-edit-dept-list" value={editForm['부서'] || ''}
+                      onChange={e => ef('부서', e.target.value)}
+                      placeholder="예: 미화팀, 시설팀 (직접 입력 가능 · 비우면 미분류)"
+                      style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--line, #d5dce6)', borderRadius: 7, fontSize: 13, boxSizing: 'border-box' }} />
+                    <datalist id="msds-edit-dept-list">
+                      {MSDS_DEPTS.map(d => <option key={d} value={d} />)}
+                    </datalist>
                   </div>
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>{field('제품명', '예: 무광 마감제')}</div>
