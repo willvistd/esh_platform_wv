@@ -171,6 +171,24 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   res.json({ name: originalName, url: `/uploads/${req.file.filename}`, size: req.file.size });
 });
 
+// ── 큰 파일 직접 업로드용 서명 URL 발급 ──
+//   Vercel 서버리스는 요청 본문이 ~4.5MB로 제한되므로, 큰 파일은 이 URL로 브라우저가
+//   Supabase 스토리지에 직접 PUT 업로드한다(서버를 거치지 않아 용량 제한 우회).
+app.post('/api/upload-url', async (req, res) => {
+  if (!supabase) return res.status(400).json({ error: '스토리지(Supabase)가 설정되지 않아 직접 업로드를 쓸 수 없습니다.' });
+  try {
+    const rawExt = String((req.body && req.body.ext) || '').replace(/[^.a-zA-Z0-9]/g, '').slice(0, 12);
+    const ext = rawExt && rawExt.startsWith('.') ? rawExt : (rawExt ? '.' + rawExt : '');
+    const filename = Date.now() + '-' + Math.round(Math.random() * 1e9) + ext;
+    const { data, error } = await supabase.storage.from('uploads').createSignedUploadUrl(filename);
+    if (error) return res.status(500).json({ error: error.message });
+    const { data: pub } = supabase.storage.from('uploads').getPublicUrl(filename);
+    res.json({ path: filename, token: data.token, signedUrl: data.signedUrl, publicUrl: pub.publicUrl });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const pool = new Pool({
   host:     process.env.PGHOST     || 'localhost',
   port:     parseInt(process.env.PGPORT || '5432'),

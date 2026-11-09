@@ -628,15 +628,14 @@ const FileAttacher = ({ files, onFilesChange }) => {
     setUploadError("");
     try {
       const results = await Promise.all(arr.map(async (file) => {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/upload", { method: "POST", body: fd });
-        if (!res.ok) throw new Error("업로드 실패");
-        return await res.json();
+        // 큰 파일은 Supabase 직접 업로드(Vercel 4.5MB 제한 우회) — WV_API.uploadFile이 자동 분기
+        const r = await window.WV_API.uploadFile(file);
+        if (!r || r.error || !r.url) throw new Error((r && r.error) || "업로드 실패");
+        return r;
       }));
       onFilesChange([...files, ...results.map(r => ({ name: r.name, url: r.url }))]);
     } catch(e) {
-      setUploadError("업로드 실패. 파일 크기(50MB 이하)를 확인하세요.");
+      setUploadError(e.message || "업로드 실패. 파일 크기와 네트워크를 확인하세요.");
     }
     setUploading(false);
   };
