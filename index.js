@@ -898,6 +898,44 @@ async function initDB() {
     console.error('접미사 중복 정리 실패:', e);
   }
 
+  // ── 씨제이프레시웨이인천공항 (HR) 중복 1건 정리(1회) ──
+  //   '씨제이프레시웨이인천공항(HR)'(내가 넣은 것)을 '씨제이프레시웨이인천공항'(기존)에 합치고 삭제.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_dedupe_cj_incheon_v1'");
+    if (done.rowCount === 0) {
+      const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+      const all = (await pool.query('SELECT * FROM sites')).rows;
+      const dup = all.find(s => norm(s.name) === norm('씨제이프레시웨이인천공항(HR)'));
+      const keeper = all.find(s => norm(s.name) === norm('씨제이프레시웨이인천공항'));
+      if (dup && keeper && dup.id !== keeper.id) {
+        await pool.query(
+          `UPDATE sites SET
+             address = CASE WHEN COALESCE(address,'')='' THEN $1 ELSE address END,
+             manager = CASE WHEN COALESCE(manager,'')='' THEN $2 ELSE manager END,
+             "startAt" = CASE WHEN COALESCE("startAt",'')='' THEN $3 ELSE "startAt" END,
+             "workType" = CASE WHEN COALESCE("workType",'')='' THEN $4 ELSE "workType" END,
+             "contractType" = CASE WHEN COALESCE("contractType",'')='' THEN $5 ELSE "contractType" END,
+             "openNo" = CASE WHEN COALESCE("openNo",'')='' THEN $6 ELSE "openNo" END,
+             "hqId" = COALESCE("hqId", $7)
+           WHERE id = $8`,
+          [dup.address || '', dup.manager || '', dup.startAt || '', dup.workType || '', dup.contractType || '', dup.openNo || '', dup.hqId || null, keeper.id]
+        );
+        await pool.query('UPDATE accidents SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(dup.id)]);
+        const us = (await pool.query(`SELECT id, "siteIds" FROM users WHERE "siteIds" ~ ('(^|,)' || $1 || '(,|$)')`, [String(dup.id)])).rows;
+        for (const u of us) {
+          const ids = String(u.siteIds || '').split(',').map(x => x.trim()).filter(Boolean);
+          const next = [...new Set(ids.map(x => x === String(dup.id) ? String(keeper.id) : x))].join(',');
+          await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [next, u.id]);
+        }
+        await pool.query('DELETE FROM sites WHERE id=$1', [dup.id]);
+        console.log('[DB] CJ 인천공항 중복 정리: (HR) 접미사본 삭제, 기존으로 병합');
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_dedupe_cj_incheon_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+    }
+  } catch (e) {
+    console.error('CJ 인천공항 중복 정리 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
