@@ -406,8 +406,35 @@ const api = {
     const res = await fetch(`${ENDPOINTS.workerFeedback}/${id}`, { method: "DELETE" });
     return await res.json();
   },
-  // ── 파일 업로드 (multer) ──
+  // ── 파일 업로드 ──
+  //   작은 파일은 서버(/upload) 경유, 큰 파일(>4MB)은 Vercel 4.5MB 제한을 피해
+  //   Supabase로 브라우저가 직접 PUT 업로드(서명 URL).
   async uploadFile(fileObj) {
+    const LARGE = 4 * 1024 * 1024; // 4MB
+    if (fileObj && fileObj.size > LARGE) {
+      try {
+        const nm = fileObj.name || "";
+        const ext = nm.includes(".") ? nm.slice(nm.lastIndexOf(".")) : "";
+        const sres = await fetch(API_BASE + "/upload-url", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ext }),
+        });
+        const sdata = await sres.json();
+        if (sres.ok && sdata && sdata.signedUrl) {
+          const put = await fetch(sdata.signedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": fileObj.type || "application/octet-stream", "x-upsert": "false" },
+            body: fileObj,
+          });
+          if (put.ok) return { name: nm, url: sdata.publicUrl, size: fileObj.size };
+          let msg = ""; try { msg = (await put.json()).message || ""; } catch (_) {}
+          return { error: msg || `직접 업로드 실패(HTTP ${put.status}). 파일이 너무 크거나 스토리지 한도를 초과했을 수 있습니다.` };
+        }
+        return { error: (sdata && sdata.error) || "업로드 URL 발급 실패" };
+      } catch (e) {
+        return { error: "직접 업로드 중 오류: " + (e.message || e) };
+      }
+    }
     const fd = new FormData();
     fd.append("file", fileObj);
     const res = await fetch(API_BASE + "/upload", { method: "POST", body: fd });
