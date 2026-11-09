@@ -1104,13 +1104,13 @@ const MsdsGeneratorView = ({ onNav, currentUser, role }) => {
                 <b>{form.productName || '(제품명 미입력)'}</b> 을(를) 선택한 사업장의 관리대장에 추가합니다.
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label style={{ fontSize: 12.5, fontWeight: 700 }}>사업장 *
-                  <div style={{ marginTop: 4 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700 }}>사업장 *
+                  <div style={{ marginTop: 4, fontWeight: 400 }}>
                     <SearchSelect options={allowedSites} value={saveSite} onChange={setSaveSite}
                       placeholder="사업장명 입력해 검색…" emptyText="일치하는 사업장이 없습니다" />
                   </div>
                   {allowedSites.length === 0 && <span style={{ fontSize: 11, color: '#c0392b', fontWeight: 400 }}>담당 사업장이 없습니다. 관리자에게 문의하세요.</span>}
-                </label>
+                </div>
                 <div style={{ fontSize: 12.5, fontWeight: 700 }}>부서(팀)
                   <div style={{ marginTop: 4, fontWeight: 400 }}>
                     <input className="field-input" list="msds-save-dept-list" value={saveDept}
