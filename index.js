@@ -2950,6 +2950,8 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
         } catch (e) { reject(new Error(e.message)); }
       });
     });
+    // 단일 요청이 멈춰 함수 전체가 Vercel 60초 한도에 걸려 죽는 것 방지(= 프런트 '서버 연결 오류')
+    req.setTimeout(32000, () => { req.destroy(new Error('Gemini 응답 지연(timeout)')); });
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -2959,10 +2961,14 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
 // "high demand/overload"(503 UNAVAILABLE)는 구글 서버가 잠깐 붐비는 일시 현상 →
 // 모델별로 최대 3회, 지수 백오프(2s→4s)로 재시도하고, 그래도 안 되면 다음 모델로 폴백.
 async function callGemini(promptText, mimeType, base64Data) {
-  let lastErr, sawOverload = false;
-  const MAX_ATTEMPTS = 5;
+  let lastErr, sawOverload = false, timedOut = false;
+  const MAX_ATTEMPTS = 3;
+  // Vercel 60초 한도 전에 반드시 '응답'을 돌려주기 위한 전체 예산(초과하면 중단하고 안내 메시지 반환)
+  const DEADLINE = Date.now() + 50000;
+  outer:
   for (const model of GEMINI_MODELS) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      if (Date.now() > DEADLINE) { timedOut = true; break outer; }
       try {
         console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1})`);
         const r = await callGeminiModel(promptText, mimeType, base64Data, model);
@@ -2970,21 +2976,23 @@ async function callGemini(promptText, mimeType, base64Data) {
         return r;
       } catch (err) {
         lastErr = err;
+        if (/timeout/i.test(err.message)) timedOut = true;
         const overload = /overload|high demand|429|503|quota|unavailable/i.test(err.message);
-        const retryable = overload || /rate|500/i.test(err.message);
+        const retryable = overload || /rate|500|timeout/i.test(err.message);
         if (overload) sawOverload = true;
         console.warn(`[Gemini] 실패 (${model}): ${err.message.substring(0, 80)}`);
-        if (retryable && attempt < MAX_ATTEMPTS - 1) {
-          await new Promise(r => setTimeout(r, Math.min(1500 * (attempt + 1), 8000))); // 1.5→3→4.5→6s
+        const sleepMs = Math.min(1200 * (attempt + 1), 4000); // 1.2→2.4→3.6s
+        if (retryable && attempt < MAX_ATTEMPTS - 1 && (Date.now() + sleepMs) < DEADLINE) {
+          await new Promise(r => setTimeout(r, sleepMs));
         } else {
-          break; // 재시도 불가 또는 마지막 시도 → 다음 모델로 폴백
+          break; // 재시도 불가·마지막 시도·예산 초과 → 다음 모델로 폴백
         }
       }
     }
   }
-  // 과부하로 끝내 실패하면 사용자에게 명확한 안내 메시지로 변환
-  if (sawOverload) {
-    const e = new Error('AI 서버가 일시적으로 혼잡합니다. 20~30초 후 다시 시도해 주세요.');
+  // 과부하/지연으로 끝내 실패하면 사용자에게 명확한 안내 메시지로 변환
+  if (sawOverload || timedOut) {
+    const e = new Error('AI 서버가 일시적으로 혼잡하거나 응답이 지연됩니다. 20~30초 후 다시 시도해 주세요.');
     e.overloaded = true;
     throw e;
   }
