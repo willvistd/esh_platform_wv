@@ -1537,6 +1537,42 @@ const sendOtpEmail = async (to, code) => {
   });
   if (!res.ok) { const t = await res.text().catch(() => ''); throw new Error('메일 발송 실패: ' + res.status + ' ' + t.slice(0, 200)); }
 };
+// ── 이상 로그인(평소와 다른 IP) 감지 시 관리자 전원에게 즉시 알림 메일 ──
+//   메일 설정(RESEND_API_KEY+MAIL_FROM) 없으면 자동 skip. 실패해도 로그인에는 영향 없음.
+const sendAnomalyAlert = async (u, ip, userAgent, atIso) => {
+  if (!otpEnabled()) return;
+  try {
+    const admins = (await pool.query(
+      "SELECT email FROM users WHERE role IN ('admin','safety') AND email IS NOT NULL AND email <> ''"
+    )).rows.map(r => String(r.email).trim()).filter(Boolean);
+    const recipients = [...new Set(admins)];
+    if (!recipients.length) return;
+    let when = atIso;
+    try { when = new Date(atIso).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' (KST)'; } catch (e) {}
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.MAIL_FROM,
+        to: recipients,
+        subject: `[보안 알림] 이상 로그인 감지 — ${u.name || u.email || '사용자'}`,
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px">
+          <h2 style="margin:0 0 8px;color:#c0392b">⚠️ 이상 로그인 감지</h2>
+          <p style="color:#555;font-size:14px;margin:0 0 16px">평소와 다른 IP에서 로그인이 발생했습니다. 본인(또는 해당 직원)의 정상 접속인지 확인해 주세요.</p>
+          <table style="width:100%;font-size:13.5px;border-collapse:collapse">
+            <tr><td style="padding:6px 8px;color:#888;width:84px">계정</td><td style="padding:6px 8px;font-weight:600">${esc(u.name || '')} ${u.email ? '(' + esc(u.email) + ')' : ''}</td></tr>
+            <tr><td style="padding:6px 8px;color:#888">시각</td><td style="padding:6px 8px">${esc(when)}</td></tr>
+            <tr><td style="padding:6px 8px;color:#888">IP</td><td style="padding:6px 8px">${esc(ip || '알 수 없음')}</td></tr>
+            <tr><td style="padding:6px 8px;color:#888">기기</td><td style="padding:6px 8px;word-break:break-all">${esc(userAgent || '알 수 없음')}</td></tr>
+          </table>
+          <p style="color:#888;font-size:12px;margin:16px 0 0">본인/정상 접속이면 무시하세요. 모르는 접속이면 관리 화면 → 접속 로그(이상 접속만 보기)에서 확인하고, 해당 계정의 비밀번호를 변경하세요.</p>
+        </div>`,
+      }),
+    });
+    console.log(`[보안] 이상 로그인 알림 발송: ${u.email || u.id} → 관리자 ${recipients.length}명`);
+  } catch (e) { console.error('이상 로그인 알림 실패:', e.message); }
+};
 // 로그인 확정(세션·이력·쿠키) — 일반 로그인/OTP 통과 공통
 const finalizeLogin = async (req, res, u) => {
   const nowIso = new Date().toISOString();
@@ -1553,6 +1589,8 @@ const finalizeLogin = async (req, res, u) => {
   const sid = crypto.randomBytes(16).toString('hex');
   try { await pool.query('UPDATE users SET "lastLoginAt"=$1, "lastLoginIp"=$2, "sessionToken"=$3 WHERE id=$4', [nowIso, clientIp, sid, u.id]); } catch (e) {}
   try { await pool.query('INSERT INTO login_log ("userId", name, email, ip, "userAgent", anomaly, at) VALUES ($1,$2,$3,$4,$5,$6,$7)', [u.id, u.name || '', u.email || '', clientIp, userAgent, anomaly, nowIso]); } catch (e) {}
+  // 이상 로그인이면 관리자에게 즉시 메일 알림(서버리스에서 응답 후 함수가 멈춰 누락되지 않도록 응답 전에 await)
+  if (anomaly) { try { await sendAnomalyAlert(u, clientIp, userAgent, nowIso); } catch (e) {} }
   u.lastLoginAt = nowIso; u.lastLoginIp = clientIp;
   res.cookie('wv_sess', signSession(u, sid), {
     httpOnly: true, sameSite: 'lax',
