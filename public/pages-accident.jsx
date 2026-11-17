@@ -933,7 +933,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
             })}
           </svg>
           <div style={{ width: 300, flexShrink: 0, border: "1px solid var(--line)", borderRadius: 10, background: "var(--bg-subtle, #fcfcfd)", padding: "12px 14px", display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{activeMonth ? activeMonth.label : "-"} <span style={{ color: "var(--primary)" }}>· 재해 {activeMonth ? activeMonth.items.length : 0}건</span></div>
+            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>{activeMonth ? (activeMonth.ym.slice(0, 4) + "년 " + parseInt(activeMonth.ym.slice(5, 7)) + "월") : "-"} <span style={{ color: "var(--primary)" }}>· 재해 {activeMonth ? activeMonth.items.length : 0}건</span></div>
             <div style={{ overflow: "auto", flex: 1 }}>
               {!activeMonth || activeMonth.items.length === 0 ? (
                 <div style={{ color: "var(--fg-4)", fontSize: 12.5, margin: "auto 0", textAlign: "center" }}>이 달은 재해가 없습니다.</div>
