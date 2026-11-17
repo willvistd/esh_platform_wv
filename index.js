@@ -967,6 +967,55 @@ async function initDB() {
     console.error('CJ 인천공항 중복 정리 실패:', e);
   }
 
+  // ── 급여기초 마스터에서 업무내용·계약형태·주소 '빈 칸만' 채우기(1회) ──
+  //   플랫폼 사업장명 기준으로 매칭(접미사 (FM)/(도급)은 떼고 비교), 현재 비어있는 필드만 채움.
+  //   기존 입력값은 절대 덮어쓰지 않음. 신규 사업장은 만들지 않음.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_fields_fill_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/site_fields_fill_v1.json'); } catch (_) { list = []; }
+      if (Array.isArray(list) && list.length) {
+        const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+        const strip = (v) => String(v == null ? '' : v)
+          .replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '').replace(/fm$/i, '')
+          .replace(/주식회사|\(주\)|㈜/g, '').replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
+        const byNorm = new Map(), byStrip = new Map();
+        for (const r of list) {
+          if (!byNorm.has(norm(r.name))) byNorm.set(norm(r.name), r);
+          if (!byStrip.has(strip(r.name))) byStrip.set(strip(r.name), r);
+        }
+        const sites = (await pool.query('SELECT id, name, "workType", "contractType", address FROM sites')).rows;
+        let filled = 0;
+        for (const s of sites) {
+          const blankW = !String(s.workType || '').trim();
+          const blankC = !String(s.contractType || '').trim();
+          const blankA = !String(s.address || '').trim();
+          if (!blankW && !blankC && !blankA) continue;
+          const src = byNorm.get(norm(s.name)) || byStrip.get(strip(s.name));
+          if (!src) continue;
+          const w = blankW && src.workType ? src.workType : null;
+          const c = blankC && src.contractType ? src.contractType : null;
+          const a = blankA && src.address ? src.address : null;
+          if (w == null && c == null && a == null) continue;
+          await pool.query(
+            `UPDATE sites SET
+               "workType" = COALESCE($1, "workType"),
+               "contractType" = COALESCE($2, "contractType"),
+               address = COALESCE($3, address)
+             WHERE id = $4`,
+            [w, c, a, s.id]
+          );
+          filled++;
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_fields_fill_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        if (filled) console.log(`[DB] 사업장 필드 보강(업무내용·계약형태·주소): ${filled}건`);
+      }
+    }
+  } catch (e) {
+    console.error('사업장 필드 보강 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
@@ -2539,8 +2588,7 @@ app.post('/api/sites/bulk', async (req, res) => {
       if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
       const key = norm(name);
       if (existing.has(key)) {
-        // 기존 사업장: (1) 본부 갱신 옵션 시 hqId 갱신, (2) 사업개시번호·관리번호는 업로드에 값이 있으면 채움.
-        //   그 외 값은 보존(빈 칸은 기존 값 유지).
+        // 기존 사업장: 본부 갱신 옵션 시 hqId 갱신 + 업로드에 '값이 있는' 필드만 갱신(빈 칸은 기존 값 보존).
         const ids = existingMap.get(key) || [];
         let touched = false;
         try {
@@ -2548,14 +2596,13 @@ app.post('/api/sites/bulk', async (req, res) => {
             for (const id of ids) await pool.query('UPDATE sites SET "hqId" = $1 WHERE id = $2', [r.hqId, id]);
             touched = true;
           }
-          const openNo = String(r.openNo || '').trim();
-          if (openNo) {
-            for (const id of ids) await pool.query('UPDATE sites SET "openNo" = $1 WHERE id = $2', [openNo, id]);
-            touched = true;
-          }
-          const mgmtNo = String(r.mgmtNo || '').trim();
-          if (mgmtNo) {
-            for (const id of ids) await pool.query('UPDATE sites SET "mgmtNo" = $1 WHERE id = $2', [mgmtNo, id]);
+          // 컬럼명은 코드에 고정(사용자 입력 아님). 업로드 값이 비어있지 않은 것만 반영.
+          const fields = [['openNo', r.openNo], ['mgmtNo', r.mgmtNo], ['workType', r.workType],
+                          ['contractType', r.contractType], ['address', r.address], ['startAt', r.startAt]];
+          const sets = [], vals = [];
+          for (const [col, v] of fields) { const t = String(v == null ? '' : v).trim(); if (t) { vals.push(t); sets.push(`"${col}" = $${vals.length}`); } }
+          if (sets.length) {
+            for (const id of ids) await pool.query(`UPDATE sites SET ${sets.join(', ')} WHERE id = $${vals.length + 1}`, [...vals, id]);
             touched = true;
           }
           if (touched) updated++; else skipped++;
