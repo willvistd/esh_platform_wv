@@ -211,13 +211,14 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
         사업장명: s.사업장명 || s.name || "",
         담당자: s.담당자 || "",
         계약형태: s.계약형태 || "",
+        사업개시번호: s.사업개시번호 || s.openNo || "",
         지역: s.지역 || regionFromAddress(s.주소) || "",
         전화번호: s.전화번호 || "",
         상태: statusText(s.상태),
         주소: s.주소 || "",
       }));
       const ws = XLSX.utils.json_to_sheet(rowsOut);
-      ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 40 }];
+      ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 40 }];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "사업장담당자매칭");
       const d = new Date();
