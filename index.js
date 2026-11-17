@@ -1016,6 +1016,55 @@ async function initDB() {
     console.error('사업장 필드 보강 실패:', e);
   }
 
+  // ── 급여기초 마스터의 활성 사업장 중 '플랫폼에 없는 것만' 신규 추가(1회) ──
+  //   사업장명으로 비교하되 (FM)/(도급) 접미사는 떼고 대조 → 이미 있는 건 건너뜀(중복 방지).
+  //   본부·업무내용·계약형태·주소·계약시작일·담당자 함께 저장.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_add_active_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/site_add_active_v1.json'); } catch (_) { list = []; }
+      if (Array.isArray(list) && list.length) {
+        const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+        const strip = (v) => String(v == null ? '' : v)
+          .replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '').replace(/fm$/i, '')
+          .replace(/주식회사|\(주\)|㈜/g, '').replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
+        const normHq = (v) => norm(String(v == null ? '' : v).replace(/^\s*윌앤비전\s*/, ''));
+        const hqRows = (await pool.query('SELECT id, name FROM hq')).rows;
+        const hqByStrip = new Map();
+        for (const h of hqRows) { const k = normHq(h.name); if (k && !hqByStrip.has(k)) hqByStrip.set(k, h.id); }
+        const ensureHq = async (canon) => {
+          const k = normHq(canon); if (hqByStrip.has(k)) return hqByStrip.get(k);
+          const ins = await pool.query('INSERT INTO hq (name, "ownerDept", "sortOrder", status, "createdAt") VALUES ($1,$1,60,\'active\',NOW()::TEXT) RETURNING id', [canon]);
+          hqByStrip.set(k, ins.rows[0].id); return ins.rows[0].id;
+        };
+        const existing = new Set((await pool.query('SELECT name FROM sites')).rows.map(r => strip(r.name)).filter(Boolean));
+        let created = 0;
+        for (const s of list) {
+          const nm = String(s.name || '').trim();
+          if (!nm) continue;
+          if (!s.hq) continue;             // 본부 미매칭(법인 본사행 등)은 사업장으로 추가하지 않음
+          const k = strip(nm);
+          if (existing.has(k)) continue;   // 접미사 떼고 이미 있으면 건너뜀(중복 방지)
+          let hid = null;
+          if (s.hq) hid = hqByStrip.get(normHq(s.hq)) || await ensureHq(s.hq);
+          await pool.query(
+            `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
+              "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
+             VALUES ($1,'','',$2,'','active',$3,$4,NULL,'본사','','','',$5,$6,$7)`,
+            [nm, s.manager || '', hid, s.address || '', s.workType || '', s.contractType || '', s.startAt || null]
+          );
+          existing.add(k);
+          created++;
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_add_active_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        console.log(`[DB] 활성 사업장 신규 추가: ${created}건 (명단 ${list.length} 중 기존 제외)`);
+      }
+    }
+  } catch (e) {
+    console.error('활성 사업장 신규 추가 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
