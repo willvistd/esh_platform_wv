@@ -2735,15 +2735,24 @@ app.post('/api/sites/bulk', async (req, res) => {
     if (rows.length > 2000) return res.status(400).json({ error: '한 번에 최대 2000행까지 등록할 수 있습니다.' });
 
     const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+    // 접미사 차이((주)/(FM)/(도급)/(NN일) 등)로 인한 중복 생성을 막는 관대한 정규화
+    const strip = (v) => String(v == null ? '' : v)
+      .replace(/\(\s*\d{1,2}\s*일\s*\)/g, '').replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '')
+      .replace(/주식회사|\(주\)|㈜/g, '').replace(/fm$/i, '')
+      .replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
 
-    // 기존 사업장명 → id 목록 (중복 방지 + 본부 갱신용)
-    const existingMap = new Map();
+    // 기존 사업장명 → id 목록 (중복 방지 + 본부 갱신용). 정확 매칭과 접미사 제거 매칭 둘 다 보관.
+    const existingMap = new Map();     // 정확 norm → ids
+    const existingStripMap = new Map(); // 접미사 제거 → ids
     for (const row of (await pool.query('SELECT id, name FROM sites')).rows) {
-      const k = norm(row.name); if (!k) continue;
-      if (!existingMap.has(k)) existingMap.set(k, []);
-      existingMap.get(k).push(row.id);
+      const k = norm(row.name); if (k) { if (!existingMap.has(k)) existingMap.set(k, []); existingMap.get(k).push(row.id); }
+      const sk = strip(row.name); if (sk) { if (!existingStripMap.has(sk)) existingStripMap.set(sk, []); existingStripMap.get(sk).push(row.id); }
     }
-    const existing = new Set(existingMap.keys());
+    const matchExisting = (name) => {
+      const ids = existingMap.get(norm(name)); if (ids && ids.length) return ids;
+      const sids = existingStripMap.get(strip(name)); if (sids && sids.length) return sids;
+      return null;
+    };
 
     let created = 0, skipped = 0, updated = 0;
     const errors = [];
@@ -2770,10 +2779,9 @@ app.post('/api/sites/bulk', async (req, res) => {
         continue;
       }
       if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
-      const key = norm(name);
-      if (existing.has(key)) {
-        // 기존 사업장: 본부 갱신 옵션 시 hqId 갱신 + 업로드에 '값이 있는' 필드만 갱신(빈 칸은 기존 값 보존).
-        const ids = existingMap.get(key) || [];
+      const ids = matchExisting(name);
+      if (ids) {
+        // 기존 사업장(정확 또는 접미사 제거 매칭): 본부 갱신 옵션 시 hqId 갱신 + 업로드에 '값이 있는' 필드만 갱신.
         let touched = false;
         try {
           if (updateExisting && r.hqId) {
@@ -2803,7 +2811,10 @@ app.post('/api/sites/bulk', async (req, res) => {
            r.orgType || '본사', r.affiliateName || '', r.mgmtNo || '', r.openNo || '',
            r.workType || '', r.contractType || '', r.startAt || null]
         );
-        existing.add(key);
+        // 같은 배치 내 뒤 행이 또 추가하지 않도록 등록
+        const nk = norm(name), sk = strip(name);
+        if (nk) { if (!existingMap.has(nk)) existingMap.set(nk, []); existingMap.get(nk).push(-1); }
+        if (sk) { if (!existingStripMap.has(sk)) existingStripMap.set(sk, []); existingStripMap.get(sk).push(-1); }
         created++; createdNames.push(name);
       } catch (e) {
         errors.push({ row: i + 1, name, reason: e.message });
