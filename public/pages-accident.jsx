@@ -904,8 +904,8 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div><h3 style={h3}>월별 재해 건수 추이</h3><p style={cs}>막대/점을 클릭하면 해당 월 재해 목록이 오른쪽에 표시됩니다 (목록에서 클릭하면 상세)</p></div>
-          <div style={{ display: "flex", gap: 6 }}>
-            {[["12", "최근 12개월"], ["24", "최근 24개월"], ["all", "전체"]].map(([r, lbl]) => (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[["12", "최근 12개월"], ["24", "최근 24개월"], ["36", "최근 36개월"], ["all", "전체"]].map(([r, lbl]) => (
               <button key={r} onClick={() => { setRange(r); setHover(null); }}
                 style={{ fontSize: 12, fontWeight: 700, padding: "6px 13px", borderRadius: 999, cursor: "pointer",
                   border: "1px solid " + (range === r ? "var(--primary)" : "var(--line)"), background: range === r ? "var(--primary)" : "#fff", color: range === r ? "#fff" : "var(--fg-2)" }}>{lbl}</button>
