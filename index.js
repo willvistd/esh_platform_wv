@@ -1065,6 +1065,50 @@ async function initDB() {
     console.error('활성 사업장 신규 추가 실패:', e);
   }
 
+  // ── site_add_active_v1 롤백: 접미사 차이로 중복 추가된 사업장 제거(1회) ──
+  //   '(주)/주식회사/(FM)/(도급)/(NN일)' 접미사·수식까지 떼어 비교했을 때 기존 사업장과 겹치는
+  //   '추가 명단(site_add_active_v1.json)' 사업장을 삭제. 원본(낮은 id)은 남기고, 산재·담당지정 이관.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_add_rollback_v1'");
+    if (done.rowCount === 0) {
+      let list = [];
+      try { list = require('./data/site_add_active_v1.json'); } catch (_) { list = []; }
+      const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+      // 정리용 정규화: (NN일)/(주)/주식회사/(FM)/(도급) 제거 + 괄호문자 제거(안쪽 글자·지역명은 보존)
+      const cnorm = (v) => String(v == null ? '' : v)
+        .replace(/\(\s*\d{1,2}\s*일\s*\)/g, '').replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '')
+        .replace(/주식회사|\(주\)|㈜/g, '').replace(/fm$/i, '')
+        .replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
+      const addNames = new Set(list.map(x => norm(x.name)).filter(Boolean));
+      const all = (await pool.query('SELECT id, name FROM sites')).rows;
+      const groups = new Map();
+      for (const s of all) { const k = cnorm(s.name); if (!k) continue; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); }
+      let deleted = 0;
+      const removed = [];
+      for (const [, arr] of groups) {
+        if (arr.length < 2) continue;                 // 겹치는 것만
+        arr.sort((a, b) => a.id - b.id);
+        const keeper = arr[0];                         // 가장 오래된(낮은 id) 원본 유지
+        for (const dup of arr.slice(1)) {
+          if (!addNames.has(norm(dup.name))) continue; // 이번에 추가한 것만 삭제(원본 보호)
+          await pool.query('UPDATE accidents SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(dup.id)]);
+          const us = (await pool.query(`SELECT id, "siteIds" FROM users WHERE "siteIds" ~ ('(^|,)' || $1 || '(,|$)')`, [String(dup.id)])).rows;
+          for (const u of us) {
+            const ids = String(u.siteIds || '').split(',').map(x => x.trim()).filter(Boolean);
+            const next = [...new Set(ids.map(x => x === String(dup.id) ? String(keeper.id) : x))].join(',');
+            await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [next, u.id]);
+          }
+          await pool.query('DELETE FROM sites WHERE id=$1', [dup.id]);
+          removed.push(dup.name); deleted++;
+        }
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_add_rollback_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 중복 추가 롤백: ${deleted}건 삭제` + (removed.length ? ` — ${removed.slice(0, 30).join(' / ')}${removed.length > 30 ? ' …' : ''}` : ''));
+    }
+  } catch (e) {
+    console.error('중복 추가 롤백 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
