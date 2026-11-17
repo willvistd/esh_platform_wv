@@ -1220,6 +1220,8 @@ const SiteFormModal = ({ title, initialData, hqs = [], users = [], sites = [], d
 const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) => {
   const [fileName, setFileName] = React.useState("");
   const [rows, setRows] = React.useState([]);       // 매핑된 API 행 + _meta
+  const [pasteText, setPasteText] = React.useState("");
+  const [showPaste, setShowPaste] = React.useState(false);
   const [error, setError] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [result, setResult] = React.useState(null);
@@ -1251,6 +1253,69 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
     () => new Set(existingSites.map(s => norm(s.사업장명 || s.name)).filter(Boolean)),
     [existingSites]
   );
+  // 접미사((주)/(FM)/(도급)/(NN일)) 차이로 인한 중복을 잡기 위한 관대한 정규화 + 기존 집합
+  const stripNorm = (v) => String(v == null ? "" : v)
+    .replace(/\(\s*\d{1,2}\s*일\s*\)/g, "").replace(/\(\s*fm\s*\)/gi, "").replace(/\(\s*도급\s*\)/g, "")
+    .replace(/주식회사|\(주\)|㈜/g, "").replace(/fm$/i, "")
+    .replace(/[()\[\]{}]/g, "").replace(/[\s\-·.,"'’_]/g, "").toLowerCase();
+  const existingStripSet = React.useMemo(
+    () => new Set(existingSites.map(s => stripNorm(s.사업장명 || s.name)).filter(Boolean)),
+    [existingSites]
+  );
+
+  // 파일/붙여넣기 공통 행 생성기
+  const buildRow = (f, seen) => {
+    const name = String(f.name || "").trim();
+    const hqName = f.hqName || "";
+    const hq = resolveHqId(hqName);
+    const status = /종료|비활|inactive/.test(String(f.status || "")) ? "inactive" : "active";
+    const dupInFile = seen.has(norm(name)); if (name) seen.add(norm(name));
+    return {
+      id: f.id != null ? f.id : null,
+      name, manager: f.manager || "", hqId: hq.id,
+      orgType: f.orgType || "본사", affiliateName: f.affiliateName || "",
+      contractType: f.contractType || "", workType: f.workType || "", address: f.address || "",
+      mgmtNo: f.mgmtNo || "", openNo: f.openNo || "", startAt: f.startAt || "",
+      region: f.region || regionFromAddress(f.address || ""), client: f.client || "", phone: f.phone || "",
+      status,
+      _hqName: hqName, _hqMatched: hq.matched, _hqResolved: hq.name || "",
+      _dup: !!name && (existingNameSet.has(norm(name)) || existingStripSet.has(stripNorm(name)) || dupInFile),
+      _noName: !name,
+    };
+  };
+
+  // 붙여넣기(엑셀 복사 TSV/CSV) → 관련 열만 자동 인식해 행 생성(나머지 열은 무시)
+  const parsePaste = (text) => {
+    setError(""); setResult(null); setRows([]); setDupAck(false);
+    const lines = String(text || "").replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
+    if (lines.length < 2) { setError("머리글 행과 데이터 행을 함께 붙여넣어 주세요. (엑셀에서 제목줄 포함 범위를 복사)"); return; }
+    const split = (l) => l.indexOf("\t") > -1 ? l.split("\t") : l.split(",");
+    let hi = lines.findIndex(l => split(l).some(c => norm(c).includes("사업장") && !norm(c).includes("주소")));
+    if (hi < 0) hi = 0;
+    const H = split(lines[hi]).map(h => norm(h));
+    const find = (fn) => H.findIndex(fn);
+    const col = {
+      name: find(h => h.includes("사업장") && !h.includes("주소") && !h.includes("코드") && !h.includes("관리번호") && !h.includes("개시") && !h.includes("변경")),
+      hq: find(h => h === "본부" || h.includes("소속부서") || h.includes("소속본부") || h === "소속" || h.includes("담당부서") || h.includes("본부명")),
+      manager: find(h => h.includes("사업부담당")),
+      contractType: find(h => h.includes("계약형태")),
+      workType: find(h => h.includes("업무내용")),
+      address: find(h => h.includes("주소")),
+      openNo: find(h => h.includes("개시번호")),
+    };
+    if (col.name < 0) { setError("'사업장명'(또는 '사업장') 열을 찾지 못했습니다. 제목줄을 함께 복사했는지 확인하세요."); return; }
+    const seen = new Set(); const out = [];
+    for (let li = hi + 1; li < lines.length; li++) {
+      const cells = split(lines[li]);
+      const get = (idx) => (idx >= 0 && idx < cells.length) ? String(cells[idx] || "").trim() : "";
+      const name = get(col.name);
+      if (!name || /재직자|사업종료|육아휴직|출산휴가/.test(name) || /^[*※]/.test(name)) continue;
+      out.push(buildRow({ name, hqName: get(col.hq), manager: get(col.manager), contractType: get(col.contractType), workType: get(col.workType), address: get(col.address), openNo: get(col.openNo) }, seen));
+    }
+    if (!out.length) { setError("등록할 사업장 데이터를 찾지 못했습니다."); return; }
+    setFileName(`붙여넣기 ${out.length}행`);
+    setRows(out);
+  };
 
   const parseFile = async (file) => {
     setError(""); setResult(null); setRows([]); setDupAck(false); setFileName(file.name);
@@ -1263,20 +1328,13 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
       if (!json.length) { setError("첫 시트에서 데이터를 찾지 못했습니다."); return; }
       const seen = new Set();
       const mapped = json.map((r) => {
-        const name = pick(r, ["사업장명", "사업장", "name"]);
-        const hqName = pick(r, ["본부", "소속본부", "소속", "소속부서", "hq", "본부명"]);
-        const hq = resolveHqId(hqName);
-        const 상태raw = pick(r, ["상태", "status"]);
-        const status = /종료|비활|inactive/.test(상태raw) ? "inactive" : "active";
-        const dupInFile = seen.has(norm(name)); if (name) seen.add(norm(name));
         const idRaw = pick(r, ["ID", "id", "관리ID", "사업장ID"]);
-        const idNum = /^\d+$/.test(String(idRaw).trim()) ? parseInt(idRaw) : null;
-        return {
-          id: idNum,
-          name,
+        return buildRow({
+          id: /^\d+$/.test(String(idRaw).trim()) ? parseInt(idRaw) : null,
+          name: pick(r, ["사업장명", "사업장", "name"]),
+          hqName: pick(r, ["본부", "소속본부", "소속", "소속부서", "hq", "본부명"]),
           manager: pick(r, ["담당자", "사업부담당자", "manager"]),
-          hqId: hq.id,
-          orgType: pick(r, ["구분", "orgtype"]) || "본사",
+          orgType: pick(r, ["구분", "orgtype"]),
           affiliateName: pick(r, ["계열사명", "affiliatename"]),
           contractType: pick(r, ["계약형태", "파견도급", "파견/도급구분", "contracttype"]),
           workType: pick(r, ["업무내용", "worktype"]),
@@ -1284,14 +1342,11 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
           mgmtNo: pick(r, ["관리번호", "사업장관리번호", "mgmtno"]),
           openNo: pick(r, ["개시번호", "사업개시번호", "openno"]),
           startAt: pick(r, ["시작일", "계약시작일", "startat"]),
-          region: pick(r, ["지역", "region"]) || regionFromAddress(pick(r, ["주소", "주소지", "사업장주소지", "address"])),
+          region: pick(r, ["지역", "region"]),
           client: pick(r, ["고객사", "client"]),
           phone: pick(r, ["전화", "연락처", "전화번호", "phone"]),
-          status,
-          _hqName: hqName, _hqMatched: hq.matched, _hqResolved: hq.name || "",
-          _dup: !!name && (existingNameSet.has(norm(name)) || dupInFile),
-          _noName: !name,
-        };
+          status: pick(r, ["상태", "status"]),
+        }, seen);
       });
       setRows(mapped);
     } catch (e) {
@@ -1346,12 +1401,36 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
                 <span style={{ color: "var(--fg-3)" }}>※ 이미 있는 사업장명은 자동으로 건너뜁니다. '본부'는 이름이 비슷한 기존 본부로 매칭됩니다.</span>
               </div>
 
-              <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
-                <Icon name="upload" size={14} /> 파일 선택
-                <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
-                  onChange={e => { const f = e.target.files?.[0]; if (f) parseFile(f); e.target.value = ""; }} />
-              </label>
-              {fileName && <span style={{ marginLeft: 10, fontSize: 13, color: "var(--fg-2)" }}>{fileName}</span>}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <label className="btn btn-secondary" style={{ cursor: "pointer" }}>
+                  <Icon name="upload" size={14} /> 파일 선택
+                  <input type="file" accept=".xlsx,.xls,.csv" style={{ display: "none" }}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) parseFile(f); e.target.value = ""; }} />
+                </label>
+                <span style={{ color: "var(--fg-4)", fontSize: 12 }}>또는</span>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowPaste(v => !v)}>
+                  <Icon name="edit" size={14} /> 붙여넣기로 등록
+                </button>
+                {fileName && <span style={{ marginLeft: 4, fontSize: 13, color: "var(--fg-2)" }}>{fileName}</span>}
+              </div>
+
+              {showPaste && (
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--bg-sunk)", borderRadius: 8 }}>
+                  <div style={{ fontSize: 12.5, color: "var(--fg-2)", marginBottom: 6, lineHeight: 1.6 }}>
+                    급여기초 엑셀 등에서 <b>제목줄 포함</b> 범위를 복사해 그대로 붙여넣으세요. <b>필요한 열만 자동으로 골라내고</b> 급여일·보험금액 등 나머지는 무시합니다.<br />
+                    <span style={{ color: "var(--fg-3)" }}>※ 자동 인식: 사업장(명) · 소속부서/본부 · 사업부담당자 · 계약형태 · 업무내용 · 주소 · 산재(사업)개시번호</span>
+                  </div>
+                  <textarea value={pasteText} onChange={e => setPasteText(e.target.value)}
+                    placeholder={"여기에 붙여넣기 (엑셀에서 Ctrl+C 한 내용 그대로)\n예)\n사업장\t소속부서\t업무내용\t계약형태\t사업장 주소지\n삼성이앤에이평택캠프\tFM사업본부\t종합\t도급\t경기도 평택시 ..."}
+                    rows={6}
+                    style={{ width: "100%", fontSize: 12.5, fontFamily: "monospace", padding: "8px 10px", border: "1px solid var(--line)", borderRadius: 7, boxSizing: "border-box", resize: "vertical" }} />
+                  <div style={{ marginTop: 8 }}>
+                    <button type="button" className="btn btn-primary btn-sm" disabled={!pasteText.trim()} onClick={() => parsePaste(pasteText)}>
+                      <Icon name="check" size={13} /> 붙여넣기 분석
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {rows.length > 0 && (
                 <div style={{ marginTop: 14 }}>
