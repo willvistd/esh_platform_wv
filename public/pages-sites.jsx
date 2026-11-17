@@ -206,6 +206,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
         (hqNameOf(a)).localeCompare(hqNameOf(b), "ko") ||
         String(a.사업장명 || a.name || "").localeCompare(String(b.사업장명 || b.name || ""), "ko"));
       const rowsOut = list.map((s, i) => ({
+        ID: s.id,
         연번: i + 1,
         본부: hqNameOf(s),
         사업장명: s.사업장명 || s.name || "",
@@ -222,7 +223,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
         주소: s.주소 || "",
       }));
       const ws = XLSX.utils.json_to_sheet(rowsOut);
-      ws["!cols"] = [{ wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 8 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 40 }];
+      ws["!cols"] = [{ wch: 6 }, { wch: 6 }, { wch: 18 }, { wch: 28 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 8 }, { wch: 16 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 8 }, { wch: 40 }];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "사업장담당자매칭");
       const d = new Date();
@@ -1268,7 +1269,10 @@ const SiteBulkImportModal = ({ hqs = [], existingSites = [], onDone, onClose }) 
         const 상태raw = pick(r, ["상태", "status"]);
         const status = /종료|비활|inactive/.test(상태raw) ? "inactive" : "active";
         const dupInFile = seen.has(norm(name)); if (name) seen.add(norm(name));
+        const idRaw = pick(r, ["ID", "id", "관리ID", "사업장ID"]);
+        const idNum = /^\d+$/.test(String(idRaw).trim()) ? parseInt(idRaw) : null;
         return {
+          id: idNum,
           name,
           manager: pick(r, ["담당자", "사업부담당자", "manager"]),
           hqId: hq.id,
