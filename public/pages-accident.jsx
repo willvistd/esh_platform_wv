@@ -301,16 +301,19 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 
       {tab === "list" && (<>
       {/* 필터 */}
+      {(() => { const flbl = { fontSize: 11, fontWeight: 600, color: "var(--fg-3)", marginBottom: 3, display: "block" };
+      return (
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        <div style={{ width: 200 }}><KSelect searchable value={fHq} onChange={setFHq}
+        <div style={{ width: 200 }}><span style={flbl}>본부</span><KSelect searchable value={fHq} onChange={setFHq}
           options={["전체", ...hqOptions]} /></div>
-        <div style={{ width: 170 }}><KSelect value={fType} onChange={setFType}
-          options={[{ value: "전체", label: "발생형태 전체" }, ...IA_ACC_TYPES]} /></div>
-        <div style={{ width: 150 }}><KSelect value={fSev} onChange={setFSev}
-          options={[{ value: "전체", label: "재해정도 전체" }, ...IA_SEVERITIES]} /></div>
-        <div style={{ width: 130 }}><KSelect value={fComp} onChange={setFComp}
+        <div style={{ width: 170 }}><span style={flbl}>발생형태</span><KSelect value={fType} onChange={setFType}
+          options={[{ value: "전체", label: "전체" }, ...IA_ACC_TYPES]} /></div>
+        <div style={{ width: 150 }}><span style={flbl}>재해정도</span><KSelect value={fSev} onChange={setFSev}
+          options={[{ value: "전체", label: "전체" }, ...IA_SEVERITIES]} /></div>
+        <div style={{ width: 130 }}><span style={flbl}>조사표</span><KSelect value={fComp} onChange={setFComp}
           options={["전체", "해당없음", "기한 내", "기한 초과", "미입력"]} /></div>
       </div>
+      ); })()}
 
       {loading ? (
         <div style={{ textAlign: "center", padding: 60, color: "var(--fg-3)" }}><span className="login-spinner" style={{ width: 32, height: 32 }} /> 불러오는 중...</div>
