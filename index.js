@@ -2752,6 +2752,23 @@ app.post('/api/sites/bulk', async (req, res) => {
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i] || {};
       const name = String(r.name || '').trim();
+      // ── ID가 있으면 'ID로 정확히 그 사업장을 갱신' — 이름이 어떻든 중복 생성 불가(내보내기→수정→업로드 라운드트립 안전) ──
+      const rid = parseInt(r.id);
+      if (Number.isInteger(rid) && rid > 0) {
+        try {
+          const fields = [['name', name], ['manager', r.manager], ['openNo', r.openNo], ['mgmtNo', r.mgmtNo],
+                          ['workType', r.workType], ['contractType', r.contractType], ['address', r.address],
+                          ['startAt', r.startAt], ['status', r.status]];
+          const sets = [], vals = [];
+          for (const [col, v] of fields) { const t = String(v == null ? '' : v).trim(); if (t) { vals.push(t); sets.push(`"${col}" = $${vals.length}`); } }
+          if (updateExisting && r.hqId) { vals.push(r.hqId); sets.push(`"hqId" = $${vals.length}`); }
+          if (sets.length) {
+            const rr = await pool.query(`UPDATE sites SET ${sets.join(', ')} WHERE id = $${vals.length + 1}`, [...vals, rid]);
+            if (rr.rowCount > 0) updated++; else errors.push({ row: i + 1, name, reason: `ID ${rid} 사업장 없음` });
+          } else skipped++;
+        } catch (e) { errors.push({ row: i + 1, name, reason: e.message }); }
+        continue;
+      }
       if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
       const key = norm(name);
       if (existing.has(key)) {
