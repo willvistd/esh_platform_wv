@@ -163,12 +163,43 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
       upsert: false,
     });
     if (error) return res.status(500).json({ error: error.message });
-    const { data } = supabase.storage.from('uploads').getPublicUrl(filename);
-    return res.json({ name: originalName, url: data.publicUrl, size: req.file.size });
+    // 공개 URL 대신 '로그인 필요 + 시간제한 서명' 경로로 저장(개인정보 보호). 아래 /api/file이 서명 URL로 리다이렉트.
+    return res.json({ name: originalName, url: fileRef(filename), size: req.file.size });
   }
 
   // 로컬 폴백
   res.json({ name: originalName, url: `/uploads/${req.file.filename}`, size: req.file.size });
+});
+
+// 업로드된 파일을 가리키는 '보호 경로'(로그인 필요). 공개 URL을 DB에 저장하지 않음.
+function fileRef(objectPath) { return '/api/file?p=' + encodeURIComponent(objectPath); }
+// 저장된 참조/URL에서 버킷 내 object 경로만 추출
+function objectPathFromRef(ref) {
+  const s = String(ref || '');
+  let m = s.match(/[?&]p=([^&]+)/);                               // /api/file?p=<path>
+  if (m) return decodeURIComponent(m[1]).replace(/^\/+/, '');
+  m = s.match(/\/object\/(?:public|sign|authenticated)\/uploads\/([^?]+)/); // 기존 공개/서명 URL
+  if (m) return decodeURIComponent(m[1]).replace(/^\/+/, '');
+  if (!/[\/:]/.test(s)) return s;                                 // 파일명만 저장된 경우
+  return '';
+}
+
+// ── GET /api/file?p=<경로> — 로그인한 사용자에게만 '시간제한 서명 URL'로 리다이렉트 ──
+//   /api 하위라 인증 미들웨어가 보호. 버킷을 비공개로 전환해도 이 경로로 파일 접근 가능.
+app.get('/api/file', async (req, res) => {
+  if (!supabase) return res.status(404).send('스토리지가 설정되지 않았습니다.');
+  try {
+    const objPath = req.query.p
+      ? String(req.query.p).replace(/^\/+/, '')
+      : objectPathFromRef(req.query.u || '');
+    if (!objPath || objPath.includes('..')) return res.status(400).send('잘못된 파일 경로');
+    const { data, error } = await supabase.storage.from('uploads').createSignedUrl(objPath, 600); // 10분
+    if (error || !data || !data.signedUrl) return res.status(404).send('파일을 찾을 수 없습니다.');
+    res.set('Cache-Control', 'private, max-age=300');
+    return res.redirect(302, data.signedUrl);
+  } catch (e) {
+    res.status(500).send('파일 처리 오류');
+  }
 });
 
 // ── 큰 파일 직접 업로드용 서명 URL 발급 ──
@@ -182,8 +213,8 @@ app.post('/api/upload-url', async (req, res) => {
     const filename = Date.now() + '-' + Math.round(Math.random() * 1e9) + ext;
     const { data, error } = await supabase.storage.from('uploads').createSignedUploadUrl(filename);
     if (error) return res.status(500).json({ error: error.message });
-    const { data: pub } = supabase.storage.from('uploads').getPublicUrl(filename);
-    res.json({ path: filename, token: data.token, signedUrl: data.signedUrl, publicUrl: pub.publicUrl });
+    // 저장용 URL은 공개 URL이 아니라 보호 경로(/api/file). 업로드 자체는 signedUrl로 직접 PUT.
+    res.json({ path: filename, token: data.token, signedUrl: data.signedUrl, publicUrl: fileRef(filename) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1278,8 +1309,7 @@ async function initDB() {
             const filename = `thumb-${r.id}-${Date.now()}-${Math.round(Math.random() * 1e6)}.${ext}`;
             const up = await supabase.storage.from('uploads').upload(filename, buf, { contentType: mime, upsert: false });
             if (up.error) continue;
-            const { data } = supabase.storage.from('uploads').getPublicUrl(filename);
-            await pool.query('UPDATE posts SET "thumbUrl"=$1 WHERE id=$2', [data.publicUrl, r.id]);
+            await pool.query('UPDATE posts SET "thumbUrl"=$1 WHERE id=$2', [fileRef(filename), r.id]);
             moved++;
           } catch (e) { /* 개별 실패는 건너뜀 */ }
         }
@@ -1288,6 +1318,66 @@ async function initDB() {
       }
     }
   } catch (e) { console.error('base64 썸네일 이관 실패:', e); }
+
+  // ── 기존 공개 URL → 보호 경로(/api/file) 이관(1회) ──
+  //   버킷을 비공개로 전환해도 기존 자료실 첨부·썸네일이 깨지지 않도록, DB에 저장된
+  //   Supabase 공개 URL을 로그인 필요한 /api/file?p= 경로로 바꿔 저장.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='file_private_migrate_v1'");
+    if (done.rowCount === 0) {
+      const toRef = (val) => {
+        const s = String(val || '');
+        if (!s || s.startsWith('/api/file') || s.startsWith('data:')) return s; // 이미 보호경로/인라인이면 유지
+        if (!/\/object\/(?:public|sign|authenticated)\/uploads\//.test(s)) return s; // 공개 URL 아니면 유지
+        const p = objectPathFromRef(s);
+        return p ? fileRef(p) : s;
+      };
+      let nThumb = 0, nAttach = 0;
+      // 썸네일
+      const trows = (await pool.query(`SELECT id, "thumbUrl" FROM posts WHERE "thumbUrl" LIKE '%/object/%/uploads/%'`)).rows;
+      for (const r of trows) {
+        const next = toRef(r.thumbUrl);
+        if (next !== r.thumbUrl) { await pool.query('UPDATE posts SET "thumbUrl"=$1 WHERE id=$2', [next, r.id]); nThumb++; }
+      }
+      // 첨부(JSON 배열 또는 콤마/줄바꿈 구분 문자열)
+      const arows = (await pool.query(`SELECT id, attachments FROM posts WHERE attachments LIKE '%/object/%/uploads/%'`)).rows;
+      for (const r of arows) {
+        const orig = String(r.attachments || '');
+        let next = orig;
+        try {
+          const arr = JSON.parse(orig);
+          if (Array.isArray(arr)) {
+            const mapped = arr.map(a => (a && typeof a === 'object') ? { ...a, url: toRef(a.url) } : toRef(a));
+            next = JSON.stringify(mapped);
+          }
+        } catch (e) {
+          // JSON 아니면 URL 문자열들을 통째로 치환
+          next = orig.replace(/https?:\/\/[^\s,"]+\/object\/(?:public|sign|authenticated)\/uploads\/[^\s,"]+/g, (u) => toRef(u));
+        }
+        if (next !== orig) { await pool.query('UPDATE posts SET attachments=$1 WHERE id=$2', [next, r.id]); nAttach++; }
+      }
+      // 본문에 끼워넣은 이미지/링크(공개 URL) 치환
+      let nContent = 0;
+      const urlRe = /https?:\/\/[^\s"'<>)]+\/object\/(?:public|sign|authenticated)\/uploads\/[^\s"'<>)]+/g;
+      const crows = (await pool.query(`SELECT id, content FROM posts WHERE content LIKE '%/object/%/uploads/%'`)).rows;
+      for (const r of crows) {
+        const orig = String(r.content || '');
+        const next = orig.replace(urlRe, (u) => { const p = objectPathFromRef(u); return p ? fileRef(p) : u; });
+        if (next !== orig) { await pool.query('UPDATE posts SET content=$1 WHERE id=$2', [next, r.id]); nContent++; }
+      }
+      // 이행사항 제출 파일(compliance_submissions.fileUrl)
+      let nFile = 0;
+      try {
+        const frows = (await pool.query(`SELECT id, "fileUrl" FROM compliance_submissions WHERE "fileUrl" LIKE '%/object/%/uploads/%'`)).rows;
+        for (const r of frows) {
+          const next = toRef(r.fileUrl);
+          if (next !== r.fileUrl) { await pool.query('UPDATE compliance_submissions SET "fileUrl"=$1 WHERE id=$2', [next, r.id]); nFile++; }
+        }
+      } catch (e) { /* 테이블/컬럼 없으면 무시 */ }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('file_private_migrate_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      if (nThumb || nAttach || nFile || nContent) console.log(`[DB] 파일 보호경로 이관: 썸네일 ${nThumb}, 첨부 ${nAttach}, 본문 ${nContent}, 제출파일 ${nFile}`);
+    }
+  } catch (e) { console.error('파일 보호경로 이관 실패:', e); }
 
   console.log('DB 초기화 완료!');
 }
