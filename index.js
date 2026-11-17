@@ -1539,13 +1539,12 @@ const sendOtpEmail = async (to, code) => {
 };
 // ── 이상 로그인(평소와 다른 IP) 감지 시 관리자 전원에게 즉시 알림 메일 ──
 //   메일 설정(RESEND_API_KEY+MAIL_FROM) 없으면 자동 skip. 실패해도 로그인에는 영향 없음.
+// 보안 알림 고정 수신처(요청: hhkim@willvil.co.kr). 필요 시 환경변수로 교체 가능.
+const SECURITY_ALERT_EMAIL = process.env.SECURITY_ALERT_EMAIL || 'hhkim@willvil.co.kr';
 const sendAnomalyAlert = async (u, ip, userAgent, atIso) => {
   if (!otpEnabled()) return;
   try {
-    const admins = (await pool.query(
-      "SELECT email FROM users WHERE role IN ('admin','safety') AND email IS NOT NULL AND email <> ''"
-    )).rows.map(r => String(r.email).trim()).filter(Boolean);
-    const recipients = [...new Set(admins)];
+    const recipients = [...new Set(String(SECURITY_ALERT_EMAIL).split(',').map(s => s.trim()).filter(Boolean))];
     if (!recipients.length) return;
     let when = atIso;
     try { when = new Date(atIso).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }) + ' (KST)'; } catch (e) {}
