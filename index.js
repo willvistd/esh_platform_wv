@@ -1109,6 +1109,80 @@ async function initDB() {
     console.error('중복 추가 롤백 실패:', e);
   }
 
+  // ── 사업장 정합화: 사용자 기준 파일(390곳)로 맞춤(1회) ──
+  //   ① 내가 잘못 추가한 중복(기준파일에 없는, 추가명단의 사업장) 삭제
+  //   ② 기준파일의 사업개시번호 반영  ③ 기준파일에만 있는(새로 추가한) 사업장 신규 등록
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='sites_reconcile_v1'");
+    if (done.rowCount === 0) {
+      let auth = [], addl = [];
+      try { auth = require('./data/sites_authoritative_v1.json'); } catch (_) {}
+      try { addl = require('./data/site_add_active_v1.json'); } catch (_) {}
+      if (Array.isArray(auth) && auth.length) {
+        const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+        const cnorm = (v) => String(v == null ? '' : v)
+          .replace(/\(\s*\d{1,2}\s*일\s*\)/g, '').replace(/\(\s*fm\s*\)/gi, '').replace(/\(\s*도급\s*\)/g, '')
+          .replace(/주식회사|\(주\)|㈜/g, '').replace(/fm$/i, '')
+          .replace(/[()\[\]{}]/g, '').replace(/[\s\-·.,"'’_]/g, '').toLowerCase();
+        const normHq = (v) => norm(String(v == null ? '' : v).replace(/^\s*윌앤비전\s*/, ''));
+        const authNorm = new Set(auth.map(x => norm(x.name)).filter(Boolean));
+        const authClean = new Set(auth.map(x => cnorm(x.name)).filter(Boolean));
+        const addNorm = new Set(addl.map(x => norm(x.name)).filter(Boolean));
+
+        // ① 중복 삭제: 추가명단에 있으나 기준파일엔 없는 사업장 = 내가 잘못 넣은 것
+        let sites = (await pool.query('SELECT id, name FROM sites')).rows;
+        const cleanKeeper = new Map();
+        for (const s of sites) { if (authClean.has(cnorm(s.name))) { const k = cnorm(s.name); if (!cleanKeeper.has(k) || s.id < cleanKeeper.get(k)) cleanKeeper.set(k, s.id); } }
+        let deleted = 0;
+        for (const s of sites) {
+          if (addNorm.has(norm(s.name)) && !authNorm.has(norm(s.name))) {
+            const keeperId = cleanKeeper.get(cnorm(s.name));
+            if (keeperId && keeperId !== s.id) {
+              await pool.query('UPDATE accidents SET "siteId"=$1 WHERE "siteId"::text=$2', [keeperId, String(s.id)]);
+              const us = (await pool.query(`SELECT id, "siteIds" FROM users WHERE "siteIds" ~ ('(^|,)' || $1 || '(,|$)')`, [String(s.id)])).rows;
+              for (const u of us) { const ids = String(u.siteIds || '').split(',').map(x => x.trim()).filter(Boolean); await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [[...new Set(ids.map(x => x === String(s.id) ? String(keeperId) : x))].join(','), u.id]); }
+            }
+            await pool.query('DELETE FROM sites WHERE id=$1', [s.id]);
+            deleted++;
+          }
+        }
+
+        // 본부 매핑 준비
+        const hqRows = (await pool.query('SELECT id, name FROM hq')).rows;
+        const hqByStrip = new Map();
+        for (const h of hqRows) { const k = normHq(h.name); if (k && !hqByStrip.has(k)) hqByStrip.set(k, h.id); }
+        const ensureHq = async (nm) => { const k = normHq(nm); if (hqByStrip.has(k)) return hqByStrip.get(k); const ins = await pool.query('INSERT INTO hq (name, "ownerDept", "sortOrder", status, "createdAt") VALUES ($1,$1,70,\'active\',NOW()::TEXT) RETURNING id', [nm]); hqByStrip.set(k, ins.rows[0].id); return ins.rows[0].id; };
+
+        // ②③ 사업개시번호 반영 + 빠진 것 추가
+        sites = (await pool.query('SELECT id, name, "openNo" FROM sites')).rows;
+        const byExact = new Map(), byClean = new Map();
+        for (const s of sites) { byExact.set(norm(s.name), s); const k = cnorm(s.name); if (!byClean.has(k)) byClean.set(k, s); }
+        let openSet = 0, added = 0;
+        for (const a of auth) {
+          const nm = String(a.name || '').trim(); if (!nm) continue;
+          let site = byExact.get(norm(nm)) || byClean.get(cnorm(nm));
+          if (!site) {
+            const hid = a.hq ? await ensureHq(a.hq) : null;
+            const ins = await pool.query(
+              `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
+                "orgType","affiliateName","mgmtNo","openNo","workType","contractType","startAt")
+               VALUES ($1,'','',$2,'',$3,$4,$5,NULL,'본사','','',$6,'',$7,NULL) RETURNING id, name, "openNo"`,
+              [nm, a.manager || '', (/종료/.test(a.status) ? 'inactive' : 'active'), hid, a.address || '', a.openNo || '', a.contractType || '']
+            );
+            site = ins.rows[0]; byExact.set(norm(nm), site); byClean.set(cnorm(nm), site); added++;
+            continue;
+          }
+          const want = String(a.openNo || '').trim();
+          if (want && norm(want) !== norm(site.openNo || '')) { await pool.query('UPDATE sites SET "openNo"=$1 WHERE id=$2', [want, site.id]); openSet++; }
+        }
+        await pool.query("INSERT INTO app_settings (key, value) VALUES ('sites_reconcile_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+        console.log(`[DB] 사업장 정합화: 중복삭제 ${deleted}, 개시번호 ${openSet}, 신규추가 ${added} (기준 ${auth.length}곳)`);
+      }
+    }
+  } catch (e) {
+    console.error('사업장 정합화 실패:', e);
+  }
+
   // ── 산업재해 본부 교정(1회) — 과거재해 일괄등록 시 폴더명이 본부에 그대로 들어가 사업장·팀명이 본부로 잘못 저장된 것 교정 ──
   //   · 신분당선타워(FM 산하 사업장, 종료) → 본부 FM사업본부로, 사업장명은 발생장소 앞에 보존
   //   · CRM1팀/CRM3팀/마케팅지원팀 → CRM사업본부
