@@ -785,6 +785,7 @@ const IAHBars = ({ data, unit }) => {
 const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) => {
   const [range, setRange] = React.useState("12");
   const [hover, setHover] = React.useState(null);   // 월 인덱스
+  const [hqBasis, setHqBasis] = React.useState("all");   // 본부별 재해 건수 기준: all=전체, rate=재해율 기준(출퇴근 제외)
   const siteName = (id) => (siteMap[String(id)]?.사업장명) || "";
   const hqOf = (a) => { if (a && a.hqName && a.hqName.trim()) return a.hqName.trim(); const s = siteMap[String(a?.siteId)]; return s ? (hqMap[String(s.hqId)]?.name || "미지정") : "미지정"; };
   const placeName = (a) => siteName(a?.siteId) || (a?.location || "") || "(미지정)";
@@ -824,11 +825,17 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
   const activeMonth = view[activeIdx];
 
   // 집계들
-  const byHq = React.useMemo(() => {
+  const byHqOf = (src) => {
     const m = {}; (hqs || []).forEach(h => m[h.name] = 0);
-    list.forEach(a => { const n = hqOf(a); m[n] = (m[n] || 0) + 1; });
+    src.forEach(a => { const n = hqOf(a); m[n] = (m[n] || 0) + 1; });
     return Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([l, v]) => ({ l, v }));
-  }, [list, siteMap, hqMap, hqs]);
+  };
+  const byHqAll = React.useMemo(() => byHqOf(list), [list, siteMap, hqMap, hqs]);
+  // 재해율 기준(출퇴근재해 제외) — 재해율 분석과 동일 기준
+  const byHqRate = React.useMemo(() => byHqOf(list.filter(a => !iaIsCommute(a))), [list, siteMap, hqMap, hqs]);
+  const byHq = hqBasis === "rate" ? byHqRate : byHqAll;
+  const hqTotalAll = list.length;
+  const hqTotalRate = list.filter(a => !iaIsCommute(a)).length;
   const byType = React.useMemo(() => {
     const m = {}; list.forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([l, v]) => ({ l, v }));
@@ -895,7 +902,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
       {/* 월별 추이 + 날개박스 */}
       <div style={card}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-          <div><h3 style={h3}>월별 재해 건수 추이</h3><p style={cs}>막대/점에 마우스를 올리면 해당 월 재해 목록이 오른쪽에 표시됩니다</p></div>
+          <div><h3 style={h3}>월별 재해 건수 추이</h3><p style={cs}>막대/점을 클릭하면 해당 월 재해 목록이 오른쪽에 표시됩니다 (목록에서 클릭하면 상세)</p></div>
           <div style={{ display: "flex", gap: 6 }}>
             {[["12", "최근 12개월"], ["24", "최근 24개월"], ["all", "전체"]].map(([r, lbl]) => (
               <button key={r} onClick={() => { setRange(r); setHover(null); }}
@@ -905,8 +912,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
           </div>
         </div>
         <div style={{ display: "flex", gap: 16, alignItems: "stretch" }}>
-          <svg style={{ flex: 1, minWidth: 0 }} height="200" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none"
-            onMouseLeave={() => setHover(null)}>
+          <svg style={{ flex: 1, minWidth: 0 }} height="200" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
             <line x1={padL} y1={H - padB} x2={W - padR} y2={H - padB} stroke="#e6e6ea" />
             {grid.map(g => { const y = padT + (H - padT - padB) * (1 - g / max);
               return <g key={g}><line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#f0f1f4" /><text x={padL - 6} y={y + 3} fontSize="10" fill="#a1a1a6" textAnchor="end">{g}</text></g>; })}
@@ -920,7 +926,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
                   {!LINE && v > 0 && <text x={cx(i)} y={cy(v) - 5} fontSize="11" fill="#424248" fontWeight="700" textAnchor="middle" style={{ pointerEvents: "none" }}>{v}</text>}
                   {LINE && <circle cx={cx(i)} cy={cy(v)} r={isAct ? 5 : 2.6} fill="var(--primary)" style={{ pointerEvents: "none" }} />}
                   {i % everyLabel === 0 && <text x={cx(i)} y={H - 8} fontSize="10" fill="#6e6e73" textAnchor="middle" style={{ pointerEvents: "none" }}>{mo.label}</text>}
-                  <rect x={padL + cw * i} y={padT} width={cw} height={H - padT - padB} fill="transparent" style={{ cursor: "pointer" }} onMouseEnter={() => setHover(i)} />
+                  <rect x={padL + cw * i} y={padT} width={cw} height={H - padT - padB} fill="transparent" style={{ cursor: "pointer" }} onClick={() => setHover(i)} />
                 </g>
               );
             })}
@@ -945,7 +951,21 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
 
       {/* 본부별 / 발생형태 */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ia-grid2">
-        <div style={card}><h3 style={h3}>본부·법인별 재해 건수</h3><p style={cs}>전체 기간 누적</p><IAHBars data={byHq} /></div>
+        <div style={card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+            <div><h3 style={h3}>본부·법인별 재해 건수</h3>
+              <p style={cs}>전체 기간 누적 · {hqBasis === "rate" ? "재해율 기준(출퇴근 제외)" : "전체"} <b style={{ color: "var(--primary)" }}>{hqBasis === "rate" ? hqTotalRate : hqTotalAll}건</b></p>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              {[["all", "전체"], ["rate", "재해율 기준"]].map(([k, lbl]) => (
+                <button key={k} onClick={() => setHqBasis(k)} title={k === "rate" ? "재해율에 포함되는 재해만(출퇴근재해 제외)" : "모든 재해"}
+                  style={{ fontSize: 11.5, fontWeight: 700, padding: "5px 11px", borderRadius: 999, cursor: "pointer",
+                    border: "1px solid " + (hqBasis === k ? "var(--primary)" : "var(--line)"), background: hqBasis === k ? "var(--primary)" : "#fff", color: hqBasis === k ? "#fff" : "var(--fg-2)" }}>{lbl}</button>
+              ))}
+            </div>
+          </div>
+          <IAHBars data={byHq} />
+        </div>
         <div style={card}><h3 style={h3}>발생형태 Top</h3><p style={cs}>많이 발생한 유형 순</p><IAHBars data={byType} /></div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }} className="ia-grid2">
