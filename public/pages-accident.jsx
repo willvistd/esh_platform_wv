@@ -831,11 +831,12 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
     return Object.entries(m).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).map(([l, v]) => ({ l, v }));
   };
   const byHqAll = React.useMemo(() => byHqOf(list), [list, siteMap, hqMap, hqs]);
-  // 재해율 기준(출퇴근재해 제외) — 재해율 분석과 동일 기준
-  const byHqRate = React.useMemo(() => byHqOf(list.filter(a => !iaIsCommute(a))), [list, siteMap, hqMap, hqs]);
+  // 재해율 포함 = 출퇴근재해 제외 + 산재 승인(승인·요양중·치료종결)만 — 고용노동부 공식 기준(재해율 분석 '공식'과 동일)
+  const inRate = (a) => !iaIsCommute(a) && iaIsApproved(a.compensationStatus);
+  const byHqRate = React.useMemo(() => byHqOf(list.filter(inRate)), [list, siteMap, hqMap, hqs]);
   const byHq = hqBasis === "rate" ? byHqRate : byHqAll;
   const hqTotalAll = list.length;
-  const hqTotalRate = list.filter(a => !iaIsCommute(a)).length;
+  const hqTotalRate = list.filter(inRate).length;
   const byType = React.useMemo(() => {
     const m = {}; list.forEach(a => { if (a.accidentType) m[a.accidentType] = (m[a.accidentType] || 0) + 1; });
     return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([l, v]) => ({ l, v }));
@@ -954,11 +955,11 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
             <div><h3 style={h3}>본부·법인별 재해 건수</h3>
-              <p style={cs}>전체 기간 누적 · {hqBasis === "rate" ? "재해율 기준(출퇴근 제외)" : "전체"} <b style={{ color: "var(--primary)" }}>{hqBasis === "rate" ? hqTotalRate : hqTotalAll}건</b></p>
+              <p style={cs}>전체 기간 누적 · {hqBasis === "rate" ? "재해율 포함(출퇴근·산재 미승인 제외)" : "전체"} <b style={{ color: "var(--primary)" }}>{hqBasis === "rate" ? hqTotalRate : hqTotalAll}건</b></p>
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              {[["all", "전체"], ["rate", "재해율 기준"]].map(([k, lbl]) => (
-                <button key={k} onClick={() => setHqBasis(k)} title={k === "rate" ? "재해율에 포함되는 재해만(출퇴근재해 제외)" : "모든 재해"}
+              {[["all", "전체"], ["rate", "재해율 포함"]].map(([k, lbl]) => (
+                <button key={k} onClick={() => setHqBasis(k)} title={k === "rate" ? "재해율에 포함되는 재해만 (출퇴근재해·산재 미승인 제외 / 승인·요양중·치료종결만)" : "모든 재해"}
                   style={{ fontSize: 11.5, fontWeight: 700, padding: "5px 11px", borderRadius: 999, cursor: "pointer",
                     border: "1px solid " + (hqBasis === k ? "var(--primary)" : "var(--line)"), background: hqBasis === k ? "var(--primary)" : "#fff", color: hqBasis === k ? "#fff" : "var(--fg-2)" }}>{lbl}</button>
               ))}
