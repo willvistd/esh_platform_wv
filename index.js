@@ -2539,17 +2539,27 @@ app.post('/api/sites/bulk', async (req, res) => {
       if (!name) { errors.push({ row: i + 1, name: '', reason: '사업장명 비어있음' }); continue; }
       const key = norm(name);
       if (existing.has(key)) {
-        // 기존 사업장: 본부 갱신 옵션이 켜져 있고 매칭된 본부가 있으면 hqId만 갱신(다른 값은 보존)
-        if (updateExisting && r.hqId) {
-          try {
-            for (const id of (existingMap.get(key) || [])) {
-              await pool.query('UPDATE sites SET "hqId" = $1 WHERE id = $2', [r.hqId, id]);
-            }
-            updated++;
-          } catch (e) { errors.push({ row: i + 1, name, reason: e.message }); }
-        } else {
-          skipped++;
-        }
+        // 기존 사업장: (1) 본부 갱신 옵션 시 hqId 갱신, (2) 사업개시번호·관리번호는 업로드에 값이 있으면 채움.
+        //   그 외 값은 보존(빈 칸은 기존 값 유지).
+        const ids = existingMap.get(key) || [];
+        let touched = false;
+        try {
+          if (updateExisting && r.hqId) {
+            for (const id of ids) await pool.query('UPDATE sites SET "hqId" = $1 WHERE id = $2', [r.hqId, id]);
+            touched = true;
+          }
+          const openNo = String(r.openNo || '').trim();
+          if (openNo) {
+            for (const id of ids) await pool.query('UPDATE sites SET "openNo" = $1 WHERE id = $2', [openNo, id]);
+            touched = true;
+          }
+          const mgmtNo = String(r.mgmtNo || '').trim();
+          if (mgmtNo) {
+            for (const id of ids) await pool.query('UPDATE sites SET "mgmtNo" = $1 WHERE id = $2', [mgmtNo, id]);
+            touched = true;
+          }
+          if (touched) updated++; else skipped++;
+        } catch (e) { errors.push({ row: i + 1, name, reason: e.message }); }
         continue;
       }
       try {
