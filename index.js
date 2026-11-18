@@ -141,6 +141,14 @@ app.use('/api', async (req, res, next) => {
   next();
 });
 
+// ── 서버측 권한 검증 헬퍼 (화면 UI와 별개로, 각 요청의 권한을 서버에서 재확인) ──
+const roleOf = (req) => (req.session && req.session.role) || '';
+const isAdminLevel = (req) => ['admin', 'safety'].includes(roleOf(req));            // 관리자·안전관리자
+const isSiteMgrLevel = (req) => ['admin', 'safety', 'manager', 'staff'].includes(roleOf(req)); // 사업장 관리 가능
+const isSiteAgent = (req) => ['site_manager', 'site_staff'].includes(roleOf(req));  // 현장대리인
+// ok가 false면 403 응답 후 true 반환 → 호출부에서 `if (deny(...)) return;`
+const deny = (ok, res, msg) => { if (!ok) { res.status(403).json({ error: msg || '권한이 없습니다.' }); return true; } return false; };
+
 // ── multer: Supabase면 메모리, 로컬이면 디스크 ──
 const upload = multer({
   storage: supabase ? multer.memoryStorage() : multer.diskStorage({
@@ -2244,6 +2252,7 @@ app.get('/api/hq', async (req, res) => {
 });
 
 app.post('/api/hq', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '본부 추가는 관리자·안전관리자만 가능합니다.')) return;
   try {
     const { name, code, description, ownerDept, sortOrder, status } = req.body;
     if (!name) return res.status(400).json({ error: '본부명을 입력하세요.' });
@@ -2260,6 +2269,7 @@ app.post('/api/hq', async (req, res) => {
 });
 
 app.put('/api/hq/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '본부 수정은 관리자·안전관리자만 가능합니다.')) return;
   try {
     const { name, code, description, ownerDept, sortOrder, status } = req.body;
     const result = await pool.query(
@@ -2275,6 +2285,7 @@ app.put('/api/hq/:id', async (req, res) => {
 });
 
 app.delete('/api/hq/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '본부 삭제는 관리자·안전관리자만 가능합니다.')) return;
   try {
     // 본부 삭제 전: 소속 사업장 있는지 확인
     const inUse = await pool.query('SELECT COUNT(*) FROM sites WHERE "hqId"=$1', [req.params.id]);
@@ -2587,6 +2598,7 @@ app.get('/api/edu-types', async (req, res) => {
 });
 
 app.post('/api/edu-types', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '교육종류 설정은 관리자·안전관리자만 가능합니다.')) return;
   try {
     const { id, label, hours, content, sortOrder } = req.body || {};
     if (!id || !String(id).trim()) return res.status(400).json({ error: 'id를 입력해주세요.' });
@@ -2606,6 +2618,7 @@ app.post('/api/edu-types', async (req, res) => {
 });
 
 app.put('/api/edu-types/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '교육종류 설정은 관리자·안전관리자만 가능합니다.')) return;
   try {
     // 부분 업데이트 지원 — body에 들어온 필드만 갱신
     const b = req.body || {};
@@ -2633,6 +2646,7 @@ app.put('/api/edu-types/:id', async (req, res) => {
 });
 
 app.delete('/api/edu-types/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '교육종류 삭제는 관리자·안전관리자만 가능합니다.')) return;
   try {
     const result = await pool.query('DELETE FROM education_types WHERE id=$1 RETURNING id', [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: '교육종류를 찾을 수 없습니다.' });
@@ -2682,6 +2696,7 @@ async function syncSiteAssignees(siteId, assigneeIds) {
 }
 
 app.post('/api/sites', async (req, res) => {
+  if (deny(isSiteMgrLevel(req), res, '사업장 추가 권한이 없습니다.')) return;
   try {
     const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
             orgType, affiliateName, mgmtNo, openNo, workType, contractType, startAt } = req.body;
@@ -2727,6 +2742,7 @@ app.post('/api/sites', async (req, res) => {
 //         skipDuplicates?: true }
 // 사업장명(공백/대소문자 무시) 기준으로 기존 DB·배치 내 중복은 건너뜀.
 app.post('/api/sites/bulk', async (req, res) => {
+  if (deny(isSiteMgrLevel(req), res, '사업장 일괄 등록 권한이 없습니다.')) return;
   try {
     const rows = Array.isArray(req.body && req.body.rows) ? req.body.rows : [];
     const skipDup = req.body.skipDuplicates !== false; // 기본 true
@@ -2830,6 +2846,7 @@ app.post('/api/sites/bulk', async (req, res) => {
 // ── 사업장명 일괄 변경 (접미사 정리 등) ──
 // body: { renames: [{ id, name }] }  — name만 변경, 다른 필드는 손대지 않음
 app.post('/api/sites/rename-bulk', async (req, res) => {
+  if (deny(isSiteMgrLevel(req), res, '사업장명 일괄 변경 권한이 없습니다.')) return;
   try {
     const renames = Array.isArray(req.body && req.body.renames) ? req.body.renames : [];
     if (renames.length === 0) return res.status(400).json({ error: '변경할 항목이 없습니다.' });
@@ -2855,6 +2872,18 @@ app.post('/api/sites/rename-bulk', async (req, res) => {
 });
 
 app.put('/api/sites/:id', async (req, res) => {
+  // 사업장 관리자급은 허용. 현장대리인은 '본인 담당 사업장'만 수정 가능.
+  if (!isSiteMgrLevel(req)) {
+    let allowed = false;
+    if (isSiteAgent(req) && req.session && req.session.uid) {
+      try {
+        const ur = await pool.query('SELECT "siteIds" FROM users WHERE id=$1', [req.session.uid]);
+        const ids = String((ur.rows[0] && ur.rows[0].siteIds) || '').split(',').map(s => s.trim()).filter(Boolean);
+        allowed = ids.includes(String(req.params.id));
+      } catch (e) {}
+    }
+    if (deny(allowed, res, '이 사업장을 수정할 권한이 없습니다.')) return;
+  }
   try {
     const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
             orgType, affiliateName, mgmtNo, openNo, workType, contractType, startAt } = req.body;
@@ -2884,6 +2913,7 @@ app.put('/api/sites/:id', async (req, res) => {
 });
 
 app.delete('/api/sites/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '사업장 삭제는 관리자·안전관리자만 가능합니다.')) return;
   try {
     const result = await pool.query('DELETE FROM sites WHERE id=$1 RETURNING id, name', [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: '사업장을 찾을 수 없습니다.' });
