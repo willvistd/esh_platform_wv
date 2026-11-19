@@ -1005,6 +1005,107 @@ async function initDB() {
     console.error('CJ 인천공항 중복 정리 실패:', e);
   }
 
+  // ── 접미사(CRM/HR 등) 중복 사업장 병합(1회) — 담당자·주소가 동일해 '같은 현장'이 확실한 쌍만 ──
+  //   · (suffix) 붙은 중복을 접미사 없는 원본(사업개시번호 보유분)으로 합치고 삭제.
+  //   · 완전 동일 이름 2회 입력분도 1건으로 정리.
+  //   · (CRM) vs (HR)처럼 담당자/주소가 달라 서로 다른 현장인 쌍은 손대지 않음(사장님 확인 대상).
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_dedupe_division_v1'");
+    if (done.rowCount === 0) {
+      const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
+      // keeper(남길 이름) ← drop(지울 이름) 명시적 쌍. 담당자+주소 동일 확인된 것만.
+      const pairs = [
+        ['대한항공ITSVC', '대한항공ITSVC(CRM)'],
+        ['베스트슬립', '베스트슬립(CRM)'],
+        ['블루개러지', '블루개러지(CRM)'],
+        ['비버웍스', '비버웍스(CRM)'],
+        ['삼성카드법인모니터링', '삼성카드법인모니터링(CRM)'],
+        ['샥즈', '샥즈(CRM)'],
+        ['소노아임레디만기방어센터', '소노아임레디만기방어센터(CRM)'],
+        ['아이즈비전', '아이즈비전(CRM)'],
+        ['에스케이스피드메이트', '에스케이스피드메이트(CRM)'],
+        ['에이블씨엔씨', '에이블씨엔씨(CRM)'],
+        ['엘지유플러스레드캡', '엘지유플러스레드캡(CRM)'],
+        ['전국화물자동차공제조합', '전국화물자동차공제조합(CRM)'],
+        ['트라이씨클', '트라이씨클(CRM)'],
+        ['트립일레븐', '트립일레븐(CRM)'],
+        ['AI교수학습플랫폼', 'AI교수학습플랫폼(CRM)'],
+        ['KAIN통합관제센터(동부캐리어)', 'KAIN통합관제센터(동부캐리어)(CRM)'],
+        ['농협하나로마트', '농협하나로마트(HR)'],
+        ['동성항운', '동성항운(HR)'],
+        ['씨제이제일제당', '씨제이제일제당(HR)'],
+        ['이디비', '이디비(HR)'],
+        ['잉글리시에그', '잉글리시에그(HR)'],
+        ['퀴즈노스인하대병원점', '퀴즈노스인하대병원점(HR)'],
+        ['티케이엘리베이터', '티케이엘리베이터(HR)'],
+        ['파주연천축산업협동조합', '파주연천축산업협동조합(HR)'],
+        ['한국금융연수원', '한국금융연수원(HR)'],
+        ['한국원자력환경복원연구원', '한국원자력환경복원연구원(HR)'],
+        ['한국중소벤처기업유통원', '한국중소벤처기업유통원(HR)'],
+        ['홈앤브릿지', '홈앤브릿지(HR)'],
+      ];
+      // 완전 동일 이름 2회 입력분(이름만으로 정리)
+      const exactDupNames = ['SK매직(대전)', '대한항공국내(CRM)', '당산 SK V1 센터', '와이잭(HR)', '한국인삼공사직영위탁(HR)'];
+
+      const all = (await pool.query('SELECT * FROM sites')).rows;
+      const byNorm = new Map();   // norm(name) → [rows]
+      for (const s of all) { const k = norm(s.name); if (!byNorm.has(k)) byNorm.set(k, []); byNorm.get(k).push(s); }
+
+      // keeper로 drop을 합침: 빈 필드 보강 → 참조 이관 → drop 삭제
+      const mergeInto = async (keeper, drop) => {
+        if (!keeper || !drop || keeper.id === drop.id) return;
+        await pool.query(
+          `UPDATE sites SET
+             address = CASE WHEN COALESCE(address,'')='' THEN $1 ELSE address END,
+             manager = CASE WHEN COALESCE(manager,'')='' THEN $2 ELSE manager END,
+             "startAt" = CASE WHEN COALESCE("startAt",'')='' THEN $3 ELSE "startAt" END,
+             "workType" = CASE WHEN COALESCE("workType",'')='' THEN $4 ELSE "workType" END,
+             "contractType" = CASE WHEN COALESCE("contractType",'')='' THEN $5 ELSE "contractType" END,
+             "openNo" = CASE WHEN COALESCE("openNo",'')='' THEN $6 ELSE "openNo" END,
+             "hqId" = COALESCE("hqId", $7)
+           WHERE id = $8`,
+          [drop.address || '', drop.manager || '', drop.startAt || '', drop.workType || '', drop.contractType || '', drop.openNo || '', drop.hqId || null, keeper.id]
+        );
+        await pool.query('UPDATE accidents SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(drop.id)]);
+        await pool.query('UPDATE msds_ledger SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(drop.id)]);
+        await pool.query('UPDATE compliance_submissions SET "siteId"=$1 WHERE "siteId"::text=$2', [keeper.id, String(drop.id)]);
+        // 근로자수(PK: siteId,year) — keeper에 없는 연도만 이관 후 나머지 삭제
+        await pool.query('UPDATE workplace_headcounts SET "siteId"=$1 WHERE "siteId"=$2 AND year NOT IN (SELECT year FROM workplace_headcounts WHERE "siteId"=$1)', [keeper.id, drop.id]);
+        await pool.query('DELETE FROM workplace_headcounts WHERE "siteId"=$1', [drop.id]);
+        // 담당지정(users.siteIds CSV) 이관
+        const us = (await pool.query(`SELECT id, "siteIds" FROM users WHERE "siteIds" ~ ('(^|,)' || $1 || '(,|$)')`, [String(drop.id)])).rows;
+        for (const u of us) {
+          const ids = String(u.siteIds || '').split(',').map(x => x.trim()).filter(Boolean);
+          const next = [...new Set(ids.map(x => x === String(drop.id) ? String(keeper.id) : x))].join(',');
+          await pool.query('UPDATE users SET "siteIds"=$1 WHERE id=$2', [next, u.id]);
+        }
+        await pool.query('DELETE FROM sites WHERE id=$1', [drop.id]);
+      };
+
+      let removed = 0; const log = [];
+      // (1) 명시적 접미사 쌍
+      for (const [keepName, dropName] of pairs) {
+        const keepers = byNorm.get(norm(keepName)) || [];
+        const drops = byNorm.get(norm(dropName)) || [];
+        if (!keepers.length || !drops.length) continue;
+        const keeper = keepers.slice().sort((a, b) => a.id - b.id)[0];
+        for (const drop of drops) { if (drop.id === keeper.id) continue; await mergeInto(keeper, drop); removed++; log.push(dropName); }
+      }
+      // (2) 완전 동일 이름 2회 — 주소 채워진 것/낮은 id를 keeper로
+      for (const nm of exactDupNames) {
+        const rows = (byNorm.get(norm(nm)) || []).slice();
+        if (rows.length < 2) continue;
+        rows.sort((a, b) => (((b.address || '').length > 0) - ((a.address || '').length > 0)) || (a.id - b.id));
+        const keeper = rows[0];
+        for (const drop of rows.slice(1)) { await mergeInto(keeper, drop); removed++; log.push(nm + '(중복)'); }
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_dedupe_division_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 접미사(CRM/HR) 중복 병합 v1: ${removed}건 삭제` + (log.length ? ` — ${log.join(' / ')}` : ''));
+    }
+  } catch (e) {
+    console.error('접미사 중복 병합 실패:', e);
+  }
+
   // ── 급여기초 마스터에서 업무내용·계약형태·주소 '빈 칸만' 채우기(1회) ──
   //   플랫폼 사업장명 기준으로 매칭(접미사 (FM)/(도급)은 떼고 비교), 현재 비어있는 필드만 채움.
   //   기존 입력값은 절대 덮어쓰지 않음. 신규 사업장은 만들지 않음.
