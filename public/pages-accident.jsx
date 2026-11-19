@@ -96,6 +96,7 @@ const iaReportCompliance = (acc) => {
 const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
   const [list, setList] = React.useState([]);
   const [canWrite, setCanWrite] = React.useState(false);
+  const [canSeeRoster, setCanSeeRoster] = React.useState(false);  // 재해 대장(명단) 탭 접근권
   const [sites, setSites] = React.useState([]);
   const [hqs, setHqs] = React.useState([]);
   const [headcounts, setHeadcounts] = React.useState([]);
@@ -122,6 +123,10 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
     ]).then(([acc, siteData, hqData, hc]) => {
       setList((acc && acc.accidents) || []);
       setCanWrite(!!(acc && acc.canWrite));
+      const roster = !!(acc && acc.canSeeRoster);
+      setCanSeeRoster(roster);
+      // 명단 접근권이 없는 사용자가 '재해 대장' 탭에 있으면 대시보드로 이동
+      if (!roster) setTab(t => (t === "list" ? "dash" : t));
       setSites(Array.isArray(siteData) ? siteData : []);
       setHqs(Array.isArray(hqData) ? hqData : (hqData && hqData.hqs) || []);
       setHeadcounts(Array.isArray(hc) ? hc : []);
@@ -265,7 +270,7 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
 
       {/* 탭 */}
       <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--line)", margin: "14px 0 18px" }}>
-        {[["list", "재해 대장"], ["dash", "대시보드"], ["rate", "재해율 분석"]].map(([k, lbl]) => (
+        {[...(canSeeRoster ? [["list", "재해 대장"]] : []), ["dash", "대시보드"], ["rate", "재해율 분석"]].map(([k, lbl]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ padding: "9px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", background: "none", border: "none",
               color: tab === k ? "var(--primary)" : "var(--fg-3)", borderBottom: "2px solid " + (tab === k ? "var(--primary)" : "transparent"), marginBottom: -1 }}>
@@ -275,7 +280,8 @@ const IndustrialAccidentView = ({ onNav, currentUser, role }) => {
       </div>
 
       {tab === "dash" && !loading && (
-        <AccidentDashboard list={list} sites={sites} siteMap={siteMap} hqMap={hqMap} hqs={hqs} onOpenDetail={openDetail} />
+        <AccidentDashboard list={list} sites={sites} siteMap={siteMap} hqMap={hqMap} hqs={hqs} onOpenDetail={canSeeRoster ? openDetail : null}
+          showSummaryList={!canSeeRoster} hqNameOf={hqNameOf} placeOf={placeOf} />
       )}
 
       {tab === "rate" && !loading && (
@@ -785,7 +791,7 @@ const IAHBars = ({ data, unit }) => {
   );
 };
 
-const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) => {
+const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail, showSummaryList, hqNameOf, placeOf }) => {
   const [range, setRange] = React.useState("12");
   const [hover, setHover] = React.useState(null);   // 월 인덱스
   const [hqBasis, setHqBasis] = React.useState("all");   // 본부별 재해 건수 기준: all=전체, rate=재해율 기준(출퇴근 제외)
@@ -941,7 +947,7 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
               {!activeMonth || activeMonth.items.length === 0 ? (
                 <div style={{ color: "var(--fg-4)", fontSize: 12.5, margin: "auto 0", textAlign: "center" }}>이 달은 재해가 없습니다.</div>
               ) : activeMonth.items.map(a => (
-                <div key={a.id} onClick={() => onOpenDetail(a.id)} style={{ padding: "8px 0", borderBottom: "1px solid var(--line)", cursor: "pointer" }}>
+                <div key={a.id} onClick={() => onOpenDetail && onOpenDetail(a.id)} style={{ padding: "8px 0", borderBottom: "1px solid var(--line)", cursor: onOpenDetail ? "pointer" : "default" }}>
                   <div style={{ fontWeight: 700, fontSize: 12.5 }}>{hqOf(a)}{placeName(a) !== "(미지정)" ? " · " + placeName(a) : ""}</div>
                   <div style={{ fontSize: 11.5, color: "var(--fg-3)", marginTop: 2 }}>
                     <span style={{ color: "var(--primary)", fontWeight: 700 }}>{a.accidentType || "-"}</span> · <span style={{ color: IA_sevColor(a.severity), fontWeight: 700 }}>{a.severity || "-"}</span>{a.victimName ? " · " + a.victimName : ""}
@@ -981,6 +987,42 @@ const AccidentDashboard = ({ list, sites, siteMap, hqMap, hqs, onOpenDetail }) =
         <div style={card}><h3 style={h3}>부서별 재해조사표 평균 소요일</h3><p style={cs}>발생→고용노동부 제출까지 평균 (30일 초과 빨강)</p><IAHBars data={byDept} /></div>
         <div />
       </div>
+
+      {/* 재해 요약 목록 — 명단 접근권이 없는 사용자용(개인정보 제외: 나이·형태·정도) */}
+      {showSummaryList && (
+        <div style={{ ...card, marginTop: 0 }}>
+          <h3 style={h3}>재해 요약</h3>
+          <p style={cs}>개인 식별 정보(실명·생년월일·상세 경위)는 제외됩니다. 발생형태·재해정도·나이로 심각도만 확인하세요.</p>
+          {list.length === 0 ? (
+            <div style={{ color: "var(--fg-4)", fontSize: 13, padding: "8px 0" }}>등록된 재해가 없습니다.</div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640, fontSize: 13 }}>
+                <thead>
+                  <tr>{["발생일", "본부", "사업장 / 현장", "나이", "발생형태", "재해정도"].map((h, i) => (
+                    <th key={i} style={{ textAlign: "left", padding: "8px 10px", borderBottom: "1px solid var(--line)", color: "var(--fg-3)", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {list.map(a => {
+                    const age = iaAgeAt(a.birthDate, a.occurredAt);
+                    return (
+                      <tr key={a.id}>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" }}>{iaDatePart(a.occurredAt) || "-"}</td>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap", color: "var(--fg-2)" }}>{(hqNameOf && hqNameOf(a)) || "-"}</td>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)" }}>{(placeOf && placeOf(a)) || "-"}</td>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" }}>{age != null ? age + "세" : "-"}</td>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap", color: "var(--primary)", fontWeight: 700 }}>{a.accidentType || "-"}</td>
+                        <td style={{ padding: "8px 10px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" }}><span style={{ color: IA_sevColor(a.severity), fontWeight: 700 }}>{a.severity || "-"}</span></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
       <style>{`@media(max-width:720px){.ia-grid2{grid-template-columns:1fr !important}}`}</style>
     </div>
   );

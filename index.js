@@ -3019,7 +3019,8 @@ const fmNorm = (s) => String(s || '')
 // 입력/수정/삭제 = 관리자급(admin/safety)만.
 // 재해자 실명 조회 = 관리자(admin)·안전/보건관리자(safety)·팀 공용/팀장(staff)만. 그 외(현장대리인 등)는 성씨만 보이고 이름은 마스킹.
 const canWriteAccident = (req) => ['admin', 'safety'].includes(req.session && req.session.role);
-const canSeeVictimName = (req) => ['admin', 'safety', 'staff'].includes(req.session && req.session.role);
+// 재해 대장(명단) 탭 접근권 = 관리자·안전/보건관리자·팀장(팀 공용). 그 외는 재해율/대시보드만.
+const canSeeRoster = (req) => ['admin', 'safety', 'staff'].includes(req.session && req.session.role);
 // 성씨(첫 글자)만 남기고 이름은 전부 ○ 처리. 예: 홍길동 → 홍○○, 홍길 → 홍○
 const maskKoreanName = (name) => {
   const s = String(name || '').trim();
@@ -3038,9 +3039,24 @@ const ACCIDENT_COLS = [
 app.get('/api/accidents', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM accidents ORDER BY "occurredAt" DESC NULLS LAST, id DESC');
-    const canSeeName = canSeeVictimName(req);
-    const rows = result.rows.map(r => canSeeName ? r : { ...r, victimName: maskKoreanName(r.victimName) });
-    res.json({ accidents: rows, canWrite: canWriteAccident(req) });
+    const role = (req.session && req.session.role) || '';
+    let rows;
+    if (role === 'admin' || role === 'safety') {
+      // 관리자·안전/보건관리자: 전체 실명
+      rows = result.rows;
+    } else if (role === 'staff') {
+      // 팀장(팀 공용): 본인 담당 사업장 재해만 실명, 타 팀은 마스킹
+      let mySites = new Set();
+      try {
+        const ur = await pool.query('SELECT "siteIds" FROM users WHERE id=$1', [req.session.uid]);
+        mySites = new Set(String((ur.rows[0] || {}).siteIds || '').split(',').map(s => s.trim()).filter(Boolean));
+      } catch {}
+      rows = result.rows.map(r => mySites.has(String(r.siteId)) ? r : { ...r, victimName: maskKoreanName(r.victimName) });
+    } else {
+      // 그 외(현장대리인 등): 전부 마스킹
+      rows = result.rows.map(r => ({ ...r, victimName: maskKoreanName(r.victimName) }));
+    }
+    res.json({ accidents: rows, canWrite: canWriteAccident(req), canSeeRoster: canSeeRoster(req) });
   } catch (e) {
     console.error('GET /api/accidents 오류:', e);
     res.status(500).json({ error: e.message });
