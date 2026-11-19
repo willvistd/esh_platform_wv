@@ -702,6 +702,36 @@ async function initDB() {
     console.error('지사 병합 실패:', e);
   }
 
+  // ── 본부 드롭다운 정렬 정돈(매 부팅·멱등) ──
+  //   · '윌앤비전 ○○사업본부'는 모두 위쪽에 함께 묶이도록, 물류는 광주 바로 아래로.
+  //   · 그 외 조직(KBCI·동부캐리어·윌비모터스·위드윌 등)은 아래쪽에 가나다 순.
+  //   UPDATE만 하므로 정돈 완료 후엔 사실상 no-op.
+  try {
+    // 윌앤비전 본부 선호 순서(미지정 윌앤비전 본부는 이 뒤, 가나다 순으로 자동 배치)
+    const wvOrder = [
+      '윌앤비전 FM사업본부',
+      '윌앤비전 HR사업본부',
+      '윌앤비전 CRM사업본부',
+      '윌앤비전 공항사업본부',
+      '윌앤비전 부산사업본부',
+      '윌앤비전 대전사업본부',
+      '윌앤비전 광주사업본부',
+      '윌앤비전 물류사업본부',
+    ];
+    const allHq = (await pool.query('SELECT id, name FROM hq')).rows;
+    const wvRows  = allHq.filter(h => String(h.name || '').startsWith('윌앤비전'));
+    const etcRows = allHq.filter(h => !String(h.name || '').startsWith('윌앤비전'));
+    const idxOf = (nm) => { const i = wvOrder.indexOf(nm); return i < 0 ? 999 : i; };
+    wvRows.sort((a, b) => idxOf(a.name) - idxOf(b.name) || String(a.name).localeCompare(String(b.name), 'ko'));
+    etcRows.sort((a, b) => String(a.name).localeCompare(String(b.name), 'ko'));
+    let so = 10;
+    for (const r of wvRows)  { await pool.query('UPDATE hq SET "sortOrder" = $1 WHERE id = $2', [so++, r.id]); }
+    so = 1000;
+    for (const r of etcRows) { await pool.query('UPDATE hq SET "sortOrder" = $1 WHERE id = $2', [so++, r.id]); }
+  } catch (e) {
+    console.error('본부 정렬 정돈 실패:', e);
+  }
+
   // ── 사업장 담당자 정리(1회) ──
   // 예전엔 담당자 칸에 본부명·팀 공용계정명·사업장명(현장계정명)이 그대로 박혀 목록에서 중복 표시됐음.
   // 담당자 텍스트를 콤마로 분리해, 아래에 해당하는 토큰만 제거하고 '실제 사람 이름'만 남김:
