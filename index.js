@@ -3016,14 +3016,16 @@ const fmNorm = (s) => String(s || '')
   .toLowerCase();
 
 // ── 산업재해 관리(통계) ──
-// 입력/수정/삭제·재해자 실명 조회 = 관리자급(admin/safety)만. 그 외는 조회+실명 마스킹.
+// 입력/수정/삭제 = 관리자급(admin/safety)만.
+// 재해자 실명 조회 = 관리자(admin)·안전/보건관리자(safety)·팀 공용/팀장(staff)만. 그 외(현장대리인 등)는 성씨만 보이고 이름은 마스킹.
 const canWriteAccident = (req) => ['admin', 'safety'].includes(req.session && req.session.role);
+const canSeeVictimName = (req) => ['admin', 'safety', 'staff'].includes(req.session && req.session.role);
+// 성씨(첫 글자)만 남기고 이름은 전부 ○ 처리. 예: 홍길동 → 홍○○, 홍길 → 홍○
 const maskKoreanName = (name) => {
   const s = String(name || '').trim();
   if (!s) return '';
   if (s.length <= 1) return s;
-  if (s.length === 2) return s[0] + '○';
-  return s[0] + '○'.repeat(s.length - 2) + s[s.length - 1];
+  return s[0] + '○'.repeat(s.length - 1);
 };
 const ACCIDENT_COLS = [
   'siteId','hqName','category','occurredAt','occurredTimeUnknown','location','victimName','birthDate','employmentType',
@@ -3036,7 +3038,7 @@ const ACCIDENT_COLS = [
 app.get('/api/accidents', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM accidents ORDER BY "occurredAt" DESC NULLS LAST, id DESC');
-    const canSeeName = canWriteAccident(req);
+    const canSeeName = canSeeVictimName(req);
     const rows = result.rows.map(r => canSeeName ? r : { ...r, victimName: maskKoreanName(r.victimName) });
     res.json({ accidents: rows, canWrite: canWriteAccident(req) });
   } catch (e) {
