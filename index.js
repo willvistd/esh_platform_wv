@@ -3949,8 +3949,9 @@ app.get('/api/lawgo-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
     const query = String(req.query.query || '').trim();
     if (!query) return res.status(400).json({ ok: false, message: '검색어를 입력하세요.' });
     const page = String(parseInt(req.query.page) || 1);
-    const display = String(Math.min(parseInt(req.query.display) || 20, 50));
     const target = String(req.query.target || 'law'); // law(법령) / admrul(행정규칙) / prec(판례)
+    // 안전·보건·노무 관련만 남기므로 후보를 넉넉히(최대 50) 받아 서버에서 거른다.
+    const display = String(Math.min(Math.max(parseInt(req.query.display) || 20, 50), 50));
     const search = req.query.search === '2' ? '2' : '1'; // 1=제목(법령명), 2=본문(내용)
     const base = (req.query.https === '1' ? 'https' : 'http') + '://www.law.go.kr';
     const url = `${base}/DRF/lawSearch.do?OC=${encodeURIComponent(oc)}&target=${encodeURIComponent(target)}&type=XML&search=${search}&display=${display}&page=${page}&query=${encodeURIComponent(query)}`;
@@ -4004,7 +4005,15 @@ app.get('/api/lawgo-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
         id: pick(b, '법령ID') || bySuffix(b, '일련번호'),
       };
     }).filter(x => x.name || x.caseNo || x.id);
-    res.json({ ok: true, target, totalCount: totalMatch ? parseInt(totalMatch[1]) : items.length, page: parseInt(page), items });
+    // ── 안전·보건·노무 관련만 남기기 ──
+    //   국가법령정보센터는 모든 분야의 법을 반환하므로, 소관부처(고용노동부 등) 또는
+    //   법령명/사건명에 안전보건·노무 키워드가 있는 것만 통과시킨다.
+    const LABOR_ORG = /고용노동부|안전보건공단|산업안전보건공단|근로복지공단/;
+    const LABOR_NAME = /산업안전|안전보건|산업재해|중대재해|재해보상|근로|노동|노무|임금|퇴직급여|퇴직연금|고용보험|고용정책|고용상|직업안정|직업능력|파견근로|기간제|단시간|남녀고용|고용평등|일·?가정|노사|노동조합|산재|진폐|석면|작업환경|유해인자|유해·?위험|직업병|과로|감정노동|작업중지|위험성평가|안전관리자|보건관리자|근로감독|최저임금|임금채권|외국인근로|가사근로/;
+    const isLaborRelated = (it) => LABOR_ORG.test(it.org || '') || LABOR_NAME.test(it.name || '');
+    const laborItems = items.filter(isLaborRelated);
+    res.json({ ok: true, target, laborFiltered: true, rawCount: items.length,
+      totalCount: laborItems.length, page: parseInt(page), items: laborItems });
   } catch (e) {
     console.error('[lawgo-search]', e.message);
     res.status(500).json({ ok: false, message: '검색 중 오류: ' + e.message });
