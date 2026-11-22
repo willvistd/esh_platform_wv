@@ -3896,35 +3896,55 @@ app.get('/api/ai-legal', async (req, res) => {
       '- 맨 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙인다.\n\n' +
       '[질문]\n' + q + '\n\n[자료]\n' + context;
 
-    // 모델 폴백을 넓게: latest 별칭(가장 덜 붐빔) 우선 → 공용 목록 → 2.5-flash. 중복 제거.
+    // 모델 폴백을 넓게: latest 별칭(가장 덜 붐빔) 우선 → 공용 목록 → 안정 모델들. 중복 제거.
     const base = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
       ? GEMINI_MODELS : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
-    const models = [...new Set(['gemini-flash-latest', ...base, 'gemini-2.5-flash'])];
+    const models = [...new Set(['gemini-flash-latest', ...base, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'])];
     let answer = '', lastErr = '', overloaded = false, quota = false;
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    // 과부하는 잠깐이므로 마감시간(약 40초) 안에서 모델을 바꿔가며 끈질기게 재시도.
+    //   (Vercel 함수 60초 제한 — 마감 40초 + 요청 타임아웃 15초 = 최대 55초로 여유 확보)
+    const DEADLINE = Date.now() + 40000;
     outer:
     for (const model of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (Date.now() > DEADLINE) break outer;
         try {
           const gurl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(gkey)}`;
-          const gr = await fetch(gurl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.25, maxOutputTokens: 2400 } }),
-          });
-          const gd = await gr.json();
+          // 요청 하나가 늘어져 전체 예산을 먹지 않도록 15초 타임아웃
+          const ctl = new AbortController();
+          const to = setTimeout(() => ctl.abort(), 15000);
+          let gd;
+          try {
+            const gr = await fetch(gurl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.25, maxOutputTokens: 2400 } }),
+              signal: ctl.signal,
+            });
+            gd = await gr.json();
+          } finally { clearTimeout(to); }
           if (gd.error) {
             lastErr = gd.error.message || '';
             const isQuota = /quota|resource_exhausted|billing|limit exceeded|daily/i.test(lastErr);
             const over = /high demand|overload|unavailable|try again|429|503|rate/i.test(lastErr);
             if (isQuota) { quota = true; break; }             // 일일/요금 한도 → 다음 모델 시도(다른 모델은 한도 남아있을 수 있음)
-            if (over) { overloaded = true; if (attempt < 1) { await sleep(1800); continue; } break; }
+            if (over) {
+              overloaded = true;
+              const sleepMs = 1200 * Math.pow(2, attempt);   // 1.2s → 2.4s → 4.8s 지수 백오프
+              if (attempt < 2 && (Date.now() + sleepMs) < DEADLINE) { await sleep(sleepMs); continue; }
+              break;   // 이 모델은 계속 붐빔 → 다음 모델로
+            }
             break; // 모델 중단/미지원 등 → 다음 모델
           }
           answer = ((gd.candidates && gd.candidates[0] && gd.candidates[0].content && gd.candidates[0].content.parts) || []).map(p => p.text).join('').trim();
           if (answer) break outer;
           break;
-        } catch (e) { lastErr = e.message; if (attempt < 1) await sleep(1000); }
+        } catch (e) {
+          lastErr = (e && e.name === 'AbortError') ? '응답 지연(timeout)' : (e && e.message) || String(e);
+          const sleepMs = 900 * (attempt + 1);
+          if (attempt < 2 && (Date.now() + sleepMs) < DEADLINE) await sleep(sleepMs);
+        }
       }
     }
     if (!answer) {
