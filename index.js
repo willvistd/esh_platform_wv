@@ -4010,7 +4010,9 @@ app.get('/api/lawgo-search', legalCacheJson(10 * 60 * 1000), async (req, res) =>
     //   법령명/사건명에 안전보건·노무 키워드가 있는 것만 통과시킨다.
     const LABOR_ORG = /고용노동부|안전보건공단|산업안전보건공단|근로복지공단/;
     const LABOR_NAME = /산업안전|안전보건|산업재해|중대재해|재해보상|근로|노동|노무|임금|퇴직급여|퇴직연금|고용보험|고용정책|고용상|직업안정|직업능력|파견근로|기간제|단시간|남녀고용|고용평등|일·?가정|노사|노동조합|산재|진폐|석면|작업환경|유해인자|유해·?위험|직업병|과로|감정노동|작업중지|위험성평가|안전관리자|보건관리자|근로감독|최저임금|임금채권|외국인근로|가사근로/;
-    const isLaborRelated = (it) => LABOR_ORG.test(it.org || '') || LABOR_NAME.test(it.name || '');
+    // 관련법(타 부처 소관이나 산업현장 안전·보건과 직접 연관) — 화학물질·고압가스·위험물·전기·승강기 등
+    const RELATED_NAME = /화학물질|유해화학|화학사고|고압가스|액화석유가스|액화가스|위험물|전기안전|승강기|기계설비|건설기술\s*진흥|시설물의\s*안전|생활화학제품|석면안전|방사선|원자력안전|소방시설/;
+    const isLaborRelated = (it) => LABOR_ORG.test(it.org || '') || LABOR_NAME.test(it.name || '') || RELATED_NAME.test(it.name || '');
     const laborItems = items.filter(isLaborRelated);
     res.json({ ok: true, target, laborFiltered: true, rawCount: items.length,
       totalCount: laborItems.length, page: parseInt(page), items: laborItems });
