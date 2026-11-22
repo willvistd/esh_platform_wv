@@ -99,6 +99,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
   const [search, setSearch] = React.useState("");
   const [regionFilter, setRegionFilter] = React.useState("전체");
   const [contractFilter, setContractFilter] = React.useState("전체"); // 전체 | 파견제외 | 파견만
+  const [statusFilter, setStatusFilter] = React.useState("운영중");   // 운영중(기본) | 종료 | 전체
   const [hqFilter, setHQFilter] = React.useState("전체");
   const [view, setView] = React.useState("grouped");           // grouped | flat
   const [addingForHQ, setAddingForHQ] = React.useState(null);  // 본부 카드에서 + 클릭 시 미리 hqId 설정
@@ -187,12 +188,16 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
 
   const matchContractFilter = (s) =>
     contractFilter === "전체" || (contractFilter === "파견만" ? isDispatchSite(s) : !isDispatchSite(s));
+  // 종료(inactive) 여부 — 상태 필터 공용
+  const isEndedSite = (s) => { const v = s["상태"]; return v === "inactive" || v === "종료"; };
+  const matchStatusFilter = (s) =>
+    statusFilter === "전체" || (statusFilter === "종료" ? isEndedSite(s) : !isEndedSite(s));
 
   const filtered = sites.filter(s => {
     const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
     const matchHQ = hqFilter === "전체" || String(s.hqId) === String(hqFilter);
     const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
-    return matchRegion && matchHQ && matchSearch && matchContractFilter(s);
+    return matchRegion && matchHQ && matchSearch && matchContractFilter(s) && matchStatusFilter(s);
   });
 
   // 현재 사업장 목록 → 엑셀 내보내기 (담당자 매칭 파일). 일괄등록과 동일한 열 이름 사용 → 되읽기 호환.
@@ -342,6 +347,11 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
           { value: "파견제외", label: "파견 제외" },
           { value: "파견만", label: "파견만" },
         ]} /></div>
+        <div style={{ width: 130 }} title="종료 사업장은 기본으로 숨겨집니다"><KSelect value={statusFilter} onChange={setStatusFilter} options={[
+          { value: "운영중", label: "운영중만" },
+          { value: "종료", label: "종료만" },
+          { value: "전체", label: "상태 전체" },
+        ]} /></div>
         <div style={{ flex: 1 }} />
         <div style={{ display: "inline-flex", padding: 3, background: "var(--bg-sunk)", borderRadius: 6 }}>
           <button className={`btn btn-sm ${view === "grouped" ? "btn-primary" : "btn-ghost"}`}
@@ -473,7 +483,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
               const groupBase = (sitesByHQ[h.id] || []).filter(s => {
                 const matchRegion = regionFilter === "전체" || (s["지역"] || regionFromAddress(s["주소"])) === regionFilter;
                 const matchSearch = !search || s["사업장명"]?.includes(search) || s["담당자"]?.includes(search) || s["계약형태"]?.includes(search);
-                return matchRegion && matchSearch;
+                return matchRegion && matchSearch && matchStatusFilter(s);
               });
               const grpDispatch = groupBase.filter(isDispatchSite).length;      // 파견
               const grpNonDispatch = groupBase.length - grpDispatch;             // 파견 외(도급 등)
