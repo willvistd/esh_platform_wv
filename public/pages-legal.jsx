@@ -754,6 +754,50 @@ function LawSearchPanel({ initialQuery = "" }) {
   );
 }
 
+// ── 안전·보건·노무 관계법령 전체 목록(검색 없이 한눈에) ──
+//   각 모법 + 시행령/시행규칙. 이름을 누르면 국가법령정보센터 원문으로 이동.
+//   sub: 존재하는 하위법령만 표기('시행령'/'시행규칙'). t:'admrul'은 고시/지침(행정규칙).
+const LAWGO_CATALOG = [
+  { group: "안전·보건", items: [
+    { name: "산업안전보건법", sub: ["시행령", "시행규칙"] },
+    { name: "산업안전보건기준에 관한 규칙", sub: [] },
+    { name: "유해·위험작업의 취업 제한에 관한 규칙", sub: [] },
+    { name: "사업장 위험성평가에 관한 지침", sub: [], t: "admrul" },
+    { name: "중대재해 처벌 등에 관한 법률", sub: ["시행령"] },
+    { name: "산업재해보상보험법", sub: ["시행령", "시행규칙"] },
+    { name: "진폐의 예방과 진폐근로자의 보호 등에 관한 법률", sub: ["시행령", "시행규칙"] },
+  ] },
+  { group: "노무·근로", items: [
+    { name: "근로기준법", sub: ["시행령", "시행규칙"] },
+    { name: "최저임금법", sub: ["시행령"] },
+    { name: "근로자퇴직급여 보장법", sub: ["시행령", "시행규칙"] },
+    { name: "임금채권보장법", sub: ["시행령", "시행규칙"] },
+    { name: "근로복지기본법", sub: ["시행령", "시행규칙"] },
+    { name: "고용보험법", sub: ["시행령", "시행규칙"] },
+    { name: "고용보험 및 산업재해보상보험의 보험료징수 등에 관한 법률", sub: ["시행령", "시행규칙"] },
+    { name: "남녀고용평등과 일·가정 양립 지원에 관한 법률", sub: ["시행령", "시행규칙"] },
+    { name: "기간제 및 단시간근로자 보호 등에 관한 법률", sub: ["시행령"] },
+    { name: "파견근로자 보호 등에 관한 법률", sub: ["시행령", "시행규칙"] },
+    { name: "노동조합 및 노동관계조정법", sub: ["시행령", "시행규칙"] },
+    { name: "근로자참여 및 협력증진에 관한 법률", sub: ["시행령"] },
+    { name: "직업안정법", sub: ["시행령", "시행규칙"] },
+    { name: "국민 평생 직업능력 개발법", sub: ["시행령", "시행규칙"] },
+    { name: "외국인근로자의 고용 등에 관한 법률", sub: ["시행령", "시행규칙"] },
+  ] },
+  { group: "관련법", items: [
+    { name: "화학물질관리법", sub: ["시행령", "시행규칙"] },
+    { name: "화학물질의 등록 및 평가 등에 관한 법률", sub: ["시행령", "시행규칙"] },
+    { name: "고압가스 안전관리법", sub: ["시행령", "시행규칙"] },
+    { name: "위험물안전관리법", sub: ["시행령", "시행규칙"] },
+    { name: "전기안전관리법", sub: ["시행령", "시행규칙"] },
+    { name: "승강기 안전관리법", sub: ["시행령", "시행규칙"] },
+    { name: "액화석유가스의 안전관리 및 사업법", sub: ["시행령", "시행규칙"] },
+    { name: "건설기술 진흥법", sub: ["시행령", "시행규칙"] },
+  ] },
+];
+const LAWGO_CATALOG_COUNT = LAWGO_CATALOG.reduce((n, g) => n + g.items.reduce((m, it) => m + 1 + (it.sub ? it.sub.length : 0), 0), 0);
+const lawgoLink = (name, type) => `https://www.law.go.kr/${type === "admrul" ? "행정규칙" : "법령"}/${encodeURIComponent(name)}`;
+
 // ── 국가법령정보센터(law.go.kr) 법령 검색 — 실제 법령 원문으로 딥링크 ──
 function LawGoSearch({ initialQuery = "" }) {
   // 자료 구분(HRDB식 체크박스). 판례·해석류 기본 선택, 법령/행정규칙은 선택 시 추가.
@@ -767,6 +811,7 @@ function LawGoSearch({ initialQuery = "" }) {
   const defaultSel = () => { const o = {}; TYPES.forEach(t => o[t.v] = true); return o; };   // 전체 체크(법령·행정규칙 포함)
 
   const [q, setQ] = React.useState(initialQuery || "");
+  const [showCatalog, setShowCatalog] = React.useState(false);   // 관계법령 전체 목록 패널
   const [sel, setSel] = React.useState(defaultSel);
   const [limit, setLimit] = React.useState(20);        // 자료형별 가져올 개수
   const [loading, setLoading] = React.useState(false);
@@ -1017,7 +1062,48 @@ h2{font-size:14px;color:#1d4ed8;margin:22px 0 8px;} .hd{font-weight:800;margin:9
           placeholder="예: 부당해고, 업무상 재해, 실업급여, 휴게시설…"
           style={{ flex: "1 1 240px", minWidth: 180, border: "1px solid var(--line)", borderRadius: "var(--r-sm)", padding: "9px 12px", fontSize: 14, background: "var(--bg-elev)", color: "var(--fg)" }} />
         <button className="btn btn-primary" onClick={() => { setLimit(20); run(null, 20); }} disabled={loading}>{loading ? "검색 중…" : "검색"}</button>
+        <button className="btn btn-secondary" onClick={() => setShowCatalog(v => !v)} title="안전·보건·노무 관계법령을 검색 없이 한눈에">
+          📋 관계법령 전체 목록
+        </button>
       </div>
+
+      {showCatalog && (
+        <div style={{ ...card, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 800 }}>안전·보건·노무 관계법령 전체 목록</div>
+              <div style={{ fontSize: 12.5, color: "var(--fg-3)", marginTop: 2 }}>모법 + 시행령·시행규칙 포함 <b style={{ color: "var(--primary)" }}>{LAWGO_CATALOG_COUNT}건</b> · 이름을 누르면 국가법령정보센터 원문으로 이동</div>
+            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowCatalog(false)}>닫기 ✕</button>
+          </div>
+          {LAWGO_CATALOG.map(g => (
+            <div key={g.group} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--fg-2)", margin: "6px 0 8px", paddingBottom: 4, borderBottom: "1px solid var(--line)" }}>
+                {g.group} <span style={{ color: "var(--fg-4)", fontWeight: 600 }}>({g.items.reduce((m, it) => m + 1 + (it.sub ? it.sub.length : 0), 0)})</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {g.items.map(it => (
+                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <a href={lawgoLink(it.name, it.t)} target="_blank" rel="noopener noreferrer"
+                      style={{ fontSize: 14, fontWeight: 700, color: "var(--primary)", textDecoration: "none" }}>
+                      {it.t === "admrul" ? "📑 " : "⚖ "}{it.name}
+                    </a>
+                    {(it.sub || []).map(s => (
+                      <a key={s} href={lawgoLink(it.name + " " + s, it.t)} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize: 11.5, color: "var(--fg-3)", background: "var(--bg-elev)", border: "1px solid var(--line)", borderRadius: 6, padding: "1px 7px", textDecoration: "none" }}>
+                        {s}
+                      </a>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ fontSize: 11.5, color: "var(--fg-4)", marginTop: 6, lineHeight: 1.6 }}>
+            ※ 이 목록은 윌앤비전이 상시 관리하는 관계법령 기준입니다. 빠진 법이 있으면 알려주시면 추가합니다.
+          </div>
+        </div>
+      )}
 
       {needKey && (
         <div style={{ ...card, marginBottom: 16, borderColor: "#fdba74", background: "#fff7ed" }}>
