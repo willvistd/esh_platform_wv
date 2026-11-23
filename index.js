@@ -1109,6 +1109,22 @@ async function initDB() {
     console.error('접미사 중복 병합 실패:', e);
   }
 
+  // ── 사업장관리번호 통일(1회) — 윌앤비전 본사 소속 부서·지사만 907-16-15418-7 ──
+  //   계열사(KBCI·동부캐리어·윌비모터스·위드윌 등 '윌앤비전' 접두어 없는 본부)는 제외.
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='site_mgmtno_wv_v1'");
+    if (done.rowCount === 0) {
+      const r = await pool.query(
+        `UPDATE sites SET "mgmtNo" = '907-16-15418-7'
+         WHERE "hqId" IN (SELECT id FROM hq WHERE name LIKE '윌앤비전%')`
+      );
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('site_mgmtno_wv_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+      console.log(`[DB] 사업장관리번호 통일(윌앤비전 본사/지사): ${r.rowCount}건 적용`);
+    }
+  } catch (e) {
+    console.error('사업장관리번호 통일 실패:', e);
+  }
+
   // ── 급여기초 마스터에서 업무내용·계약형태·주소 '빈 칸만' 채우기(1회) ──
   //   플랫폼 사업장명 기준으로 매칭(접미사 (FM)/(도급)은 떼고 비교), 현재 비어있는 필드만 채움.
   //   기존 입력값은 절대 덮어쓰지 않음. 신규 사업장은 만들지 않음.
