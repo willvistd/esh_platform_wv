@@ -1109,23 +1109,23 @@ async function initDB() {
     console.error('접미사 중복 병합 실패:', e);
   }
 
-  // ── 업로드 버킷 파일 크기 한도 상향(1회) — 게시판 등 큰 첨부파일(최대 50MB) 허용 ──
-  //   Supabase 버킷 기본 한도에 걸려 수십 MB 파일 업로드가 막히던 문제 해결.
-  //   (public 상태는 현재값 유지. 사장님이 추후 비공개로 바꾸면 마커 때문에 되돌리지 않음)
+  // ── 업로드 버킷 설정(1회) — 50MB 한도 + 모든 형식 허용(ZIP·HWP 등) ──
+  //   Supabase 버킷의 크기 한도/형식(MIME) 제한에 걸려 수십 MB·압축파일 업로드가 막히던 문제 해결.
+  //   allowedMimeTypes:null = 형식 제한 없음. (public 상태는 유지; 추후 비공개 전환은 마커로 보존)
   try {
     if (supabase) {
-      const done = await pool.query("SELECT value FROM app_settings WHERE key='uploads_bucket_limit_v1'");
+      const done = await pool.query("SELECT value FROM app_settings WHERE key='uploads_bucket_cfg_v2'");
       if (done.rowCount === 0) {
-        const { error } = await supabase.storage.updateBucket('uploads', { public: true, fileSizeLimit: '50MB' });
+        const { error } = await supabase.storage.updateBucket('uploads', { public: true, fileSizeLimit: '50MB', allowedMimeTypes: null });
         if (!error) {
-          await pool.query("INSERT INTO app_settings (key, value) VALUES ('uploads_bucket_limit_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
-          console.log('[DB] uploads 버킷 파일 크기 한도 50MB 설정');
+          await pool.query("INSERT INTO app_settings (key, value) VALUES ('uploads_bucket_cfg_v2', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+          console.log('[DB] uploads 버킷 설정: 50MB + 모든 형식 허용');
         } else {
-          console.error('버킷 한도 설정 실패:', error.message);
+          console.error('버킷 설정 실패:', error.message);
         }
       }
     }
-  } catch (e) { console.error('버킷 한도 설정 예외:', e.message); }
+  } catch (e) { console.error('버킷 설정 예외:', e.message); }
 
   // ── 사업장관리번호 통일(1회) — 윌앤비전 본사 소속 부서·지사만 907-16-15418-7 ──
   //   계열사(KBCI·동부캐리어·윌비모터스·위드윌 등 '윌앤비전' 접두어 없는 본부)는 제외.
