@@ -3630,6 +3630,51 @@ function sanitizeMsds(d) {
   return d;
 }
 
+// ── AI 진단(관리자 전용) — 각 Gemini 모델이 되는지/몇 초 걸리는지 측정 ──
+//   브라우저에서 /api/ai-diag 접속(로그인 상태) → 표로 결과 확인.
+app.get('/api/ai-diag', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '관리자 전용입니다.')) return;
+  const gkey = GEMINI_API_KEY;
+  if (!gkey) return res.send('<pre>GEMINI_API_KEY 미설정</pre>');
+  const candidates = [
+    'gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite',
+    'gemini-1.5-flash', 'gemini-2.0-flash-001', 'gemini-3.8-flash', 'gemini-2.5-pro',
+  ];
+  const testOne = (model) => new Promise((resolve) => {
+    const t0 = Date.now();
+    const body = JSON.stringify({ contents: [{ parts: [{ text: '아래 지시만 따르세요. 정확히 이 JSON만 출력: {"ok":true}' }] }], generationConfig: { temperature: 0, maxOutputTokens: 256 } });
+    const r = https.request({
+      hostname: 'generativelanguage.googleapis.com',
+      path: `/v1beta/models/${model}:generateContent?key=${gkey}`,
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    }, (resp) => {
+      const chunks = []; resp.on('data', c => chunks.push(c));
+      resp.on('end', () => {
+        const ms = Date.now() - t0; let out;
+        try {
+          const d = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          if (d.error) out = { model, ms, status: 'ERR', msg: (d.error.message || '').slice(0, 120) };
+          else { const txt = (d.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim(); out = { model, ms, status: txt ? 'OK' : 'EMPTY', msg: txt.slice(0, 60) }; }
+        } catch (e) { out = { model, ms, status: 'PARSE', msg: e.message.slice(0, 120) }; }
+        resolve(out);
+      });
+    });
+    r.setTimeout(15000, () => r.destroy(new Error('timeout(15s)')));
+    r.on('error', (e) => resolve({ model, ms: Date.now() - t0, status: 'FAIL', msg: (e.message || '').slice(0, 120) }));
+    r.write(body); r.end();
+  });
+  // 병렬 실행(총 ~15초 내 완료, Vercel 60초 한도 안전)
+  const results = await Promise.all(candidates.map(testOne));
+  const rows = results.map(x => `<tr><td>${x.model}</td><td style="text-align:right">${x.ms}ms</td><td><b>${x.status}</b></td><td style="color:#666">${(x.msg||'').replace(/</g,'&lt;')}</td></tr>`).join('');
+  res.send(`<!doctype html><meta charset="utf-8"><title>AI 진단</title>
+    <body style="font-family:system-ui,sans-serif;max-width:820px;margin:24px auto;padding:0 16px">
+    <h2>Gemini 모델 진단</h2>
+    <p style="color:#555">OK=정상 · ERR=모델거부(메시지) · FAIL=연결실패 · timeout=20초 무응답. 이 표를 캡처해 보내주세요.</p>
+    <table border="1" cellpadding="7" style="border-collapse:collapse;width:100%;font-size:14px">
+    <tr style="background:#f0f3f8"><th>모델</th><th>응답시간</th><th>결과</th><th>메시지</th></tr>${rows}</table>
+    </body>`);
+});
+
 app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   // Supabase 모드=memoryStorage(req.file.buffer) / 로컬=diskStorage(req.file.path)
