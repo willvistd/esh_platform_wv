@@ -3354,7 +3354,7 @@ const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za
 // 특정 모델 고정이 필요하면 환경변수 GEMINI_MODEL 로 지정.
 const GEMINI_MODELS = process.env.GEMINI_MODEL
   ? [process.env.GEMINI_MODEL]
-  : ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
+  : ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
@@ -3479,7 +3479,7 @@ async function callOpenAI(pdfBase64) {
 }
 
 // ── 제미나이(Gemini) 호출 — PDF/이미지 + 프롬프트 → JSON ──
-function callGeminiModel(promptText, mimeType, base64Data, model) {
+function callGeminiModel(promptText, mimeType, base64Data, model, timeoutMs) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       contents: [{ parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ] }],
@@ -3509,7 +3509,8 @@ function callGeminiModel(promptText, mimeType, base64Data, model) {
       });
     });
     // 단일 요청이 멈춰 함수 전체가 Vercel 60초 한도에 걸려 죽는 것 방지(= 프런트 '서버 연결 오류')
-    req.setTimeout(32000, () => { req.destroy(new Error('Gemini 응답 지연(timeout)')); });
+    //   타임아웃은 남은 예산에 맞춰 동적으로 전달(기본 42초). 응답이 느린 모델도 충분히 기다리되 한도는 안 넘김.
+    req.setTimeout(Math.max(8000, timeoutMs || 42000), () => { req.destroy(new Error('Gemini 응답 지연(timeout)')); });
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -3522,14 +3523,16 @@ async function callGemini(promptText, mimeType, base64Data) {
   let lastErr, sawOverload = false, timedOut = false;
   const MAX_ATTEMPTS = 3;
   // Vercel 60초 한도 전에 반드시 '응답'을 돌려주기 위한 전체 예산(초과하면 중단하고 안내 메시지 반환)
-  const DEADLINE = Date.now() + 50000;
+  const DEADLINE = Date.now() + 56000;
   outer:
   for (const model of GEMINI_MODELS) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      if (Date.now() > DEADLINE) { timedOut = true; break outer; }
+      // 남은 예산(마감 1.5초 전까지). 5초도 안 남으면 더 시도하지 않고 안내 메시지 반환.
+      const budget = DEADLINE - Date.now() - 1500;
+      if (budget < 5000) { timedOut = true; break outer; }
       try {
-        console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1})`);
-        const r = await callGeminiModel(promptText, mimeType, base64Data, model);
+        console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1}, budget ${Math.round(budget/1000)}s)`);
+        const r = await callGeminiModel(promptText, mimeType, base64Data, model, Math.min(42000, budget));
         console.log(`[Gemini] 성공: ${model}`);
         return r;
       } catch (err) {
