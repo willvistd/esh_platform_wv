@@ -1109,6 +1109,24 @@ async function initDB() {
     console.error('접미사 중복 병합 실패:', e);
   }
 
+  // ── 업로드 버킷 파일 크기 한도 상향(1회) — 게시판 등 큰 첨부파일(최대 50MB) 허용 ──
+  //   Supabase 버킷 기본 한도에 걸려 수십 MB 파일 업로드가 막히던 문제 해결.
+  //   (public 상태는 현재값 유지. 사장님이 추후 비공개로 바꾸면 마커 때문에 되돌리지 않음)
+  try {
+    if (supabase) {
+      const done = await pool.query("SELECT value FROM app_settings WHERE key='uploads_bucket_limit_v1'");
+      if (done.rowCount === 0) {
+        const { error } = await supabase.storage.updateBucket('uploads', { public: true, fileSizeLimit: '50MB' });
+        if (!error) {
+          await pool.query("INSERT INTO app_settings (key, value) VALUES ('uploads_bucket_limit_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+          console.log('[DB] uploads 버킷 파일 크기 한도 50MB 설정');
+        } else {
+          console.error('버킷 한도 설정 실패:', error.message);
+        }
+      }
+    }
+  } catch (e) { console.error('버킷 한도 설정 예외:', e.message); }
+
   // ── 사업장관리번호 통일(1회) — 윌앤비전 본사 소속 부서·지사만 907-16-15418-7 ──
   //   계열사(KBCI·동부캐리어·윌비모터스·위드윌 등 '윌앤비전' 접두어 없는 본부)는 제외.
   try {
