@@ -3394,6 +3394,9 @@ const MSDS_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 아�
 
 주의: ghsIds와 ppeIds는 반드시 숫자(정수) 배열로 반환. 문자열 금지. 해당 항목이 없으면 [] 반환.`;
 
+// MSDS 분석은 구조화 추출 작업 → '사고(thinking)'가 적어 빠른 모델을 먼저 시도(시간 초과↓).
+const MSDS_MODELS = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+
 // 순서대로 시도할 모델 목록 (앞쪽 모델 실패 시 다음으로)
 const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
 
@@ -3519,13 +3522,14 @@ function callGeminiModel(promptText, mimeType, base64Data, model, timeoutMs) {
 // 재시도 + 모델 폴백 포함
 // "high demand/overload"(503 UNAVAILABLE)는 구글 서버가 잠깐 붐비는 일시 현상 →
 // 모델별로 최대 3회, 지수 백오프(2s→4s)로 재시도하고, 그래도 안 되면 다음 모델로 폴백.
-async function callGemini(promptText, mimeType, base64Data) {
+async function callGemini(promptText, mimeType, base64Data, modelsOverride) {
   let lastErr, sawOverload = false, timedOut = false;
   const MAX_ATTEMPTS = 3;
+  const modelList = (Array.isArray(modelsOverride) && modelsOverride.length) ? modelsOverride : GEMINI_MODELS;
   // Vercel 60초 한도 전에 반드시 '응답'을 돌려주기 위한 전체 예산(초과하면 중단하고 안내 메시지 반환)
   const DEADLINE = Date.now() + 56000;
   outer:
-  for (const model of GEMINI_MODELS) {
+  for (const model of modelList) {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       // 남은 예산(마감 1.5초 전까지). 5초도 안 남으면 더 시도하지 않고 안내 메시지 반환.
       const budget = DEADLINE - Date.now() - 1500;
@@ -3632,7 +3636,7 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
     cleanup();
     // Gemini 키가 있으면 Gemini, 아니면 OpenAI
     const raw = GEMINI_API_KEY
-      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64)
+      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64, MSDS_MODELS)
       : await callOpenAI(pdfBase64);
     const result = sanitizeMsds(raw);
     res.json(result);
