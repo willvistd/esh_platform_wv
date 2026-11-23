@@ -428,7 +428,11 @@ const api = {
           });
           if (put.ok) return { name: nm, url: sdata.publicUrl, size: fileObj.size };
           let msg = ""; try { msg = (await put.json()).message || ""; } catch (_) {}
-          return { error: msg || `직접 업로드 실패(HTTP ${put.status}). 파일이 너무 크거나 스토리지 한도를 초과했을 수 있습니다.` };
+          const mb = (fileObj.size / 1048576).toFixed(1);
+          if (put.status === 413 || /exceed|too large|maximum|size/i.test(msg)) {
+            return { error: `파일이 너무 큽니다(${mb}MB). 스토리지 한도를 초과했습니다. 50MB 이하 파일로 올려주세요.` };
+          }
+          return { error: msg || `직접 업로드 실패(HTTP ${put.status}, ${mb}MB). 잠시 후 다시 시도해 주세요.` };
         }
         return { error: (sdata && sdata.error) || "업로드 URL 발급 실패" };
       } catch (e) {
