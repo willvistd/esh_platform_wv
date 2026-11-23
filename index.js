@@ -1109,23 +1109,29 @@ async function initDB() {
     console.error('접미사 중복 병합 실패:', e);
   }
 
-  // ── 업로드 버킷 설정(1회) — 50MB 한도 + 모든 형식 허용(ZIP·HWP 등) ──
-  //   Supabase 버킷의 크기 한도/형식(MIME) 제한에 걸려 수십 MB·압축파일 업로드가 막히던 문제 해결.
-  //   allowedMimeTypes:null = 형식 제한 없음. (public 상태는 유지; 추후 비공개 전환은 마커로 보존)
+  // ── 업로드 버킷 보장 — 없으면 생성, 있으면 설정(50MB + 모든 형식 허용) ──
+  //   'The related resource does not exist' = 'uploads' 버킷이 없어서 업로드 전부 실패하던 원인.
+  //   성공 시 마커 저장(이후 콜드스타트마다 반복 호출 방지). 실패 시 다음 부팅에 재시도.
   try {
     if (supabase) {
-      const done = await pool.query("SELECT value FROM app_settings WHERE key='uploads_bucket_cfg_v2'");
+      const done = await pool.query("SELECT value FROM app_settings WHERE key='uploads_bucket_ready_v3'");
       if (done.rowCount === 0) {
-        const { error } = await supabase.storage.updateBucket('uploads', { public: true, fileSizeLimit: '50MB', allowedMimeTypes: null });
-        if (!error) {
-          await pool.query("INSERT INTO app_settings (key, value) VALUES ('uploads_bucket_cfg_v2', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
-          console.log('[DB] uploads 버킷 설정: 50MB + 모든 형식 허용');
+        const cfg = { public: true, fileSizeLimit: '50MB', allowedMimeTypes: null };
+        const { data: existing } = await supabase.storage.getBucket('uploads');
+        let ok = false;
+        if (!existing) {
+          const { error: cErr } = await supabase.storage.createBucket('uploads', cfg);
+          if (cErr && !/already exists/i.test(cErr.message || '')) console.error('버킷 생성 실패:', cErr.message);
+          else { ok = true; console.log('[DB] uploads 버킷 생성(50MB·모든 형식)'); }
         } else {
-          console.error('버킷 설정 실패:', error.message);
+          const { error: uErr } = await supabase.storage.updateBucket('uploads', cfg);
+          if (uErr) console.error('버킷 설정 실패:', uErr.message);
+          else { ok = true; console.log('[DB] uploads 버킷 설정 갱신(50MB·모든 형식)'); }
         }
+        if (ok) await pool.query("INSERT INTO app_settings (key, value) VALUES ('uploads_bucket_ready_v3', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
       }
     }
-  } catch (e) { console.error('버킷 설정 예외:', e.message); }
+  } catch (e) { console.error('버킷 보장 예외:', e.message); }
 
   // ── 사업장관리번호 통일(1회) — 윌앤비전 본사 소속 부서·지사만 907-16-15418-7 ──
   //   계열사(KBCI·동부캐리어·윌비모터스·위드윌 등 '윌앤비전' 접두어 없는 본부)는 제외.
