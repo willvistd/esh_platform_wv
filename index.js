@@ -3353,11 +3353,12 @@ const OPENAI_API_KEY = (process.env.OPENAI_API_KEY || '').replace(/[^A-Za-z0-9_\
 // 공백/개행/따옴표만 걸러지도록 키 구성 문자(영문/숫자/_/-/.)를 허용.
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za-z0-9_.\-]/g, '');
 // 최신 모델 우선, 접근 불가 시 하위 모델로 자동 폴백.
-// (구 gemini-2.5-flash는 2026년부터 신규 사용자에게 제공 중단 → 3.x 계열로 교체)
+// 2026년 기준 이 계정에서 유효한 모델은 3.x 계열뿐(2.0/2.5/1.5-flash는 전부 'no longer available').
+//   진단(/api/ai-diag)으로 확인: gemini-3.8-flash·gemini-flash-latest 유효, 과부하 시에만 'high demand'.
 // 특정 모델 고정이 필요하면 환경변수 GEMINI_MODEL 로 지정.
 const GEMINI_MODELS = process.env.GEMINI_MODEL
   ? [process.env.GEMINI_MODEL]
-  : ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+  : ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-pro'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
@@ -3397,8 +3398,8 @@ const MSDS_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 아�
 
 주의: ghsIds와 ppeIds는 반드시 숫자(정수) 배열로 반환. 문자열 금지. 해당 항목이 없으면 [] 반환.`;
 
-// MSDS 분석은 구조화 추출 작업 → '사고(thinking)'가 적어 빠른 모델을 먼저 시도(시간 초과↓).
-const MSDS_MODELS = ['gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+// MSDS 분석 — 유효한 3.x 모델만(옛 2.0/2.5는 제공 중단). flash 우선, pro는 최후 폴백.
+const MSDS_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-pro'];
 
 // 순서대로 시도할 모델 목록 (앞쪽 모델 실패 시 다음으로)
 const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
@@ -3970,10 +3971,10 @@ app.get('/api/ai-legal', async (req, res) => {
       '- 맨 마지막 줄에 "※ 이 답변은 참고용이며, 구체적 판단은 원문과 전문가 확인이 필요합니다." 를 붙인다.\n\n' +
       '[질문]\n' + q + '\n\n[자료]\n' + context;
 
-    // 모델 폴백을 넓게: latest 별칭(가장 덜 붐빔) 우선 → 공용 목록 → 안정 모델들. 중복 제거.
+    // 모델 폴백 — 유효한 3.x 계열만(옛 2.0/2.5는 제공 중단). 중복 제거.
     const base = (typeof GEMINI_MODELS !== 'undefined' && GEMINI_MODELS.length)
-      ? GEMINI_MODELS : ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash'];
-    const models = [...new Set(['gemini-flash-latest', ...base, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'])];
+      ? GEMINI_MODELS : ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash'];
+    const models = [...new Set(['gemini-3.8-flash', 'gemini-flash-latest', ...base])];
     let answer = '', lastErr = '', overloaded = false, quota = false;
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     // 과부하는 잠깐이므로 마감시간(약 40초) 안에서 모델을 바꿔가며 끈질기게 재시도.
