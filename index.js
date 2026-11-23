@@ -3358,7 +3358,7 @@ const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || '').trim().replace(/[^A-Za
 // 특정 모델 고정이 필요하면 환경변수 GEMINI_MODEL 로 지정.
 const GEMINI_MODELS = process.env.GEMINI_MODEL
   ? [process.env.GEMINI_MODEL]
-  : ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-pro'];
+  : ['gemini-3.8-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.1-pro'];
 // AI 사용 가능 여부(둘 중 하나라도 키가 있으면 true) — Gemini 우선
 const AI_ENABLED = !!(GEMINI_API_KEY || OPENAI_API_KEY);
 
@@ -3398,8 +3398,8 @@ const MSDS_PROMPT = `이 MSDS(물질안전보건자료) PDF를 분석하여 아�
 
 주의: ghsIds와 ppeIds는 반드시 숫자(정수) 배열로 반환. 문자열 금지. 해당 항목이 없으면 [] 반환.`;
 
-// MSDS 분석 — 유효한 3.x 모델만(옛 2.0/2.5는 제공 중단). flash 우선, pro는 최후 폴백.
-const MSDS_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-pro'];
+// MSDS 분석 — 무료 등급에서 덜 붐비는 경량(lite) 모델 우선 → 일반 flash → pro.
+const MSDS_MODELS = ['gemini-3.8-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.1-pro'];
 
 // 순서대로 시도할 모델 목록 (앞쪽 모델 실패 시 다음으로)
 const OPENAI_MODELS = ['gpt-4o-mini', 'gpt-4o'];
@@ -3638,8 +3638,8 @@ app.get('/api/ai-diag', async (req, res) => {
   const gkey = GEMINI_API_KEY;
   if (!gkey) return res.send('<pre>GEMINI_API_KEY 미설정</pre>');
   const candidates = [
-    'gemini-2.0-flash', 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.5-flash-lite',
-    'gemini-1.5-flash', 'gemini-2.0-flash-001', 'gemini-3.8-flash', 'gemini-2.5-pro',
+    'gemini-3.8-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-flash-latest',
+    'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.1-flash', 'gemini-3.1-pro',
   ];
   const testOne = (model) => new Promise((resolve) => {
     const t0 = Date.now();
