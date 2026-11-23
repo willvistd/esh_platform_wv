@@ -3522,10 +3522,11 @@ function callGeminiModel(promptText, mimeType, base64Data, model, timeoutMs) {
 // 재시도 + 모델 폴백 포함
 // "high demand/overload"(503 UNAVAILABLE)는 구글 서버가 잠깐 붐비는 일시 현상 →
 // 모델별로 최대 3회, 지수 백오프(2s→4s)로 재시도하고, 그래도 안 되면 다음 모델로 폴백.
-async function callGemini(promptText, mimeType, base64Data, modelsOverride) {
+async function callGemini(promptText, mimeType, base64Data, modelsOverride, maxReqMs) {
   let lastErr, sawOverload = false, timedOut = false;
   const MAX_ATTEMPTS = 3;
   const modelList = (Array.isArray(modelsOverride) && modelsOverride.length) ? modelsOverride : GEMINI_MODELS;
+  const perReqCap = maxReqMs || 42000;   // 요청당 최대 대기(모델을 더 많이 시도하려면 짧게)
   // Vercel 60초 한도 전에 반드시 '응답'을 돌려주기 위한 전체 예산(초과하면 중단하고 안내 메시지 반환)
   const DEADLINE = Date.now() + 56000;
   outer:
@@ -3536,7 +3537,7 @@ async function callGemini(promptText, mimeType, base64Data, modelsOverride) {
       if (budget < 5000) { timedOut = true; break outer; }
       try {
         console.log(`[Gemini] 시도: ${model} (attempt ${attempt + 1}, budget ${Math.round(budget/1000)}s)`);
-        const r = await callGeminiModel(promptText, mimeType, base64Data, model, Math.min(42000, budget));
+        const r = await callGeminiModel(promptText, mimeType, base64Data, model, Math.min(perReqCap, budget));
         console.log(`[Gemini] 성공: ${model}`);
         return r;
       } catch (err) {
@@ -3636,7 +3637,7 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
     cleanup();
     // Gemini 키가 있으면 Gemini, 아니면 OpenAI
     const raw = GEMINI_API_KEY
-      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64, MSDS_MODELS)
+      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64, MSDS_MODELS, 22000)   // 요청당 22초 → 예산 내 2~3개 모델 시도
       : await callOpenAI(pdfBase64);
     const result = sanitizeMsds(raw);
     res.json(result);
