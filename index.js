@@ -10,6 +10,9 @@ const https = require('https');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const judge = require('./judge'); // 규제 판정 엔진(작업환경측정·특수건강진단 등)
+// PDF 텍스트 추출 — lib 경로를 직접 require해 pdf-parse의 디버그(샘플파일 읽기) 회피
+let pdfParse = null;
+try { pdfParse = require('pdf-parse/lib/pdf-parse.js'); } catch (_) { try { pdfParse = require('pdf-parse'); } catch (_) {} }
 
 // ── 세션 (HMAC 서명 쿠키, 무상태) ──
 // SESSION_SECRET 권장. 없으면 PGPASSWORD 기반 파생(재시작에도 안정 — 새 env 없이 동작)
@@ -3484,8 +3487,12 @@ async function callOpenAI(pdfBase64) {
 // ── 제미나이(Gemini) 호출 — PDF/이미지 + 프롬프트 → JSON ──
 function callGeminiModel(promptText, mimeType, base64Data, model, timeoutMs) {
   return new Promise((resolve, reject) => {
+    // base64Data가 있으면 파일(비전) 포함, 없으면 텍스트만 전송(훨씬 빠름).
+    const parts = base64Data
+      ? [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ]
+      : [ { text: promptText } ];
     const body = JSON.stringify({
-      contents: [{ parts: [ { text: promptText }, { inline_data: { mime_type: mimeType, data: base64Data } } ] }],
+      contents: [{ parts }],
       // 레거시 thinkingConfig.thinkingBudget:0 은 Gemini 3.x에서 오류(429/400)를 유발하므로 제거.
       // 대신 출력 한도를 크게 잡아, 기본 '사고' 토큰이 출력을 잠식해 JSON이 잘리는 것을 방지.
       generationConfig: { temperature: 0, maxOutputTokens: 32768 },
@@ -3633,12 +3640,26 @@ app.post('/api/msds/extract', upload.single('file'), async (req, res) => {
   }
   try {
     const pdfBuffer = req.file.buffer || fs.readFileSync(req.file.path);
-    const pdfBase64 = pdfBuffer.toString('base64');
     cleanup();
-    // Gemini 키가 있으면 Gemini, 아니면 OpenAI
-    const raw = GEMINI_API_KEY
-      ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64, MSDS_MODELS, 22000)   // 요청당 22초 → 예산 내 2~3개 모델 시도
-      : await callOpenAI(pdfBase64);
+
+    // 1) 먼저 PDF에서 '텍스트'를 추출 시도 — 텍스트 PDF면 파일 통째 전송(느린 비전처리) 대신
+    //    텍스트만 Gemini에 보내 훨씬 빠르고 안정적으로 분석(타임아웃 방지).
+    let pdfText = '';
+    if (pdfParse) {
+      try { const parsed = await pdfParse(pdfBuffer); pdfText = String((parsed && parsed.text) || '').trim(); } catch (_) {}
+    }
+    let raw;
+    if (GEMINI_API_KEY && pdfText.length >= 300) {
+      // 텍스트 경로(빠름): 원문 텍스트를 프롬프트에 포함, 파일 전송 없음.
+      const textPrompt = MSDS_PROMPT + '\n\n[분석할 MSDS 원문 텍스트]\n' + pdfText.slice(0, 40000);
+      raw = await callGemini(textPrompt, null, null, MSDS_MODELS, 22000);
+    } else {
+      // 스캔본(텍스트 거의 없음) 등 → 파일(비전) 경로로 폴백.
+      const pdfBase64 = pdfBuffer.toString('base64');
+      raw = GEMINI_API_KEY
+        ? await callGemini(MSDS_PROMPT, 'application/pdf', pdfBase64, MSDS_MODELS, 22000)
+        : await callOpenAI(pdfBase64);
+    }
     const result = sanitizeMsds(raw);
     res.json(result);
   } catch (err) {
