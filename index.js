@@ -277,6 +277,14 @@ async function initDB() {
       key TEXT PRIMARY KEY,
       value TEXT
     );
+    CREATE TABLE IF NOT EXISTS safety_board (
+      id SERIAL PRIMARY KEY,
+      title TEXT,
+      "fileUrl" TEXT,
+      "fileName" TEXT,
+      "sortOrder" INTEGER DEFAULT 0,
+      "updatedAt" TEXT
+    );
     CREATE TABLE IF NOT EXISTS sites (
       id SERIAL PRIMARY KEY,
       name TEXT, region TEXT, client TEXT,
@@ -1148,6 +1156,23 @@ async function initDB() {
   } catch (e) {
     console.error('사업장관리번호 통일 실패:', e);
   }
+
+  // ── 안전보건게시판 기본 칸 시드(1회) — 법정 게시 항목 8칸 ──
+  try {
+    const done = await pool.query("SELECT value FROM app_settings WHERE key='safety_board_seed_v1'");
+    if (done.rowCount === 0) {
+      const cnt = await pool.query('SELECT COUNT(*) FROM safety_board');
+      if (parseInt(cnt.rows[0].count) === 0) {
+        const titles = ['안전보건경영방침', '산업안전보건법령 요지', '안전보건관리규정', '작업환경측정 결과표',
+                        '산업안전보건위원회 회의록', '위험성평가 결과', '비상연락망', '기타 공지사항'];
+        for (let i = 0; i < titles.length; i++) {
+          await pool.query('INSERT INTO safety_board (title, "sortOrder", "updatedAt") VALUES ($1, $2, NOW()::TEXT)', [titles[i], i]);
+        }
+        console.log('[DB] 안전보건게시판 기본 8칸 시드');
+      }
+      await pool.query("INSERT INTO app_settings (key, value) VALUES ('safety_board_seed_v1', NOW()::TEXT) ON CONFLICT (key) DO NOTHING");
+    }
+  } catch (e) { console.error('안전보건게시판 시드 실패:', e); }
 
   // ── 급여기초 마스터에서 업무내용·계약형태·주소 '빈 칸만' 채우기(1회) ──
   //   플랫폼 사업장명 기준으로 매칭(접미사 (FM)/(도급)은 떼고 비교), 현재 비어있는 필드만 채움.
@@ -3112,6 +3137,50 @@ app.delete('/api/sites/:id', async (req, res) => {
     console.error('DELETE /api/sites 오류:', e);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── 안전보건게시판 (벽면 게시판형 — 칸별 PDF 부착/다운로드) ──
+//   조회: 로그인한 모든 사용자. 수정/업로드/추가/삭제: 관리자급(admin·safety)만.
+app.get('/api/safety-board', async (req, res) => {
+  try {
+    const r = await pool.query('SELECT id, title, "fileUrl", "fileName", "sortOrder", "updatedAt" FROM safety_board ORDER BY "sortOrder" ASC, id ASC');
+    res.json({ items: r.rows, canEdit: isAdminLevel(req) });
+  } catch (e) { console.error('GET /api/safety-board', e.message); res.status(500).json({ error: e.message }); }
+});
+app.post('/api/safety-board', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '게시판 수정은 관리자만 가능합니다.')) return;
+  try {
+    const title = String((req.body && req.body.title) || '새 항목').slice(0, 100);
+    const mx = await pool.query('SELECT COALESCE(MAX("sortOrder"),0)+1 AS n FROM safety_board');
+    const r = await pool.query('INSERT INTO safety_board (title, "sortOrder", "updatedAt") VALUES ($1, $2, NOW()::TEXT) RETURNING *', [title, mx.rows[0].n]);
+    res.json({ item: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/safety-board/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '게시판 수정은 관리자만 가능합니다.')) return;
+  try {
+    const b = req.body || {};
+    // 제공된 필드만 갱신(부분 수정 지원)
+    const sets = [], vals = [];
+    if (b.title !== undefined)    { vals.push(String(b.title).slice(0, 100)); sets.push(`title = $${vals.length}`); }
+    if (b.fileUrl !== undefined)  { vals.push(b.fileUrl ? String(b.fileUrl) : null); sets.push(`"fileUrl" = $${vals.length}`); }
+    if (b.fileName !== undefined) { vals.push(b.fileName ? String(b.fileName).slice(0, 200) : null); sets.push(`"fileName" = $${vals.length}`); }
+    if (b.sortOrder !== undefined){ vals.push(parseInt(b.sortOrder) || 0); sets.push(`"sortOrder" = $${vals.length}`); }
+    if (!sets.length) return res.json({ ok: true });
+    vals.push(new Date().toISOString()); sets.push(`"updatedAt" = $${vals.length}`);
+    vals.push(req.params.id);
+    const r = await pool.query(`UPDATE safety_board SET ${sets.join(', ')} WHERE id = $${vals.length} RETURNING *`, vals);
+    if (r.rowCount === 0) return res.status(404).json({ error: '항목을 찾을 수 없습니다.' });
+    res.json({ item: r.rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.delete('/api/safety-board/:id', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '게시판 수정은 관리자만 가능합니다.')) return;
+  try {
+    const r = await pool.query('DELETE FROM safety_board WHERE id=$1 RETURNING id', [req.params.id]);
+    if (r.rowCount === 0) return res.status(404).json({ error: '항목을 찾을 수 없습니다.' });
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ── FM사업본부 사업장 담당자(담당AM) 명단 ──

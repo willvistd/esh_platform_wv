@@ -1251,6 +1251,8 @@ function App() {
           <FieldInspectionView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "tool-worker-survey" ? (
           <WorkerSurveyView onNav={onNav} currentUser={currentUser} />
+        ) : route.name === "safety-board" ? (
+          <SafetyBoardView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "legal-checker" ? (
           <LegalCheckerView onNav={onNav} currentUser={currentUser} initialLawQuery={route.lawQuery || ""} />
         ) : route.name === "risk-assessment" ? (
