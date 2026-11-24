@@ -2869,17 +2869,31 @@ async function syncSiteAssignees(siteId, assigneeIds) {
   }
 }
 
+// ── 윌앤비전 본사/지사면 사업장관리번호 자동 기입(비어있을 때만) ──
+const WV_MGMT_NO = '907-16-15418-7';
+async function wvHqIdSet() {
+  try { const r = await pool.query("SELECT id FROM hq WHERE name LIKE '윌앤비전%'"); return new Set(r.rows.map(x => String(x.id))); }
+  catch { return new Set(); }
+}
+const applyDefaultMgmtNo = (hqId, provided, wvSet) => {
+  const p = String(provided || '').trim();
+  if (p) return p;                                            // 입력값 있으면 그대로
+  if (hqId != null && wvSet.has(String(hqId))) return WV_MGMT_NO;   // 윌앤비전 본사/지사면 자동
+  return '';                                                 // 계열사 등은 비움
+};
+
 app.post('/api/sites', async (req, res) => {
   if (deny(isSiteMgrLevel(req), res, '사업장 추가 권한이 없습니다.')) return;
   try {
     const { name, region, client, manager, phone, status, hqId, address, assigneeIds, expiresAt,
             orgType, affiliateName, mgmtNo, openNo, workType, contractType, startAt } = req.body;
+    const mgmtNoFinal = applyDefaultMgmtNo(hqId, mgmtNo, await wvHqIdSet());
     const result = await pool.query(
       `INSERT INTO sites (name, region, client, manager, phone, status, "hqId", address, "expiresAt",
         "orgType", "affiliateName", "mgmtNo", "openNo", "workType", "contractType", "startAt")
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
       [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', expiresAt||null,
-       orgType||'본사', affiliateName||'', mgmtNo||'', openNo||'', workType||'', contractType||'', startAt||null]
+       orgType||'본사', affiliateName||'', mgmtNoFinal, openNo||'', workType||'', contractType||'', startAt||null]
     );
     const site = result.rows[0];
     // 담당자 동기화 (배열로 들어왔을 때만)
@@ -2924,6 +2938,7 @@ app.post('/api/sites/bulk', async (req, res) => {
     if (rows.length === 0) return res.status(400).json({ error: '등록할 행이 없습니다.' });
     if (rows.length > 2000) return res.status(400).json({ error: '한 번에 최대 2000행까지 등록할 수 있습니다.' });
 
+    const wvSet = await wvHqIdSet();   // 윌앤비전 본사/지사 hqId 집합(관리번호 자동기입용)
     const norm = (v) => String(v == null ? '' : v).replace(/\s+/g, '').toLowerCase();
     // 접미사 차이((주)/(FM)/(도급)/(NN일) 등)로 인한 중복 생성을 막는 관대한 정규화
     const strip = (v) => String(v == null ? '' : v)
@@ -2998,7 +3013,7 @@ app.post('/api/sites/bulk', async (req, res) => {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
           [name, r.region || '', r.client || '', r.manager || '', r.phone || '', r.status || 'active',
            r.hqId || null, r.address || '', r.expiresAt || null,
-           r.orgType || '본사', r.affiliateName || '', r.mgmtNo || '', r.openNo || '',
+           r.orgType || '본사', r.affiliateName || '', applyDefaultMgmtNo(r.hqId, r.mgmtNo, wvSet), r.openNo || '',
            r.workType || '', r.contractType || '', r.startAt || null]
         );
         // 같은 배치 내 뒤 행이 또 추가하지 않도록 등록
@@ -3069,12 +3084,13 @@ app.put('/api/sites/:id', async (req, res) => {
       const cur = await pool.query('SELECT "expiresAt" FROM sites WHERE id=$1', [req.params.id]);
       finalExpiresAt = (cur.rows[0] && cur.rows[0].expiresAt) || null;
     }
+    const mgmtNoFinal = applyDefaultMgmtNo(hqId, mgmtNo, await wvHqIdSet());  // 윌앤비전이면 비어있을 때 자동 기입
     const result = await pool.query(
       `UPDATE sites SET name=$1, region=$2, client=$3, manager=$4, phone=$5, status=$6, "hqId"=$7, address=$8, "expiresAt"=$9,
         "orgType"=$10, "affiliateName"=$11, "mgmtNo"=$12, "openNo"=$13, "workType"=$14, "contractType"=$15, "startAt"=$16
        WHERE id=$17 RETURNING *`,
       [name||'', region||'', client||'', manager||'', phone||'', status||'active', hqId||null, address||'', finalExpiresAt,
-       orgType||'본사', affiliateName||'', mgmtNo||'', openNo||'', workType||'', contractType||'', startAt||null, req.params.id]
+       orgType||'본사', affiliateName||'', mgmtNoFinal, openNo||'', workType||'', contractType||'', startAt||null, req.params.id]
     );
     if (Array.isArray(assigneeIds)) {
       await syncSiteAssignees(req.params.id, assigneeIds);
