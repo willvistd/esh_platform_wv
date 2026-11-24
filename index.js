@@ -470,6 +470,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "orgType" TEXT;`);        // 본사/계열사
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "affiliateName" TEXT;`);  // 계열사명(계열사일 때)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "mgmtNo" TEXT;`);         // 사업장관리번호
+  await pool.query(`ALTER TABLE safety_board ADD COLUMN IF NOT EXISTS "thumbUrl" TEXT;`);  // 게시판 썸네일(PDF 첫장 이미지)
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "openNo" TEXT;`);         // 사업개시번호
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "workType" TEXT;`);       // 업무내용
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "contractType" TEXT;`);   // 계약형태
@@ -3143,7 +3144,7 @@ app.delete('/api/sites/:id', async (req, res) => {
 //   조회: 로그인한 모든 사용자. 수정/업로드/추가/삭제: 관리자급(admin·safety)만.
 app.get('/api/safety-board', async (req, res) => {
   try {
-    const r = await pool.query('SELECT id, title, "fileUrl", "fileName", "sortOrder", "updatedAt" FROM safety_board ORDER BY "sortOrder" ASC, id ASC');
+    const r = await pool.query('SELECT id, title, "fileUrl", "fileName", "thumbUrl", "sortOrder", "updatedAt" FROM safety_board ORDER BY "sortOrder" ASC, id ASC');
     res.json({ items: r.rows, canEdit: isAdminLevel(req) });
   } catch (e) { console.error('GET /api/safety-board', e.message); res.status(500).json({ error: e.message }); }
 });
@@ -3165,6 +3166,7 @@ app.put('/api/safety-board/:id', async (req, res) => {
     if (b.title !== undefined)    { vals.push(String(b.title).slice(0, 100)); sets.push(`title = $${vals.length}`); }
     if (b.fileUrl !== undefined)  { vals.push(b.fileUrl ? String(b.fileUrl) : null); sets.push(`"fileUrl" = $${vals.length}`); }
     if (b.fileName !== undefined) { vals.push(b.fileName ? String(b.fileName).slice(0, 200) : null); sets.push(`"fileName" = $${vals.length}`); }
+    if (b.thumbUrl !== undefined) { vals.push(b.thumbUrl ? String(b.thumbUrl) : null); sets.push(`"thumbUrl" = $${vals.length}`); }
     if (b.sortOrder !== undefined){ vals.push(parseInt(b.sortOrder) || 0); sets.push(`"sortOrder" = $${vals.length}`); }
     if (!sets.length) return res.json({ ok: true });
     vals.push(new Date().toISOString()); sets.push(`"updatedAt" = $${vals.length}`);

@@ -10,6 +10,34 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
   const [err, setErr] = React.useState("");
   const fileRefs = React.useRef({});
 
+  // pdf.js 워커 1회 설정
+  React.useEffect(() => {
+    try {
+      if (window.pdfjsLib && !window.pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      }
+    } catch (_) {}
+  }, []);
+
+  // PDF 첫 장을 이미지(JPG)로 렌더 → 썸네일 파일 반환(실패 시 null)
+  const renderPdfThumb = async (file) => {
+    try {
+      const lib = window.pdfjsLib;
+      if (!lib) return null;
+      const buf = await file.arrayBuffer();
+      const pdf = await lib.getDocument({ data: buf }).promise;
+      const page = await pdf.getPage(1);
+      const base = page.getViewport({ scale: 1 });
+      const scale = 560 / base.width;
+      const vp = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+      const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.82));
+      return blob ? new File([blob], "thumb.jpg", { type: "image/jpeg" }) : null;
+    } catch (_) { return null; }
+  };
+
   const load = React.useCallback(() => {
     setLoading(true);
     fetch("/api/safety-board").then(r => r.json()).then(d => {
@@ -36,7 +64,11 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
     try {
       const r = await window.WV_API.uploadFile(file);
       if (!r || r.error || !r.url) throw new Error((r && r.error) || "업로드 실패");
-      await patch(id, { fileUrl: r.url, fileName: r.name || file.name });
+      // 첫 장 썸네일 생성·업로드(실패해도 PDF는 정상 등록)
+      let thumbUrl = "";
+      const thumb = await renderPdfThumb(file);
+      if (thumb) { const tr = await window.WV_API.uploadFile(thumb); if (tr && tr.url) thumbUrl = tr.url; }
+      await patch(id, { fileUrl: r.url, fileName: r.name || file.name, thumbUrl });
     } catch (e) { setErr(e.message || "업로드 실패"); }
     setBusyId(null);
   };
@@ -55,7 +87,7 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
     if (res.ok) setItems(xs => xs.filter(x => x.id !== id));
     else setErr("삭제 실패");
   };
-  const clearFile = async (id) => { if (window.confirm("이 칸의 파일을 떼어낼까요?")) await patch(id, { fileUrl: "", fileName: "" }); };
+  const clearFile = async (id) => { if (window.confirm("이 칸의 자료를 떼어낼까요? (칸은 남고 파일만 비워집니다)")) await patch(id, { fileUrl: "", fileName: "", thumbUrl: "" }); };
 
   return (
     <div className="content" style={{ maxWidth: 1180 }}>
@@ -103,11 +135,19 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
                   <div className={"sb-paper" + (it.fileUrl ? " has-file" : "")}>
                     <span className="sb-pin" />
                     {it.fileUrl ? (
-                      <a className="sb-doc" href={it.fileUrl} target="_blank" rel="noopener noreferrer" title="클릭하여 열기/다운로드">
-                        <div className="sb-doc-icon">PDF</div>
-                        <div className="sb-doc-name">{it.fileName || "자료"}</div>
-                        <div className="sb-doc-hint">클릭하여 열기</div>
-                      </a>
+                      it.thumbUrl ? (
+                        <a className="sb-doc-thumb" href={it.fileUrl} target="_blank" rel="noopener noreferrer" title={(it.fileName || "자료") + " — 클릭하여 열기/다운로드"}>
+                          <img className="sb-thumb" src={it.thumbUrl} alt={it.fileName || "자료"} loading="lazy" />
+                          <span className="sb-thumb-badge">PDF</span>
+                          <span className="sb-thumb-hint">클릭하여 열기</span>
+                        </a>
+                      ) : (
+                        <a className="sb-doc" href={it.fileUrl} target="_blank" rel="noopener noreferrer" title="클릭하여 열기/다운로드">
+                          <div className="sb-doc-icon">PDF</div>
+                          <div className="sb-doc-name">{it.fileName || "자료"}</div>
+                          <div className="sb-doc-hint">클릭하여 열기</div>
+                        </a>
+                      )
                     ) : (
                       <div className="sb-empty">
                         {edit ? (
@@ -127,11 +167,12 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
                   {/* 편집 모드 하단 버튼 */}
                   {edit && (
                     <div className="sb-slot-actions">
-                      <button onClick={() => fileRefs.current[it.id] && fileRefs.current[it.id].click()} disabled={uploading}>
-                        {it.fileUrl ? "교체" : "파일"}
+                      <button title={it.fileUrl ? "다른 PDF로 바꾸기" : "PDF 올리기"}
+                        onClick={() => fileRefs.current[it.id] && fileRefs.current[it.id].click()} disabled={uploading}>
+                        {it.fileUrl ? "파일 교체" : "PDF 올리기"}
                       </button>
-                      {it.fileUrl && <button onClick={() => clearFile(it.id)}>떼기</button>}
-                      <button className="sb-del" onClick={() => removeItem(it.id)}>칸삭제</button>
+                      {it.fileUrl && <button title="칸은 두고 파일만 비우기" onClick={() => clearFile(it.id)}>자료 떼기</button>}
+                      <button className="sb-del" title="칸(제목까지) 통째로 삭제" onClick={() => removeItem(it.id)}>칸 삭제</button>
                     </div>
                   )}
                 </div>
@@ -185,6 +226,13 @@ const SafetyBoardView = ({ onNav, currentUser }) => {
         .sb-doc-name { font-size:12px; font-weight:700; text-align:center; line-height:1.4;
           display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; word-break:break-all; }
         .sb-doc-hint { font-size:11px; color:#2563eb; font-weight:600; }
+        .sb-doc-thumb { position:absolute; inset:0; display:block; text-decoration:none; }
+        .sb-thumb { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+        .sb-doc-thumb:hover .sb-thumb { filter:brightness(.93); }
+        .sb-thumb-badge { position:absolute; top:6px; right:6px; background:#d4473b; color:#fff;
+          font-size:10px; font-weight:800; letter-spacing:.5px; padding:2px 6px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,.3); }
+        .sb-thumb-hint { position:absolute; left:0; right:0; bottom:0; text-align:center;
+          font-size:11px; font-weight:700; color:#fff; background:linear-gradient(transparent,rgba(0,0,0,.55)); padding:10px 4px 5px; }
         .sb-empty { display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
         .sb-empty-txt { color:#aab2bf; font-size:12.5px; }
         .sb-upload-btn { background:#fff; border:1.5px dashed #94a3b8; color:#475569; font-weight:700;
