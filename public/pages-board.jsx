@@ -1079,6 +1079,17 @@ const PdfThumb = ({ url }) => {
 //   - 썸네일 카드 그리드 + 하위분류 탭 + 검색
 //   - 관리자/안전관리자만 업로드·삭제, 직원은 다운로드만
 // ═══════════════════════════════════════════════════════════════
+// 유튜브 URL에서 영상 ID 추출(watch/youtu.be/embed/shorts 등 지원)
+const ytId = (url) => {
+  const s = String(url || "");
+  let m = s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/|live\/))([A-Za-z0-9_-]{11})/);
+  if (m) return m[1];
+  m = s.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : "";
+};
+const ytThumb = (id) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+const ytEmbed = (id) => `https://www.youtube-nocookie.com/embed/${id}`;
+
 const LibraryView = ({ cat, onNav, role, currentUser }) => {
   const D = window.WV_DATA;
   const can = D.can[role] || D.can["staff"];
@@ -1235,7 +1246,8 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
           {filtered.map(it => {
             const fileUrl = firstFileUrl(it);
-            const thumb = it.thumbUrl || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
+            const vid = ytId(it.videoUrl);
+            const thumb = it.thumbUrl || (vid ? ytThumb(vid) : null) || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
             return (
               <div key={it.id} className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 {/* 썸네일 (클릭 시 본문 보기) */}
@@ -1251,6 +1263,12 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                           <Icon name="file" size={36} />
                           <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 없음</div>
                         </div>}
+                  {vid && (
+                    <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                      <span style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 2px 8px rgba(0,0,0,.4)" }}>▶</span>
+                    </span>
+                  )}
                   {it.subCategory && (
                     <span style={{
                       position: "absolute", top: 8, left: 8, padding: "2px 8px", borderRadius: 10,
@@ -1271,10 +1289,14 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                   )}
                   {/* 본문은 카드에 표시 안 함. 클릭하면 내용 보기 */}
                   <div className="meta" style={{ fontSize: 11, marginTop: "auto" }}>
-                    {it.subCategory ? it.subCategory + " · " : ""}{KOSHORTDATE(it.createdAt)} · 파일 {fileCount(it)}개
+                    {vid ? "영상 · " : ""}{it.subCategory ? it.subCategory + " · " : ""}{KOSHORTDATE(it.createdAt)}{fileCount(it) ? " · 파일 " + fileCount(it) + "개" : ""}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                    {fileUrl ? (
+                    {vid ? (
+                      <button className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setDetailItem(it)}>
+                        ▶ 영상 보기
+                      </button>
+                    ) : fileUrl ? (
                       <a href={fileUrl} download className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center", textDecoration: "none" }}>
                         <Icon name="download" size={12} /> 다운로드
                       </a>
@@ -1325,6 +1347,13 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                   {detailItem.subCategory && <span className="chip chip-primary">{detailItem.subCategory}</span>}
                   {dps.map(d => <span key={d} style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)", background: "var(--primary-soft,#eef3ff)", borderRadius: 10, padding: "2px 9px" }}>{d}</span>)}
                 </div>
+                {ytId(detailItem.videoUrl) && (
+                  <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", marginBottom: 14, borderRadius: 8, overflow: "hidden", background: "#000" }}>
+                    <iframe src={ytEmbed(ytId(detailItem.videoUrl))} title={detailItem.title} allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
+                  </div>
+                )}
                 {detailItem.content
                   ? <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{detailItem.content}</div>
                   : <div className="meta" style={{ fontSize: 13 }}>등록된 설명(본문)이 없습니다.</div>}
@@ -1381,6 +1410,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
   const [title, setTitle] = React.useState(editItem?.title || "");
   const [desc, setDesc] = React.useState(editItem?.content || "");
   const [subCategory, setSubCategory] = React.useState(editItem?.subCategory || "");
+  const [videoUrl, setVideoUrl] = React.useState(editItem?.videoUrl || "");
   const [departments, setDepartments] = React.useState(
     String(editItem?.departments || "").split(",").map(s => s.trim()).filter(Boolean)
   );
@@ -1421,7 +1451,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
         title: title.trim(), content: desc.trim(), categoryId: cat.id,
         authorId: String(currentUser?.id || ""), authorName: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name || "",
         attachments: JSON.stringify(files), thumbUrl, subCategory: subCategory.trim(),
-        departments: departments.join(","),
+        departments: departments.join(","), videoUrl: videoUrl.trim(),
       };
       if (editItem) await window.WV_API.updatePost(editItem.id, payload);
       else await window.WV_API.addPost(payload);
@@ -1481,6 +1511,18 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
               placeholder="자료에 대한 간단한 설명" style={{ minHeight: 60 }} />
           </div>
 
+          <div className="field">
+            <label className="field-label">유튜브 영상 링크 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(선택 · 안전보건공단 등 유튜브 주소 붙여넣기)</span></label>
+            <input className="field-input" value={videoUrl} onChange={e => setVideoUrl(e.target.value)}
+              placeholder="예: https://www.youtube.com/watch?v=..." />
+            {videoUrl.trim() && !ytId(videoUrl) && (
+              <div style={{ fontSize: 11, color: "#b45309", marginTop: 4 }}>유튜브 주소 형식이 아닌 것 같아요. (youtube.com/watch?v=... 또는 youtu.be/...)</div>
+            )}
+            {ytId(videoUrl) && (
+              <div style={{ fontSize: 11, color: "var(--success,#1f8a5b)", marginTop: 4 }}>✓ 영상 인식됨 — 자료실에서 바로 재생됩니다.</div>
+            )}
+          </div>
+
           {/* 썸네일 */}
           <div className="field">
             <label className="field-label">미리보기 이미지 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(카드에 표시 · 이미지 파일이면 자동)</span></label>
@@ -1499,7 +1541,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
 
           {/* 첨부파일 (다운로드용) */}
           <div className="field">
-            <label className="field-label">첨부 파일 (다운로드용) *</label>
+            <label className="field-label">첨부 파일 (다운로드용) <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(문서 자료면 올리기 · 영상만이면 비워도 됨)</span></label>
             <FileAttacher files={files} onFilesChange={setFiles} />
           </div>
         </div>
