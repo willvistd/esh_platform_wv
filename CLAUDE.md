@@ -37,6 +37,16 @@
 - 무료 등급은 'high demand(과부하)' 잦음 → lite 모델 우선 시도, 안되면 유료 전환 권유.
 - MSDS 분석은 pdf-parse로 텍스트 추출 후 '텍스트'로 전송(빠름). 스캔본만 파일(비전) 폴백.
 
+## 교육자료(자료실형 library 카테고리)
+- posts 테이블에 `departments`(부서 다중 CSV), `videoUrl`(유튜브 링크) 컬럼 추가.
+- 부서별 묶기(한 자료가 여러 부서에 중복 표기) → 그 안에서 교육종류(subCategory: 채용시/정기/특별/MSDS 등)로 분리.
+- 카드=제목+썸네일+부서태그, 클릭 시 상세 모달(본문·유튜브 임베드 재생·첨부 다운로드).
+- 유튜브: ytId/ytThumb/ytEmbed 헬퍼(pages-board.jsx). youtube-nocookie 임베드.
+
+## 안전보건게시판(safety_board) — 벽면 게시판형
+- 별도 테이블 safety_board(칸별 PDF). 칸 클릭→PDF, PDF 첫장 썸네일(thumbUrl) 표시. 수정은 관리자급만.
+- 전용 페이지 pages-safetyboard.jsx, 사이드바 '안전보건게시판', API /api/safety-board.
+
 ## 업로드(Supabase Storage 'uploads' 버킷)
 - 큰 파일(>4MB)은 /api/upload-url 서명 URL로 브라우저가 Supabase에 직접 PUT(Vercel 4.5MB 우회).
 - 버킷 없으면 부팅 시 자동 생성(마커 uploads_bucket_ready_v3): public, 50MB, 모든 형식 허용.

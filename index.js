@@ -472,6 +472,7 @@ async function initDB() {
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "mgmtNo" TEXT;`);         // 사업장관리번호
   await pool.query(`ALTER TABLE safety_board ADD COLUMN IF NOT EXISTS "thumbUrl" TEXT;`);  // 게시판 썸네일(PDF 첫장 이미지)
   await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS departments TEXT;`);          // 자료실 부서 다중 태그(CSV)
+  await pool.query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;`);            // 교육자료 유튜브 영상 링크
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "openNo" TEXT;`);         // 사업개시번호
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "workType" TEXT;`);       // 업무내용
   await pool.query(`ALTER TABLE sites ADD COLUMN IF NOT EXISTS "contractType" TEXT;`);   // 계약형태
@@ -2289,20 +2290,20 @@ app.post('/api/posts/:id/view', async (req, res) => {
 });
 
 app.post('/api/posts', async (req, res) => {
-  const { title, content, categoryId, authorId, authorName, priority, dueAt, pinned, mustRead, hasSubmission, submissionTarget, attachments, thumbUrl, subCategory, departments } = req.body;
+  const { title, content, categoryId, authorId, authorName, priority, dueAt, pinned, mustRead, hasSubmission, submissionTarget, attachments, thumbUrl, subCategory, departments, videoUrl } = req.body;
   const result = await pool.query(
-    `INSERT INTO posts (title, content, "categoryId", "authorId", "authorName", "createdAt", priority, "dueAt", pinned, "mustRead", "hasSubmission", "submissionTarget", attachments, "thumbUrl", "subCategory", departments)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
-    [title, content, categoryId, authorId, authorName, new Date().toISOString(), priority||'normal', dueAt||'', pinned||'', mustRead||'', hasSubmission||'', submissionTarget||'', attachments||'', thumbUrl||'', subCategory||'', departments||'']
+    `INSERT INTO posts (title, content, "categoryId", "authorId", "authorName", "createdAt", priority, "dueAt", pinned, "mustRead", "hasSubmission", "submissionTarget", attachments, "thumbUrl", "subCategory", departments, "videoUrl")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [title, content, categoryId, authorId, authorName, new Date().toISOString(), priority||'normal', dueAt||'', pinned||'', mustRead||'', hasSubmission||'', submissionTarget||'', attachments||'', thumbUrl||'', subCategory||'', departments||'', videoUrl||'']
   );
   res.json({ post: result.rows[0] });
 });
 
 app.put('/api/posts/:id', async (req, res) => {
-  const { title, content, categoryId, priority, dueAt, pinned, mustRead, hasSubmission, submissionTarget, attachments, thumbUrl, subCategory, departments } = req.body;
+  const { title, content, categoryId, priority, dueAt, pinned, mustRead, hasSubmission, submissionTarget, attachments, thumbUrl, subCategory, departments, videoUrl } = req.body;
   const result = await pool.query(
-    `UPDATE posts SET title=$1, content=$2, "categoryId"=$3, priority=$4, "dueAt"=$5, pinned=$6, "mustRead"=$7, "hasSubmission"=$8, "submissionTarget"=$9, attachments=$10, "thumbUrl"=$11, "subCategory"=$12, departments=$13 WHERE id=$14 RETURNING *`,
-    [title, content, categoryId, priority||'normal', dueAt||'', pinned||'', mustRead||'', hasSubmission||'', submissionTarget||'', attachments||'', thumbUrl||'', subCategory||'', departments||'', req.params.id]
+    `UPDATE posts SET title=$1, content=$2, "categoryId"=$3, priority=$4, "dueAt"=$5, pinned=$6, "mustRead"=$7, "hasSubmission"=$8, "submissionTarget"=$9, attachments=$10, "thumbUrl"=$11, "subCategory"=$12, departments=$13, "videoUrl"=$14 WHERE id=$15 RETURNING *`,
+    [title, content, categoryId, priority||'normal', dueAt||'', pinned||'', mustRead||'', hasSubmission||'', submissionTarget||'', attachments||'', thumbUrl||'', subCategory||'', departments||'', videoUrl||'', req.params.id]
   );
   res.json({ post: result.rows[0] });
 });
