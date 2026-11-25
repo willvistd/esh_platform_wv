@@ -1555,8 +1555,15 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
 
           {allDepts.length > 0 && (
             <div className="field">
-              <label className="field-label">부서 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(여러 부서 선택 가능 · 선택한 부서마다 자료가 표시됨)</span></label>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <label className="field-label" style={{ marginBottom: 0 }}>부서 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(여러 부서 선택 가능 · 선택한 부서마다 자료가 표시됨)</span></label>
+                <button type="button"
+                  onClick={() => setDepartments(allDepts.every(d => departments.includes(d)) ? [] : [...allDepts])}
+                  style={{ fontSize: 12, fontWeight: 700, color: "var(--primary)", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {allDepts.every(d => departments.includes(d)) ? "전체 해제" : "전체 선택"}
+                </button>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
                 {allDepts.map(d => {
                   const on = departments.includes(d);
                   return (
