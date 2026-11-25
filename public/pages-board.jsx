@@ -616,7 +616,7 @@ const SubmitModal = ({ post, role, onClose }) => {
 };
 
 // ─── 파일 첨부 컴포넌트
-const FileAttacher = ({ files, onFilesChange }) => {
+const FileAttacher = ({ files, onFilesChange, onRawFiles }) => {
   const [uploading, setUploading] = React.useState(false);
   const [uploadError, setUploadError] = React.useState("");
   const inputRef = React.useRef(null);
@@ -634,6 +634,7 @@ const FileAttacher = ({ files, onFilesChange }) => {
         return r;
       }));
       onFilesChange([...files, ...results.map(r => ({ name: r.name, url: r.url }))]);
+      if (typeof onRawFiles === "function") onRawFiles(arr);   // 원본 File 전달(썸네일 자동 생성용)
     } catch(e) {
       setUploadError(e.message || "업로드 실패. 파일 크기와 네트워크를 확인하세요.");
     }
@@ -1034,6 +1035,25 @@ const loadPdfJs = () => {
     document.head.appendChild(s);
   });
   return _wvPdfjsPromise;
+};
+
+// PDF 파일(File) → 첫 장 이미지(JPG File). 업로드 시 썸네일 자동 생성용.
+const pdfFileToThumb = async (file) => {
+  try {
+    if (!file || !/\.pdf$/i.test(file.name || "")) return null;
+    const lib = await loadPdfJs();
+    const buf = await file.arrayBuffer();
+    const pdf = await lib.getDocument({ data: buf }).promise;
+    const page = await pdf.getPage(1);
+    const base = page.getViewport({ scale: 1 });
+    const scale = 560 / base.width;
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise;
+    const blob = await new Promise(r => canvas.toBlob(r, "image/jpeg", 0.82));
+    return blob ? new File([blob], "thumb.jpg", { type: "image/jpeg" }) : null;
+  } catch (_) { return null; }
 };
 
 const PdfThumb = ({ url }) => {
@@ -1525,7 +1545,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
 
           {/* 썸네일 */}
           <div className="field">
-            <label className="field-label">미리보기 이미지 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(카드에 표시 · 이미지 파일이면 자동)</span></label>
+            <label className="field-label">미리보기 이미지 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(카드에 표시 · PDF/이미지 첨부하면 자동 생성 · 바꾸려면 직접 선택)</span></label>
             {thumbUrl ? (
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <img src={thumbUrl} alt="썸네일" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--line)" }} />
@@ -1542,7 +1562,19 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
           {/* 첨부파일 (다운로드용) */}
           <div className="field">
             <label className="field-label">첨부 파일 (다운로드용) <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(문서 자료면 올리기 · 영상만이면 비워도 됨)</span></label>
-            <FileAttacher files={files} onFilesChange={setFiles} />
+            <FileAttacher files={files} onFilesChange={setFiles}
+              onRawFiles={async (rawFiles) => {
+                // 미리보기 이미지를 직접 안 올렸으면, 첨부한 PDF 첫 장으로 썸네일 자동 생성
+                if (thumbUrl) return;
+                const pdf = (rawFiles || []).find(f => /\.pdf$/i.test(f.name || ""));
+                if (!pdf) return;
+                setThumbUploading(true);
+                try {
+                  const t = await pdfFileToThumb(pdf);
+                  if (t) { const r = await window.WV_API.uploadFile(t); if (r && r.url) setThumbUrl(r.url); }
+                } catch (_) {}
+                setThumbUploading(false);
+              }} />
           </div>
         </div>
         <div className="modal-ft">
