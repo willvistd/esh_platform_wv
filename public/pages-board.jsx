@@ -1099,6 +1099,9 @@ const PdfThumb = ({ url }) => {
 //   - 썸네일 카드 그리드 + 하위분류 탭 + 검색
 //   - 관리자/안전관리자만 업로드·삭제, 직원은 다운로드만
 // ═══════════════════════════════════════════════════════════════
+// 교육자료 등 자료실 부서 구분(본부 기준) — 소유자 지정
+const EDU_DEPTS = ["CRM 사업본부", "HR 사업본부", "FM 사업본부", "물류사업본부", "윌비모터스", "동부캐리어"];
+
 // 유튜브 URL에서 영상 ID 추출(watch/youtu.be/embed/shorts 등 지원)
 const ytId = (url) => {
   const s = String(url || "");
@@ -1434,7 +1437,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
   const [departments, setDepartments] = React.useState(
     String(editItem?.departments || "").split(",").map(s => s.trim()).filter(Boolean)
   );
-  const allDepts = (window.WV_DATA && window.WV_DATA.depts) || [];
+  const allDepts = EDU_DEPTS;
   const toggleDept = (d) => setDepartments(xs => xs.includes(d) ? xs.filter(x => x !== d) : [...xs, d]);
   const [thumbUrl, setThumbUrl] = React.useState(editItem?.thumbUrl || "");
   const [files, setFiles] = React.useState(() => {
