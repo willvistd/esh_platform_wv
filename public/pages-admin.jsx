@@ -1185,6 +1185,32 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
   const [dragOverIndex, setDragOverIndex] = React.useState(null);
   const [reorderSaving, setReorderSaving] = React.useState(false);
 
+  // ── 고정 '메뉴' 순서 편집 ──
+  const [menuRows, setMenuRows] = React.useState([]);
+  const [mDragI, setMDragI] = React.useState(null);
+  const [mOverI, setMOverI] = React.useState(null);
+  const [mSaving, setMSaving] = React.useState(false);
+  React.useEffect(() => {
+    const defs = window.WV_MENU_DEFS || [];
+    window.WV_API.getMenuOrder().then(order => {
+      const ids = Array.isArray(order) ? order : [];
+      const byId = new Map(defs.map(d => [d.id, d]));
+      const ordered = [...ids.filter(id => byId.has(id)).map(id => byId.get(id)), ...defs.filter(d => !ids.includes(d.id))];
+      setMenuRows(ordered);
+    });
+  }, []);
+  const menuDrop = async (i) => {
+    if (mDragI === null || mDragI === i) { setMDragI(null); setMOverI(null); return; }
+    const next = [...menuRows]; const [m] = next.splice(mDragI, 1); next.splice(i, 0, m);
+    setMenuRows(next); setMDragI(null); setMOverI(null);
+    setMSaving(true);
+    try {
+      await window.WV_API.saveMenuOrder(next.map(x => x.id));
+      try { localStorage.setItem("wv_menu_order", JSON.stringify(next.map(x => x.id))); } catch (e) {}
+    } catch (e) { alert("메뉴 순서 저장 실패: " + (e.message || e)); }
+    setMSaving(false);
+  };
+
   const handleDragStart = (i) => (e) => {
     setDragIndex(i);
     e.dataTransfer.effectAllowed = "move";
@@ -1300,6 +1326,35 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
         </div>
         <button className="btn btn-primary" onClick={() => setAdding(true)}><Icon name="plus" size={14} /> 카테고리 추가</button>
       </div>
+
+      {/* 고정 '메뉴' 순서 편집 */}
+      {menuRows.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-2)", margin: "0 0 8px" }}>상단 메뉴 순서 <span style={{ fontWeight: 500, color: "var(--fg-3)", fontSize: 12 }}>(대시보드·산업재해·안전보건게시판 등 고정 메뉴)</span></div>
+          <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "8px 16px", fontSize: 12, color: "var(--fg-3)", borderBottom: "1px solid var(--line)", background: "var(--bg-sunk)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>💡 끌어서 순서를 바꾸면 모든 사용자 사이드바에 바로 반영됩니다.</span>
+              {mSaving && <span style={{ color: "var(--primary)" }}>저장 중…</span>}
+            </div>
+            {menuRows.map((m, i) => (
+              <div key={m.id} draggable
+                onDragStart={() => setMDragI(i)}
+                onDragOver={(e) => { e.preventDefault(); if (mOverI !== i) setMOverI(i); }}
+                onDragLeave={() => setMOverI(null)}
+                onDrop={() => menuDrop(i)}
+                onDragEnd={() => { setMDragI(null); setMOverI(null); }}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px",
+                  borderBottom: i < menuRows.length - 1 ? "1px solid var(--line)" : "none", cursor: "grab",
+                  opacity: mDragI === i ? 0.4 : 1,
+                  background: (mOverI === i && mDragI !== null && mDragI !== i) ? "var(--primary-soft,#eef3ff)" : "transparent" }}>
+                <span style={{ fontFamily: "monospace", color: "var(--fg-4)" }}>⋮⋮</span>
+                <Icon name={m.icon} size={16} />
+                <span style={{ fontWeight: 600, fontSize: 14 }}>{m.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         {/* 드래그 안내 + 저장 상태 */}
