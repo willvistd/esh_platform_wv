@@ -1219,8 +1219,8 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                 {/* 정보 */}
                 <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{it.title}</div>
-                  {it.content && <div className="meta" style={{ fontSize: 12, whiteSpace: "normal", lineHeight: 1.4, flex: 1 }}>{it.content}</div>}
-                  <div className="meta" style={{ fontSize: 11 }}>{KOSHORTDATE(it.createdAt)} · 파일 {fileCount(it)}개</div>
+                  {/* 본문 내용은 카드에 표시하지 않음(제목+썸네일만 깔끔하게). 내용은 다운로드한 자료에서 확인 */}
+                  <div className="meta" style={{ fontSize: 11, marginTop: "auto" }}>{KOSHORTDATE(it.createdAt)} · 파일 {fileCount(it)}개</div>
                   <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                     {fileUrl ? (
                       <a href={fileUrl} download className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center", textDecoration: "none" }}>
