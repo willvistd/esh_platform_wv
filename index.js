@@ -3187,6 +3187,24 @@ app.delete('/api/safety-board/:id', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── 사이드바 고정 메뉴 순서(관리자만 변경) ──
+app.get('/api/menu-order', async (req, res) => {
+  try {
+    const r = await pool.query("SELECT value FROM app_settings WHERE key='menu_order'");
+    let order = [];
+    if (r.rows[0]) { try { order = JSON.parse(r.rows[0].value); } catch (_) {} }
+    res.json({ order: Array.isArray(order) ? order : [] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+app.put('/api/menu-order', async (req, res) => {
+  if (deny(isAdminLevel(req), res, '메뉴 순서 변경은 관리자만 가능합니다.')) return;
+  try {
+    const order = Array.isArray(req.body && req.body.order) ? req.body.order.map(String).slice(0, 50) : [];
+    await pool.query("INSERT INTO app_settings (key, value) VALUES ('menu_order', $1) ON CONFLICT (key) DO UPDATE SET value=$1", [JSON.stringify(order)]);
+    res.json({ ok: true, order });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── FM사업본부 사업장 담당자(담당AM) 명단 ──
 //   · PDF 'FM운영팀 사업장별 담당자'(순번/부서/사업장명(BMP기준)/담당AM) 46건을 코드에 내장.
 //   · 플랫폼 사업장명이 기준. PDF 사업장명은 매칭 비교용으로만 사용(정규화 후 비교).

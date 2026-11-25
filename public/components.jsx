@@ -51,7 +51,17 @@ const LogoMark = ({ size = 22 }) => {
 };
 
 // ─── Sidebar
-const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCategories }) => {
+// 사이드바 '메뉴' 섹션 고정 항목 메타(순서 변경 UI·기본 순서 공용)
+window.WV_MENU_DEFS = [
+  { id: "dashboard",            label: "대시보드",         icon: "home" },
+  { id: "submissions",          label: "이행사항 제출",     icon: "inbox" },
+  { id: "legal-checker",        label: "법적의무 자동판정", icon: "shield" },
+  { id: "tool-org-chart",       label: "안전보건 조직도",   icon: "users" },
+  { id: "industrial-accident",  label: "산업재해 관리",     icon: "alert" },
+  { id: "safety-board",         label: "안전보건게시판",     icon: "doc" },
+];
+
+const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCategories, menuOrder }) => {
   const myUser = currentUser || D.users.find((u) => u.role === role);
   // 카테고리는 App(라이브 목록)에서 내려주는 prop을 그대로 사용.
   // (예전엔 내부 state가 D.categories 씨앗을 먼저 그린 뒤 갱신해 옛 목록이 깜빡였음)
@@ -121,30 +131,40 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
       </div>
 
       <div className="sb-section-label">메뉴</div>
-      {allow("dashboard") && (
-        <NavLink active={route.name === "dashboard"} icon="home" onClick={() => onNav({ name: "dashboard" })}>대시보드</NavLink>
-      )}
-      {allow("submissions") && (() => {
-        const can = D.can[role] || D.can["staff"];
-        // 승인 권한 있는 관리자 그룹(admin/safety/manager)에게만 "현황" 라벨 + pending 카운트 표시
-        const isApprover = !!can.approve;
-        return (
-          <NavLink active={route.name === "submissions"} icon="inbox" onClick={() => onNav({ name: "submissions" })}>
-            {isApprover ? "이행사항 제출 현황" : "이행사항 제출"}
-            {isApprover && (
-              <span className="sb-link-count">{D.submissions.filter((s) => s.status === "pending").length}</span>
-            )}
-          </NavLink>
-        );
+      {(() => {
+        // 각 고정 메뉴의 렌더(권한 없으면 null). 저장된 순서(menuOrder)대로 배치.
+        const defs = {
+          dashboard: () => allow("dashboard") && (
+            <NavLink active={route.name === "dashboard"} icon="home" onClick={() => onNav({ name: "dashboard" })}>대시보드</NavLink>
+          ),
+          submissions: () => allow("submissions") && (() => {
+            const can = D.can[role] || D.can["staff"];
+            const isApprover = !!can.approve;
+            return (
+              <NavLink active={route.name === "submissions"} icon="inbox" onClick={() => onNav({ name: "submissions" })}>
+                {isApprover ? "이행사항 제출 현황" : "이행사항 제출"}
+                {isApprover && <span className="sb-link-count">{D.submissions.filter((s) => s.status === "pending").length}</span>}
+              </NavLink>
+            );
+          })(),
+          "legal-checker": () => allow("legal-checker") && (
+            <NavLink active={route.name === "legal-checker"} icon="shield" onClick={() => onNav({ name: "legal-checker" })}>법적의무 자동판정</NavLink>
+          ),
+          "tool-org-chart": () => allow("tool-org-chart") && (
+            <NavLink active={route.name === "tool-org-chart"} icon="users" onClick={() => onNav({ name: "tool-org-chart" })}>안전보건 조직도</NavLink>
+          ),
+          "industrial-accident": () => (
+            <NavLink active={route.name === "industrial-accident"} icon="alert" onClick={() => onNav({ name: "industrial-accident" })}>산업재해 관리</NavLink>
+          ),
+          "safety-board": () => (
+            <NavLink active={route.name === "safety-board"} icon="doc" onClick={() => onNav({ name: "safety-board" })}>안전보건게시판</NavLink>
+          ),
+        };
+        const DEFAULT = (window.WV_MENU_DEFS || []).map((m) => m.id);
+        const ord = Array.isArray(menuOrder) && menuOrder.length ? menuOrder : DEFAULT;
+        const ids = [...ord.filter((id) => defs[id]), ...DEFAULT.filter((id) => !ord.includes(id))];
+        return ids.map((id) => <React.Fragment key={id}>{defs[id]()}</React.Fragment>);
       })()}
-      {allow("legal-checker") && (
-        <NavLink active={route.name === "legal-checker"} icon="shield" onClick={() => onNav({ name: "legal-checker" })}>법적의무 자동판정</NavLink>
-      )}
-      {allow("tool-org-chart") && (
-        <NavLink active={route.name === "tool-org-chart"} icon="users" onClick={() => onNav({ name: "tool-org-chart" })}>안전보건 조직도</NavLink>
-      )}
-      <NavLink active={route.name === "industrial-accident"} icon="alert" onClick={() => onNav({ name: "industrial-accident" })}>산업재해 관리</NavLink>
-      <NavLink active={route.name === "safety-board"} icon="doc" onClick={() => onNav({ name: "safety-board" })}>안전보건게시판</NavLink>
 
       {categories.some((c) => allow("cat:" + c.id)) && (
         <>

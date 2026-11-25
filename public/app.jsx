@@ -566,6 +566,16 @@ const api = {
     const data = await res.json();
     return data.categories || [];
   },
+  async getMenuOrder() {
+    try { const res = await fetch(API_BASE + "/menu-order"); const d = await res.json(); return Array.isArray(d.order) ? d.order : []; }
+    catch { return []; }
+  },
+  async saveMenuOrder(order) {
+    const res = await fetch(API_BASE + "/menu-order", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ order }),
+    });
+    return await res.json();
+  },
   async addCategory(cat) {
     const res = await fetch(ENDPOINTS.categories, {
       method: "POST",
@@ -852,6 +862,17 @@ function App() {
     return [];
   });
   const [catRefreshKey, setCatRefreshKey] = React.useState(0);
+  // 사이드바 고정 메뉴 순서(관리자가 드래그로 저장) — 캐시 우선, 그다음 DB
+  const MENU_ORDER_CACHE = "wv_menu_order";
+  const [menuOrder, setMenuOrder] = React.useState(() => {
+    try { const c = JSON.parse(localStorage.getItem(MENU_ORDER_CACHE) || "null"); if (Array.isArray(c)) return c; } catch (e) {}
+    return [];
+  });
+  React.useEffect(() => {
+    window.WV_API.getMenuOrder().then(order => {
+      if (Array.isArray(order)) { setMenuOrder(order); try { localStorage.setItem(MENU_ORDER_CACHE, JSON.stringify(order)); } catch (e) {} }
+    });
+  }, [catRefreshKey]);
   // DB에서 받은 '진짜' 목록일 때만 캐시에 저장하기 위한 플래그 (mock 안전망은 저장 금지)
   const catAuthoritativeRef = React.useRef(false);
   const [livePosts, setLivePosts] = React.useState(window.WV_DATA.posts || []);
@@ -1108,7 +1129,7 @@ function App() {
   return (
     <div className="app" data-mood={t.mood} data-dark={t.dark} data-sidebar={t.sidebarPos}
          style={{ "--fs": `${t.fontSize}px` }}>
-      <Sidebar route={route} onNav={onNav} role={role} currentUser={displayUser} onLogout={logout} categories={liveCategories} />
+      <Sidebar route={route} onNav={onNav} role={role} currentUser={displayUser} onLogout={logout} categories={liveCategories} menuOrder={menuOrder} />
       <main className="main">
         {previewing && (
           <div className="preview-banner">
