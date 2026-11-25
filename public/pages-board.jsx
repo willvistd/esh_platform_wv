@@ -1086,8 +1086,13 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
   const [subFilter, setSubFilter] = React.useState("전체");
+  const [deptFilter, setDeptFilter] = React.useState("전체");   // 부서 묶기
   const [showUpload, setShowUpload] = React.useState(false);
   const [editItem, setEditItem] = React.useState(null);
+  const [detailItem, setDetailItem] = React.useState(null);     // 카드 클릭 → 본문 보기
+
+  // 부서(departments) CSV → 배열
+  const deptsOf = (it) => String(it.departments || "").split(",").map(s => s.trim()).filter(Boolean);
 
   const reload = React.useCallback(() => {
     setLoading(true);
@@ -1099,19 +1104,33 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
   }, [cat.id]);
   React.useEffect(() => { reload(); }, [reload]);
 
-  // 하위분류 목록 (등록된 자료의 subCategory들에서 추출)
-  const subCats = React.useMemo(() => {
+  // 부서 목록 (등록된 자료의 departments에서 추출) — '부서 지정 안함'도 뒤에
+  const deptList = React.useMemo(() => {
     const set = new Set();
-    items.forEach(it => { if (it.subCategory) set.add(it.subCategory); });
-    return ["전체", ...[...set].sort((a, b) => a.localeCompare(b, "ko"))];
+    items.forEach(it => deptsOf(it).forEach(d => set.add(d)));
+    const arr = [...set].sort((a, b) => a.localeCompare(b, "ko"));
+    const hasNone = items.some(it => deptsOf(it).length === 0);
+    return ["전체", ...arr, ...(hasNone ? ["부서 미지정"] : [])];
   }, [items]);
 
+  // 현재 선택된 부서에 속한 자료만(교육종류 칩 계산용)
+  const inDept = (it) => deptFilter === "전체"
+    || (deptFilter === "부서 미지정" ? deptsOf(it).length === 0 : deptsOf(it).includes(deptFilter));
+
+  // 교육종류(subCategory) 목록 — 선택 부서 범위 안에서 추출
+  const subCats = React.useMemo(() => {
+    const set = new Set();
+    items.filter(inDept).forEach(it => { if (it.subCategory) set.add(it.subCategory); });
+    return ["전체", ...[...set].sort((a, b) => a.localeCompare(b, "ko"))];
+  }, [items, deptFilter]);
+
   const filtered = items.filter(it => {
+    const matchDept = inDept(it);
     const matchSub = subFilter === "전체" || it.subCategory === subFilter;
     const matchSearch = !search ||
       it.title?.toLowerCase().includes(search.toLowerCase()) ||
       it.content?.toLowerCase().includes(search.toLowerCase());
-    return matchSub && matchSearch;
+    return matchDept && matchSub && matchSearch;
   });
 
   // attachments(JSON 문자열)에서 첫 파일 URL 뽑기
@@ -1155,7 +1174,30 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
         )}
       </div>
 
-      {/* 하위분류 탭 + 검색 */}
+      {/* 부서 묶기 (자료의 부서 태그가 있을 때만 표시) */}
+      {deptList.length > 1 && (
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-3)", marginBottom: 5 }}>부서</div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {deptList.map(d => {
+              const n = d === "전체" ? items.length : items.filter(i => (d === "부서 미지정" ? deptsOf(i).length === 0 : deptsOf(i).includes(d))).length;
+              return (
+                <button key={d} onClick={() => { setDeptFilter(d); setSubFilter("전체"); }}
+                  style={{
+                    padding: "6px 13px", borderRadius: 20, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                    border: "1px solid " + (deptFilter === d ? "var(--primary)" : "var(--line)"),
+                    background: deptFilter === d ? "var(--primary)" : "var(--bg)",
+                    color: deptFilter === d ? "#fff" : "var(--fg-2)",
+                  }}>
+                  {d} <span style={{ opacity: 0.7 }}>{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 교육종류 탭 + 검색 */}
       <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", flex: 1 }}>
           {subCats.map(sc => (
@@ -1166,7 +1208,7 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                 background: subFilter === sc ? "var(--primary)" : "var(--bg)",
                 color: subFilter === sc ? "#fff" : "var(--fg-2)",
               }}>
-              {sc} {sc !== "전체" && <span style={{ opacity: 0.7 }}>{items.filter(i => i.subCategory === sc).length}</span>}
+              {sc} {sc !== "전체" && <span style={{ opacity: 0.7 }}>{items.filter(i => inDept(i) && i.subCategory === sc).length}</span>}
             </button>
           ))}
         </div>
@@ -1196,9 +1238,9 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
             const thumb = it.thumbUrl || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
             return (
               <div key={it.id} className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                {/* 썸네일 */}
-                <div style={{
-                  aspectRatio: "4/3", background: "var(--bg-sunk)", display: "flex",
+                {/* 썸네일 (클릭 시 본문 보기) */}
+                <div onClick={() => setDetailItem(it)} title="클릭하여 내용 보기" style={{
+                  aspectRatio: "4/3", background: "var(--bg-sunk)", display: "flex", cursor: "pointer",
                   alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative",
                 }}>
                   {thumb
@@ -1218,9 +1260,19 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                 </div>
                 {/* 정보 */}
                 <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>{it.title}</div>
-                  {/* 본문 내용은 카드에 표시하지 않음(제목+썸네일만 깔끔하게). 내용은 다운로드한 자료에서 확인 */}
-                  <div className="meta" style={{ fontSize: 11, marginTop: "auto" }}>{KOSHORTDATE(it.createdAt)} · 파일 {fileCount(it)}개</div>
+                  <div onClick={() => setDetailItem(it)} style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3, cursor: "pointer" }}>{it.title}</div>
+                  {/* 부서 태그(여러 부서면 모두 표시) */}
+                  {deptsOf(it).length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {deptsOf(it).map(d => (
+                        <span key={d} style={{ fontSize: 10, fontWeight: 700, color: "var(--primary)", background: "var(--primary-soft,#eef3ff)", borderRadius: 10, padding: "1px 7px" }}>{d}</span>
+                      ))}
+                    </div>
+                  )}
+                  {/* 본문은 카드에 표시 안 함. 클릭하면 내용 보기 */}
+                  <div className="meta" style={{ fontSize: 11, marginTop: "auto" }}>
+                    {it.subCategory ? it.subCategory + " · " : ""}{KOSHORTDATE(it.createdAt)} · 파일 {fileCount(it)}개
+                  </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
                     {fileUrl ? (
                       <a href={fileUrl} download className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center", textDecoration: "none" }}>
@@ -1255,6 +1307,47 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
           onSaved={() => { setShowUpload(false); setEditItem(null); reload(); }}
         />
       )}
+
+      {/* 자료 상세(본문) 보기 */}
+      {detailItem && (() => {
+        let files = [];
+        try { const a = typeof detailItem.attachments === "string" ? JSON.parse(detailItem.attachments) : detailItem.attachments; files = Array.isArray(a) ? a : []; } catch (_) {}
+        const dps = deptsOf(detailItem);
+        return (
+          <div className="modal-overlay" onClick={() => setDetailItem(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620 }}>
+              <div className="modal-hd">
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{detailItem.title}</h2>
+                <button className="btn btn-ghost btn-sm" onClick={() => setDetailItem(null)}><Icon name="x" size={14} /></button>
+              </div>
+              <div className="modal-bd">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                  {detailItem.subCategory && <span className="chip chip-primary">{detailItem.subCategory}</span>}
+                  {dps.map(d => <span key={d} style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)", background: "var(--primary-soft,#eef3ff)", borderRadius: 10, padding: "2px 9px" }}>{d}</span>)}
+                </div>
+                {detailItem.content
+                  ? <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{detailItem.content}</div>
+                  : <div className="meta" style={{ fontSize: 13 }}>등록된 설명(본문)이 없습니다.</div>}
+                {files.length > 0 && (
+                  <div style={{ marginTop: 18 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--fg-2)", marginBottom: 8 }}>첨부 자료 ({files.length})</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {files.map((f, i) => (
+                        <a key={i} href={f.url} download className="btn btn-secondary btn-sm" style={{ justifyContent: "flex-start", textDecoration: "none" }}>
+                          <Icon name="download" size={13} /> {f.name || f.url}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-ft">
+                <button className="btn btn-secondary" onClick={() => setDetailItem(null)}>닫기</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
@@ -1288,6 +1381,11 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
   const [title, setTitle] = React.useState(editItem?.title || "");
   const [desc, setDesc] = React.useState(editItem?.content || "");
   const [subCategory, setSubCategory] = React.useState(editItem?.subCategory || "");
+  const [departments, setDepartments] = React.useState(
+    String(editItem?.departments || "").split(",").map(s => s.trim()).filter(Boolean)
+  );
+  const allDepts = (window.WV_DATA && window.WV_DATA.depts) || [];
+  const toggleDept = (d) => setDepartments(xs => xs.includes(d) ? xs.filter(x => x !== d) : [...xs, d]);
   const [thumbUrl, setThumbUrl] = React.useState(editItem?.thumbUrl || "");
   const [files, setFiles] = React.useState(() => {
     try {
@@ -1323,6 +1421,7 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
         title: title.trim(), content: desc.trim(), categoryId: cat.id,
         authorId: String(currentUser?.id || ""), authorName: (window.WV_ACTOR?.get(currentUser)) || currentUser?.name || "",
         attachments: JSON.stringify(files), thumbUrl, subCategory: subCategory.trim(),
+        departments: departments.join(","),
       };
       if (editItem) await window.WV_API.updatePost(editItem.id, payload);
       else await window.WV_API.addPost(payload);
@@ -1346,13 +1445,35 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
           </div>
 
           <div className="field">
-            <label className="field-label">분류 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(탭으로 묶임 · 비워도 됨)</span></label>
+            <label className="field-label">교육종류 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(탭으로 묶임 · 비워도 됨)</span></label>
             <input className="field-input" value={subCategory} onChange={e => setSubCategory(e.target.value)}
-              placeholder="예: 작업안전 / 화기 / 보호구" list="lib-subcats" />
-            {existingSubCats.length > 0 && (
-              <datalist id="lib-subcats">{existingSubCats.map(s => <option key={s} value={s} />)}</datalist>
-            )}
+              placeholder="예: 채용시 / 정기 / 특별 / MSDS" list="lib-subcats" />
+            <datalist id="lib-subcats">
+              {["채용시", "정기", "특별", "작업내용 변경시", "관리감독자", "MSDS", "기타", ...existingSubCats].filter((v, i, a) => v && a.indexOf(v) === i).map(s => <option key={s} value={s} />)}
+            </datalist>
           </div>
+
+          {allDepts.length > 0 && (
+            <div className="field">
+              <label className="field-label">부서 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(여러 부서 선택 가능 · 선택한 부서마다 자료가 표시됨)</span></label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {allDepts.map(d => {
+                  const on = departments.includes(d);
+                  return (
+                    <button type="button" key={d} onClick={() => toggleDept(d)}
+                      style={{ padding: "5px 11px", borderRadius: 16, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                        border: "1px solid " + (on ? "var(--primary)" : "var(--line)"),
+                        background: on ? "var(--primary)" : "var(--bg)", color: on ? "#fff" : "var(--fg-2)" }}>
+                      {on ? "✓ " : ""}{d}
+                    </button>
+                  );
+                })}
+              </div>
+              {departments.filter(d => !allDepts.includes(d)).length > 0 && (
+                <div style={{ marginTop: 6, fontSize: 11, color: "var(--fg-3)" }}>그 외: {departments.filter(d => !allDepts.includes(d)).join(", ")}</div>
+              )}
+            </div>
+          )}
 
           <div className="field">
             <label className="field-label">설명 (선택)</label>
