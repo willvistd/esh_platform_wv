@@ -1147,7 +1147,7 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
 };
 
 // ─── 카테고리 관리 (관리자)
-const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
+const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange }) => {
   const D = window.WV_DATA;
   const [cats, setCats] = React.useState(D.categories);
   const [loading, setLoading] = React.useState(true);
@@ -1205,8 +1205,10 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
     setMenuRows(next); setMDragI(null); setMOverI(null);
     setMSaving(true);
     try {
-      await window.WV_API.saveMenuOrder(next.map(x => x.id));
-      try { localStorage.setItem("wv_menu_order", JSON.stringify(next.map(x => x.id))); } catch (e) {}
+      const ids = next.map(x => x.id);
+      await window.WV_API.saveMenuOrder(ids);
+      try { localStorage.setItem("wv_menu_order", JSON.stringify(ids)); } catch (e) {}
+      if (onMenuOrderChange) onMenuOrderChange(ids);   // 사이드바 즉시 반영
     } catch (e) { alert("메뉴 순서 저장 실패: " + (e.message || e)); }
     setMSaving(false);
   };
@@ -1338,10 +1340,10 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate }) => {
             </div>
             {menuRows.map((m, i) => (
               <div key={m.id} draggable
-                onDragStart={() => setMDragI(i)}
-                onDragOver={(e) => { e.preventDefault(); if (mOverI !== i) setMOverI(i); }}
+                onDragStart={(e) => { setMDragI(i); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", String(i)); } catch (_) {} }}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (mOverI !== i) setMOverI(i); }}
                 onDragLeave={() => setMOverI(null)}
-                onDrop={() => menuDrop(i)}
+                onDrop={(e) => { e.preventDefault(); menuDrop(i); }}
                 onDragEnd={() => { setMDragI(null); setMOverI(null); }}
                 style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px",
                   borderBottom: i < menuRows.length - 1 ? "1px solid var(--line)" : "none", cursor: "grab",
