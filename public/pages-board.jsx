@@ -1270,7 +1270,8 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
           {filtered.map(it => {
             const fileUrl = firstFileUrl(it);
             const vid = ytId(it.videoUrl);
-            const thumb = it.thumbUrl || (vid ? ytThumb(vid) : null) || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
+            // 동영상 링크가 있으면 유튜브 썸네일을 최우선으로 표출
+            const thumb = (vid ? ytThumb(vid) : null) || it.thumbUrl || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
             return (
               <div key={it.id} className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 {/* 썸네일 (클릭 시 본문 보기) */}
