@@ -1056,6 +1056,34 @@ const pdfFileToThumb = async (file) => {
   } catch (_) { return null; }
 };
 
+// 영상 파일(mp4 등) 여부 — 파일명 기준(저장 URL은 /api/file 이라 확장자 없음)
+const isVideoName = (n) => /\.(mp4|webm|mov|m4v|ogg|ogv)$/i.test(String(n || ""));
+
+// 영상 파일(File) → 한 프레임 캡처 이미지(JPG File). 업로드 시 썸네일 자동 생성용.
+const videoFileToThumb = (file) => new Promise((resolve) => {
+  try {
+    const url = URL.createObjectURL(file);
+    const v = document.createElement("video");
+    v.preload = "metadata"; v.muted = true; v.playsInline = true; v.src = url;
+    const done = (res) => { try { URL.revokeObjectURL(url); } catch (_) {} resolve(res); };
+    let seeked = false;
+    v.onloadedmetadata = () => { try { v.currentTime = Math.min(1, (v.duration || 2) / 2); } catch (_) { done(null); } };
+    v.onseeked = () => {
+      if (seeked) return; seeked = true;
+      try {
+        const scale = 560 / (v.videoWidth || 560);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round((v.videoWidth || 560) * scale);
+        canvas.height = Math.round((v.videoHeight || 315) * scale);
+        canvas.getContext("2d").drawImage(v, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(b => done(b ? new File([b], "thumb.jpg", { type: "image/jpeg" }) : null), "image/jpeg", 0.82);
+      } catch (_) { done(null); }
+    };
+    v.onerror = () => done(null);
+    setTimeout(() => done(null), 8000); // 안전장치
+  } catch (_) { resolve(null); }
+});
+
 const PdfThumb = ({ url }) => {
   const [dataUrl, setDataUrl] = React.useState(null);
   const [failed, setFailed] = React.useState(false);
@@ -1178,6 +1206,14 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
       return Array.isArray(arr) && arr[0] ? arr[0].url : null;
     } catch { return null; }
   };
+  // 첨부 중 영상 파일(mp4 등) URL (파일명 기준 판별)
+  const firstVideoUrl = (it) => {
+    try {
+      const arr = typeof it.attachments === "string" ? JSON.parse(it.attachments) : it.attachments;
+      const f = Array.isArray(arr) ? arr.find(x => isVideoName(x && (x.name || x.url))) : null;
+      return f ? f.url : null;
+    } catch { return null; }
+  };
   const fileCount = (it) => {
     try {
       const arr = typeof it.attachments === "string" ? JSON.parse(it.attachments) : it.attachments;
@@ -1274,7 +1310,9 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
           {filtered.map(it => {
             const fileUrl = firstFileUrl(it);
             const vid = ytId(it.videoUrl);
-            // 동영상 링크가 있으면 유튜브 썸네일을 최우선으로 표출
+            const vFileUrl = firstVideoUrl(it);        // 첨부 영상(mp4 등)
+            const isVideo = !!vid || !!vFileUrl;       // 영상 자료 여부(유튜브 또는 파일)
+            // 유튜브 썸네일 최우선 → 자동 생성 썸네일(PDF·영상 캡처) → 이미지 첨부
             const thumb = (vid ? ytThumb(vid) : null) || it.thumbUrl || (fileUrl && /\.(png|jpe?g|gif|webp)$/i.test(fileUrl) ? fileUrl : null);
             return (
               <div key={it.id} className="card" style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -1291,7 +1329,7 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                           <Icon name="file" size={36} />
                           <div style={{ fontSize: 11, marginTop: 4 }}>미리보기 없음</div>
                         </div>}
-                  {vid && (
+                  {isVideo && (
                     <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
                       <span style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff",
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 2px 8px rgba(0,0,0,.4)" }}>▶</span>
@@ -1317,10 +1355,10 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                   )}
                   {/* 본문은 카드에 표시 안 함. 클릭하면 내용 보기 */}
                   <div className="meta" style={{ fontSize: 11, marginTop: "auto" }}>
-                    {vid ? "영상 · " : ""}{it.subCategory ? it.subCategory + " · " : ""}{KOSHORTDATE(it.createdAt)}{fileCount(it) ? " · 파일 " + fileCount(it) + "개" : ""}
+                    {isVideo ? "영상 · " : ""}{it.subCategory ? it.subCategory + " · " : ""}{KOSHORTDATE(it.createdAt)}{fileCount(it) ? " · 파일 " + fileCount(it) + "개" : ""}
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                    {vid ? (
+                    {isVideo ? (
                       <button className="btn btn-primary btn-sm" style={{ flex: 1, justifyContent: "center" }} onClick={() => setDetailItem(it)}>
                         ▶ 영상 보기
                       </button>
@@ -1363,6 +1401,7 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
         let files = [];
         try { const a = typeof detailItem.attachments === "string" ? JSON.parse(detailItem.attachments) : detailItem.attachments; files = Array.isArray(a) ? a : []; } catch (_) {}
         const dps = deptsOf(detailItem);
+        const vFile = files.find(f => isVideoName(f && (f.name || f.url)));
         return (
           <div className="modal-overlay" onClick={() => setDetailItem(null)}>
             <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 620 }}>
@@ -1375,13 +1414,16 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
                   {detailItem.subCategory && <span className="chip chip-primary">{detailItem.subCategory}</span>}
                   {dps.map(d => <span key={d} style={{ fontSize: 11, fontWeight: 700, color: "var(--primary)", background: "var(--primary-soft,#eef3ff)", borderRadius: 10, padding: "2px 9px" }}>{d}</span>)}
                 </div>
-                {ytId(detailItem.videoUrl) && (
+                {ytId(detailItem.videoUrl) ? (
                   <div style={{ position: "relative", width: "100%", aspectRatio: "16/9", marginBottom: 14, borderRadius: 8, overflow: "hidden", background: "#000" }}>
                     <iframe src={ytEmbed(ytId(detailItem.videoUrl))} title={detailItem.title} allowFullScreen
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
                   </div>
-                )}
+                ) : vFile ? (
+                  <video src={vFile.url} controls poster={detailItem.thumbUrl || ""}
+                    style={{ width: "100%", maxHeight: 360, borderRadius: 8, marginBottom: 14, background: "#000" }} />
+                ) : null}
                 {detailItem.content
                   ? <div style={{ fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", color: "var(--fg)" }}>{detailItem.content}</div>
                   : <div className="meta" style={{ fontSize: 13 }}>등록된 설명(본문)이 없습니다.</div>}
@@ -1576,13 +1618,15 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
             <label className="field-label">첨부 파일 (다운로드용) <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(문서 자료면 올리기 · 영상만이면 비워도 됨)</span></label>
             <FileAttacher files={files} onFilesChange={setFiles}
               onRawFiles={async (rawFiles) => {
-                // 미리보기 이미지를 직접 안 올렸으면, 첨부한 PDF 첫 장으로 썸네일 자동 생성
+                // 미리보기를 직접 안 올렸으면, 첨부한 PDF 첫 장 또는 영상 한 장면으로 썸네일 자동 생성
                 if (thumbUrl) return;
-                const pdf = (rawFiles || []).find(f => /\.pdf$/i.test(f.name || ""));
-                if (!pdf) return;
+                const list = rawFiles || [];
+                const pdf = list.find(f => /\.pdf$/i.test(f.name || ""));
+                const vfile = list.find(f => isVideoName(f.name || ""));
+                if (!pdf && !vfile) return;
                 setThumbUploading(true);
                 try {
-                  const t = await pdfFileToThumb(pdf);
+                  const t = pdf ? await pdfFileToThumb(pdf) : await videoFileToThumb(vfile);
                   if (t) { const r = await window.WV_API.uploadFile(t); if (r && r.url) setThumbUrl(r.url); }
                 } catch (_) {}
                 setThumbUploading(false);
