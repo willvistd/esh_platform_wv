@@ -1125,8 +1125,12 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
   const [editItem, setEditItem] = React.useState(null);
   const [detailItem, setDetailItem] = React.useState(null);     // 카드 클릭 → 본문 보기
 
-  // 부서(departments) CSV → 배열
-  const deptsOf = (it) => String(it.departments || "").split(",").map(s => s.trim()).filter(Boolean);
+  // 부서(departments) CSV → 배열 (등록 화면 순서 EDU_DEPTS 기준으로 정렬)
+  const sortDepts = (arr) => [...arr].sort((a, b) => {
+    const ia = EDU_DEPTS.indexOf(a), ib = EDU_DEPTS.indexOf(b);
+    return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.localeCompare(b, "ko");
+  });
+  const deptsOf = (it) => sortDepts(String(it.departments || "").split(",").map(s => s.trim()).filter(Boolean));
 
   const reload = React.useCallback(() => {
     setLoading(true);
@@ -1142,7 +1146,7 @@ const LibraryView = ({ cat, onNav, role, currentUser }) => {
   const deptList = React.useMemo(() => {
     const set = new Set();
     items.forEach(it => deptsOf(it).forEach(d => set.add(d)));
-    const arr = [...set].sort((a, b) => a.localeCompare(b, "ko"));
+    const arr = sortDepts([...set]);
     const hasNone = items.some(it => deptsOf(it).length === 0);
     return ["전체", ...arr, ...(hasNone ? ["부서 미지정"] : [])];
   }, [items]);
@@ -1547,20 +1551,25 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
             )}
           </div>
 
-          {/* 미리보기(썸네일)는 첨부 PDF/이미지에서 자동 생성 — 수동 업로드 칸 제거 */}
-          {(thumbUploading || thumbUrl) && (
-            <div className="field">
-              <label className="field-label">카드 미리보기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(자동 생성)</span></label>
-              {thumbUploading ? (
-                <div style={{ fontSize: 13, color: "var(--fg-3)" }}><span className="login-spinner" /> 미리보기 만드는 중...</div>
-              ) : (
-                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <img src={thumbUrl} alt="미리보기" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--line)" }} />
-                  <span style={{ fontSize: 12, color: "var(--fg-3)" }}>첨부 자료에서 자동으로 만들어졌어요</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* 카드 미리보기 — 실제 카드와 동일 우선순위(영상 > 첨부 자동썸네일) */}
+          {(() => {
+            const vid = ytId(videoUrl);
+            const previewThumb = (vid ? ytThumb(vid) : "") || thumbUrl;
+            if (!thumbUploading && !previewThumb) return null;
+            return (
+              <div className="field">
+                <label className="field-label">카드 미리보기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(자동 생성)</span></label>
+                {thumbUploading && !vid ? (
+                  <div style={{ fontSize: 13, color: "var(--fg-3)" }}><span className="login-spinner" /> 미리보기 만드는 중...</div>
+                ) : (
+                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <img src={previewThumb} alt="미리보기" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--line)" }} />
+                    <span style={{ fontSize: 12, color: "var(--fg-3)" }}>{vid ? "영상 썸네일이 카드에 표시됩니다" : "첨부 자료에서 자동으로 만들어졌어요"}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 첨부파일 (다운로드용) */}
           <div className="field">
