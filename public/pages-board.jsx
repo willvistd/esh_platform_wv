@@ -1100,7 +1100,7 @@ const PdfThumb = ({ url }) => {
 //   - 관리자/안전관리자만 업로드·삭제, 직원은 다운로드만
 // ═══════════════════════════════════════════════════════════════
 // 교육자료 등 자료실 부서 구분(본부 기준) — 소유자 지정
-const EDU_DEPTS = ["CRM 사업본부", "HR 사업본부", "FM 사업본부", "물류사업본부", "윌비모터스", "동부캐리어"];
+const EDU_DEPTS = ["공통", "CRM 사업본부", "HR 사업본부", "FM 사업본부", "물류사업본부", "윌비모터스", "동부캐리어"];
 
 // 유튜브 URL에서 영상 ID 추출(watch/youtu.be/embed/shorts 등 지원)
 const ytId = (url) => {
@@ -1546,21 +1546,20 @@ const LibraryUploadModal = ({ cat, currentUser, editItem, existingSubCats, onClo
             )}
           </div>
 
-          {/* 썸네일 */}
-          <div className="field">
-            <label className="field-label">미리보기 이미지 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(카드에 표시 · PDF/이미지 첨부하면 자동 생성 · 바꾸려면 직접 선택)</span></label>
-            {thumbUrl ? (
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <img src={thumbUrl} alt="썸네일" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--line)" }} />
-                <button className="btn btn-secondary btn-sm" onClick={() => setThumbUrl("")}>제거</button>
-              </div>
-            ) : (
-              <button className="btn btn-secondary btn-sm" onClick={() => thumbRef.current?.click()} disabled={thumbUploading}>
-                {thumbUploading ? <span className="login-spinner" /> : <><Icon name="image" size={12} /> 이미지 선택</>}
-              </button>
-            )}
-            <input ref={thumbRef} type="file" accept="image/*" hidden onChange={e => uploadThumb(e.target.files?.[0])} />
-          </div>
+          {/* 미리보기(썸네일)는 첨부 PDF/이미지에서 자동 생성 — 수동 업로드 칸 제거 */}
+          {(thumbUploading || thumbUrl) && (
+            <div className="field">
+              <label className="field-label">카드 미리보기 <span style={{ fontSize: 11, color: "var(--fg-3)" }}>(자동 생성)</span></label>
+              {thumbUploading ? (
+                <div style={{ fontSize: 13, color: "var(--fg-3)" }}><span className="login-spinner" /> 미리보기 만드는 중...</div>
+              ) : (
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <img src={thumbUrl} alt="미리보기" style={{ width: 80, height: 60, objectFit: "cover", borderRadius: 6, border: "1px solid var(--line)" }} />
+                  <span style={{ fontSize: 12, color: "var(--fg-3)" }}>첨부 자료에서 자동으로 만들어졌어요</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 첨부파일 (다운로드용) */}
           <div className="field">
