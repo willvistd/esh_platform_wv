@@ -333,21 +333,23 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
       )}
 
       {/* 필터 + 뷰 토글 — 현장대리인은 본인 사업장 1~몇개라서 필터 불필요 */}
-      {!userIsSiteAgent && (
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-        <input className="field-input" style={{ width: 220 }}
-          placeholder="사업장명, 담당자, 계약형태 검색"
-          value={search} onChange={e => setSearch(e.target.value)} />
-        <div style={{ width: 160 }}><KSelect value={hqFilter} onChange={setHQFilter}
+      {!userIsSiteAgent && (() => { const flbl = { fontSize: 11, fontWeight: 600, color: "var(--fg-3)", marginBottom: 3, display: "block" };
+      return (
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ width: 220 }}><span style={flbl}>검색</span>
+          <input className="field-input" style={{ width: "100%" }}
+            placeholder="사업장명, 담당자, 계약형태"
+            value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div style={{ width: 160 }}><span style={flbl}>본부</span><KSelect value={hqFilter} onChange={setHQFilter}
           options={[{ value: "전체", label: "전체 본부" }, ...hqs.map(h => ({ value: String(h.id), label: h.name }))]} /></div>
-        <div style={{ width: 120 }}><KSelect value={regionFilter} onChange={setRegionFilter}
+        <div style={{ width: 120 }}><span style={flbl}>지역</span><KSelect value={regionFilter} onChange={setRegionFilter}
           options={["전체", ...REGIONS]} /></div>
-        <div style={{ width: 140 }} title="계약형태로 거르기"><KSelect value={contractFilter} onChange={setContractFilter} options={[
+        <div style={{ width: 140 }} title="계약형태로 거르기"><span style={flbl}>계약형태</span><KSelect value={contractFilter} onChange={setContractFilter} options={[
           { value: "전체", label: "계약형태 전체" },
           { value: "파견제외", label: "파견 제외" },
           { value: "파견만", label: "파견만" },
         ]} /></div>
-        <div style={{ width: 130 }} title="종료 사업장은 기본으로 숨겨집니다"><KSelect value={statusFilter} onChange={setStatusFilter} options={[
+        <div style={{ width: 130 }} title="종료 사업장은 기본으로 숨겨집니다"><span style={flbl}>상태</span><KSelect value={statusFilter} onChange={setStatusFilter} options={[
           { value: "운영중", label: "운영중만" },
           { value: "종료", label: "종료만" },
           { value: "전체", label: "상태 전체" },
@@ -362,7 +364,7 @@ const ManageSitesView = ({ onNav, currentUser, role, onUserRefresh }) => {
             onClick={() => setView("flat")}>전체 목록</button>
         </div>
       </div>
-      )}
+      ); })()}
 
       {/* 로딩 */}
       {loading ? (
