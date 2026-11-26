@@ -1090,6 +1090,11 @@ function App() {
     return (
       <div className="app-shell-login" data-mood={t.mood} data-dark={t.dark}>
         <LoginScreen onLogin={login} />
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, padding: "12px 16px", textAlign: "center", fontSize: 12, color: "var(--fg-3)", zIndex: 5 }}>
+          <a href="docs/privacy-policy.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--fg-2)", fontWeight: 700, textDecoration: "none" }}>개인정보처리방침</a>
+          <span style={{ margin: "0 8px", color: "var(--fg-4)" }}>·</span>
+          ⓒ {new Date().getFullYear()} (주)윌앤비전
+        </div>
         <TweaksPanel>
           <TweakSection label="무드 / 톤" />
           <TweakRadio label="전체 무드" value={t.mood}
@@ -1310,6 +1315,12 @@ function App() {
         ) : (
           <div className="content"><h1>준비 중</h1></div>
         )}
+        <footer style={{ padding: "18px 24px", marginTop: 24, borderTop: "1px solid var(--line)", display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", justifyContent: "center", fontSize: 12.5, color: "var(--fg-3)" }}>
+          <a href="docs/privacy-policy.pdf" target="_blank" rel="noopener noreferrer"
+            style={{ color: "var(--fg-2)", fontWeight: 700, textDecoration: "none" }}>개인정보처리방침</a>
+          <span style={{ color: "var(--fg-4)" }}>·</span>
+          <span>ⓒ {new Date().getFullYear()} (주)윌앤비전. All rights reserved.</span>
+        </footer>
       </main>
 
       <TweaksPanel>
