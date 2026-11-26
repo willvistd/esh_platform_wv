@@ -137,6 +137,8 @@ const api = {
         attachments: post.attachments || "",
         thumbUrl: post.thumbUrl || "",
         subCategory: post.subCategory || "",
+        departments: post.departments || "",
+        videoUrl: post.videoUrl || "",
       })
     });
     return await res.json();
