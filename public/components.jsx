@@ -197,7 +197,6 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
                   //   → 게시판 포함 모든 진입을 오른쪽 날개에서만. (없으면 기존대로 바로 진입)
                   onClick={subs ? (e) => openFly(e, c, subs) : () => onNav({ name: "category", id: c.id })}>
                   {c.name}
-                  <span className="sb-link-count">{c.count}</span>
                   {subs && <Icon name="chevron-right" size={13} className="sb-cat-caret" />}
                 </NavLink>
               </div>
