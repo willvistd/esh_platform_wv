@@ -578,6 +578,17 @@ const api = {
     });
     return await res.json();
   },
+  // 상단 고정메뉴 '숨김' 목록 (app_settings: menu_hidden) — 숨긴 메뉴 id 배열
+  async getMenuHidden() {
+    try { const res = await fetch(API_BASE + "/settings/menu_hidden"); const d = await res.json(); return Array.isArray(d.value) ? d.value : []; }
+    catch { return []; }
+  },
+  async saveMenuHidden(hidden) {
+    const res = await fetch(API_BASE + "/settings/menu_hidden", {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value: hidden }),
+    });
+    return await res.json();
+  },
   async addCategory(cat) {
     const res = await fetch(ENDPOINTS.categories, {
       method: "POST",
@@ -875,6 +886,17 @@ function App() {
       if (Array.isArray(order)) { setMenuOrder(order); try { localStorage.setItem(MENU_ORDER_CACHE, JSON.stringify(order)); } catch (e) {} }
     });
   }, [catRefreshKey]);
+  // 상단 고정메뉴 '숨김' 목록 — 캐시 우선, 그다음 DB
+  const MENU_HIDDEN_CACHE = "wv_menu_hidden";
+  const [menuHidden, setMenuHidden] = React.useState(() => {
+    try { const c = JSON.parse(localStorage.getItem(MENU_HIDDEN_CACHE) || "null"); if (Array.isArray(c)) return c; } catch (e) {}
+    return [];
+  });
+  React.useEffect(() => {
+    window.WV_API.getMenuHidden().then(hidden => {
+      if (Array.isArray(hidden)) { setMenuHidden(hidden); try { localStorage.setItem(MENU_HIDDEN_CACHE, JSON.stringify(hidden)); } catch (e) {} }
+    });
+  }, [catRefreshKey]);
   // DB에서 받은 '진짜' 목록일 때만 캐시에 저장하기 위한 플래그 (mock 안전망은 저장 금지)
   const catAuthoritativeRef = React.useRef(false);
   const [livePosts, setLivePosts] = React.useState(window.WV_DATA.posts || []);
@@ -1136,7 +1158,7 @@ function App() {
   return (
     <div className="app" data-mood={t.mood} data-dark={t.dark} data-sidebar={t.sidebarPos}
          style={{ "--fs": `${t.fontSize}px` }}>
-      <Sidebar route={route} onNav={onNav} role={role} currentUser={displayUser} onLogout={logout} categories={liveCategories} menuOrder={menuOrder} />
+      <Sidebar route={route} onNav={onNav} role={role} currentUser={displayUser} onLogout={logout} categories={liveCategories} menuOrder={menuOrder} menuHidden={menuHidden} />
       <main className="main">
         {previewing && (
           <div className="preview-banner">
@@ -1231,7 +1253,7 @@ function App() {
             setLiveCategories(cats);
             // 캐시도 갱신 → 새로고침 시 옛 카테고리(옛 유형)가 잠깐 뜨는 것 방지
             try { localStorage.setItem(CAT_CACHE_KEY, JSON.stringify(cats)); } catch (e) {}
-          }} onMenuOrderChange={(order) => setMenuOrder(order)} />
+          }} onMenuOrderChange={(order) => setMenuOrder(order)} onMenuHiddenChange={(hidden) => setMenuHidden(hidden)} />
         ) : route.name === "manage-users" ? (
           <ManageUsersView currentUser={currentUser} />
         ) : route.name === "manage-approvals" ? (
