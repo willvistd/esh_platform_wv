@@ -1147,7 +1147,7 @@ const CategorySubmenuInline = ({ cat, list, cats, onChange, onSave, saving, msg 
 };
 
 // ─── 카테고리 관리 (관리자)
-const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange }) => {
+const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange, onMenuHiddenChange }) => {
   const D = window.WV_DATA;
   const [cats, setCats] = React.useState(D.categories);
   const [loading, setLoading] = React.useState(true);
@@ -1210,6 +1210,20 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange }) =>
       try { localStorage.setItem("wv_menu_order", JSON.stringify(ids)); } catch (e) {}
       if (onMenuOrderChange) onMenuOrderChange(ids);   // 사이드바 즉시 반영
     } catch (e) { alert("메뉴 순서 저장 실패: " + (e.message || e)); }
+    setMSaving(false);
+  };
+
+  // ── 상단 메뉴 숨김(표시/숨김) ──
+  const [menuHidden, setMenuHidden] = React.useState([]);
+  React.useEffect(() => { window.WV_API.getMenuHidden().then(h => { if (Array.isArray(h)) setMenuHidden(h); }); }, []);
+  const toggleMenuHidden = async (id) => {
+    const next = menuHidden.includes(id) ? menuHidden.filter(x => x !== id) : [...menuHidden, id];
+    setMenuHidden(next); setMSaving(true);
+    try {
+      await window.WV_API.saveMenuHidden(next);
+      try { localStorage.setItem("wv_menu_hidden", JSON.stringify(next)); } catch (e) {}
+      if (onMenuHiddenChange) onMenuHiddenChange(next);   // 사이드바 즉시 반영
+    } catch (e) { alert("메뉴 숨김 저장 실패: " + (e.message || e)); }
     setMSaving(false);
   };
 
@@ -1335,10 +1349,12 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange }) =>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--fg-2)", margin: "0 0 8px" }}>상단 메뉴 순서 <span style={{ fontWeight: 500, color: "var(--fg-3)", fontSize: 12 }}>(대시보드·산업재해·안전보건게시판 등 고정 메뉴)</span></div>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "8px 16px", fontSize: 12, color: "var(--fg-3)", borderBottom: "1px solid var(--line)", background: "var(--bg-sunk)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>💡 끌어서 순서를 바꾸면 모든 사용자 사이드바에 바로 반영됩니다.</span>
+              <span>💡 끌어서 순서 변경 · 오른쪽 눈 아이콘으로 메뉴를 숨기거나 표시할 수 있어요. 모든 사용자에게 바로 반영됩니다.</span>
               {mSaving && <span style={{ color: "var(--primary)" }}>저장 중…</span>}
             </div>
-            {menuRows.map((m, i) => (
+            {menuRows.map((m, i) => {
+              const hidden = menuHidden.includes(m.id);
+              return (
               <div key={m.id} draggable
                 onDragStart={(e) => { setMDragI(i); e.dataTransfer.effectAllowed = "move"; try { e.dataTransfer.setData("text/plain", String(i)); } catch (_) {} }}
                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (mOverI !== i) setMOverI(i); }}
@@ -1350,10 +1366,18 @@ const ManageCategoriesView = ({ onNav, onCategoryUpdate, onMenuOrderChange }) =>
                   opacity: mDragI === i ? 0.4 : 1,
                   background: (mOverI === i && mDragI !== null && mDragI !== i) ? "var(--primary-soft,#eef3ff)" : "transparent" }}>
                 <span style={{ fontFamily: "monospace", color: "var(--fg-4)" }}>⋮⋮</span>
-                <Icon name={m.icon} size={16} />
-                <span style={{ fontWeight: 600, fontSize: 14 }}>{m.label}</span>
+                <Icon name={m.icon} size={16} style={{ opacity: hidden ? 0.4 : 1 }} />
+                <span style={{ fontWeight: 600, fontSize: 14, opacity: hidden ? 0.4 : 1, textDecoration: hidden ? "line-through" : "none" }}>{m.label}</span>
+                {hidden && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--fg-4)", background: "var(--bg-sunk)", border: "1px solid var(--line)", borderRadius: 999, padding: "1px 8px" }}>숨김</span>}
+                <button type="button" title={hidden ? "메뉴 표시하기" : "메뉴 숨기기"}
+                  draggable={false}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => { e.stopPropagation(); toggleMenuHidden(m.id); }}
+                  style={{ marginLeft: "auto", display: "flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 7, border: "1px solid var(--line)", background: hidden ? "var(--bg-sunk)" : "var(--bg-elev)", color: hidden ? "var(--fg-4)" : "var(--fg-2)", cursor: "pointer", flexShrink: 0 }}>
+                  <Icon name={hidden ? "eye-off" : "eye"} size={16} />
+                </button>
               </div>
-            ))}
+            );})}
           </div>
         </div>
       )}

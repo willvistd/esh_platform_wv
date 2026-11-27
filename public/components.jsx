@@ -62,7 +62,7 @@ window.WV_MENU_DEFS = [
   { id: "safety-board",         label: "안전보건게시판",     icon: "doc" },
 ];
 
-const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCategories, menuOrder }) => {
+const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCategories, menuOrder, menuHidden }) => {
   const myUser = currentUser || D.users.find((u) => u.role === role);
   // 카테고리는 App(라이브 목록)에서 내려주는 prop을 그대로 사용.
   // (예전엔 내부 state가 D.categories 씨앗을 먼저 그린 뒤 갱신해 옛 목록이 깜빡였음)
@@ -166,7 +166,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
         };
         const DEFAULT = (window.WV_MENU_DEFS || []).map((m) => m.id);
         const ord = Array.isArray(menuOrder) && menuOrder.length ? menuOrder : DEFAULT;
-        const ids = [...ord.filter((id) => defs[id]), ...DEFAULT.filter((id) => !ord.includes(id))];
+        const hiddenSet = new Set(Array.isArray(menuHidden) ? menuHidden : []);
+        const ids = [...ord.filter((id) => defs[id]), ...DEFAULT.filter((id) => !ord.includes(id))]
+          .filter((id) => !hiddenSet.has(id));   // 관리자가 숨긴 메뉴 제외
         return ids.map((id) => <React.Fragment key={id}>{defs[id]()}</React.Fragment>);
       })()}
 
