@@ -58,6 +58,7 @@ window.WV_MENU_DEFS = [
   { id: "legal-checker",        label: "법적의무 자동판정", icon: "shield" },
   { id: "tool-org-chart",       label: "안전보건 조직도",   icon: "users" },
   { id: "industrial-accident",  label: "산업재해 관리",     icon: "alert" },
+  { id: "serious-disaster",     label: "중대재해처벌법 대응", icon: "shield" },
   { id: "safety-board",         label: "안전보건게시판",     icon: "doc" },
 ];
 
@@ -155,6 +156,9 @@ const Sidebar = ({ route, onNav, role, currentUser, onLogout, categories: propCa
           ),
           "industrial-accident": () => (
             <NavLink active={route.name === "industrial-accident"} icon="alert" onClick={() => onNav({ name: "industrial-accident" })}>산업재해 관리</NavLink>
+          ),
+          "serious-disaster": () => (
+            <NavLink active={route.name === "serious-disaster"} icon="shield" onClick={() => onNav({ name: "serious-disaster" })}>중대재해처벌법 대응</NavLink>
           ),
           "safety-board": () => (
             <NavLink active={route.name === "safety-board"} icon="doc" onClick={() => onNav({ name: "safety-board" })}>안전보건게시판</NavLink>

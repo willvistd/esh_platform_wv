@@ -1281,6 +1281,8 @@ function App() {
           <WorkerSurveyView onNav={onNav} currentUser={currentUser} />
         ) : route.name === "safety-board" ? (
           <SafetyBoardView onNav={onNav} currentUser={currentUser} />
+        ) : route.name === "serious-disaster" ? (
+          <SeriousDisasterHub onNav={onNav} currentUser={currentUser} />
         ) : route.name === "legal-checker" ? (
           <LegalCheckerView onNav={onNav} currentUser={currentUser} initialLawQuery={route.lawQuery || ""} />
         ) : route.name === "risk-assessment" ? (
